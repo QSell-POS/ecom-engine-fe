@@ -1,7 +1,10 @@
 "use client";
 
-import { type FormEvent, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,44 +20,35 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { createBrand } from "@/services/brands";
+import { createBrandAction } from "@/lib/api/brand/action";
+import { CreateBrandSchema } from "@/lib/api/brand/validation";
+
+type CreateBrandInput = z.input<typeof CreateBrandSchema>;
+type CreateBrandValues = z.output<typeof CreateBrandSchema>;
 
 export function CreateBrandForm() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const form = useForm<CreateBrandInput, unknown, CreateBrandValues>({
+    resolver: zodResolver(CreateBrandSchema),
+    defaultValues: {
+      name: "",
+      slug: "",
+      description: "",
+      logo: "",
+      website: "",
+      isActive: true,
+    },
+  });
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    const form = event.currentTarget;
-    const formData = new FormData(form);
-
-    const name = String(formData.get("name") || "").trim();
-    const slug = String(formData.get("slug") || "").trim();
-
-    if (!name || !slug) {
-      return;
-    }
-
-    const payload = {
-      name,
-      slug,
-      description:
-        String(formData.get("description") || "").trim() || undefined,
-      logo: String(formData.get("logo") || "").trim() || undefined,
-      website: String(formData.get("website") || "").trim() || undefined,
-      isActive: formData.get("isActive") === "on",
-    };
-
+  function onSubmit(values: CreateBrandValues) {
     startTransition(async () => {
-      try {
-        await createBrand(payload);
+      const result = await createBrandAction(values);
+      if (result?.data?.brand) {
         form.reset();
         setOpen(false);
         router.refresh();
-      } catch (error) {
-        console.error("Failed to create brand:", error);
       }
     });
   }
@@ -75,7 +69,10 @@ export function CreateBrandForm() {
 
         <Card className="border-0 shadow-none">
           <CardContent className="p-0">
-            <form onSubmit={handleSubmit} className="space-y-5 p-6">
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="space-y-5 p-6"
+            >
               <div className="grid gap-5 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label
@@ -87,7 +84,7 @@ export function CreateBrandForm() {
                   </Label>
                   <Input
                     id="name"
-                    name="name"
+                    {...form.register("name")}
                     placeholder="e.g. RedStone"
                     required
                     className="h-11 rounded-xl border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 placeholder:text-slate-400"
@@ -104,7 +101,7 @@ export function CreateBrandForm() {
                   </Label>
                   <Input
                     id="slug"
-                    name="slug"
+                    {...form.register("slug")}
                     placeholder="redstone"
                     required
                     className="h-11 rounded-xl border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 placeholder:text-slate-400"
@@ -121,7 +118,7 @@ export function CreateBrandForm() {
                 </Label>
                 <Textarea
                   id="description"
-                  name="description"
+                  {...form.register("description")}
                   placeholder="Enter brand description"
                   className="min-h-28 rounded-xl border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-900 placeholder:text-slate-400"
                 />
@@ -137,7 +134,7 @@ export function CreateBrandForm() {
                   </Label>
                   <Input
                     id="logo"
-                    name="logo"
+                    {...form.register("logo")}
                     type="url"
                     placeholder="https://example.com/logo.png"
                     className="h-11 rounded-xl border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 placeholder:text-slate-400"
@@ -153,7 +150,7 @@ export function CreateBrandForm() {
                   </Label>
                   <Input
                     id="website"
-                    name="website"
+                    {...form.register("website")}
                     type="url"
                     placeholder="https://example.com"
                     className="h-11 rounded-xl border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 placeholder:text-slate-400"
@@ -169,7 +166,17 @@ export function CreateBrandForm() {
                   Brand status
                 </Label>
                 <div className="flex items-center gap-2">
-                  <Switch id="isActive" name="isActive" defaultChecked />
+                  <Controller
+                    name="isActive"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Switch
+                        id="isActive"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    )}
+                  />
                   <span className="text-sm text-slate-600">Active</span>
                 </div>
               </div>
