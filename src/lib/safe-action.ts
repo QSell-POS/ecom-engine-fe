@@ -6,6 +6,16 @@ export const actionClient = createSafeActionClient({
     console.error("Action error:", error);
 
     if (error instanceof ApiError) {
+      const errors = error.data as { errors?: Record<string, string[]> } | undefined;
+      const details = errors?.errors
+        ? Object.entries(errors.errors)
+            .flatMap(([field, messages]) =>
+              messages.map((message) => `${field}: ${message}`),
+            )
+            .join("; ")
+        : "";
+
+      if (details) return `${error.message}: ${details}`;
       return error.message;
     }
 

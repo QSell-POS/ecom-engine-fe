@@ -7,8 +7,6 @@ export default async function BrandsPage() {
   const res = await getBrandsAdmin();
   const brands: Brand[] = res.data;
 
-  console.log(brands);
-
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
