@@ -3,101 +3,28 @@ import {
   ArrowUpRight,
   BarChart3,
   Boxes,
-  CircleDollarSign,
   Clock3,
   MoreHorizontal,
-  Package,
-  ShoppingCart,
-  Users,
 } from "lucide-react";
-
-const metrics = [
-  {
-    label: "Total revenue",
-    value: "$48,290",
-    change: "+12.8%",
-    icon: CircleDollarSign,
-    tone: "bg-emerald-50 text-emerald-600",
-    positive: true,
-  },
-  {
-    label: "Orders",
-    value: "1,284",
-    change: "+8.4%",
-    icon: ShoppingCart,
-    tone: "bg-blue-50 text-blue-600",
-    positive: true,
-  },
-  {
-    label: "Customers",
-    value: "8,549",
-    change: "+5.7%",
-    icon: Users,
-    tone: "bg-violet-50 text-violet-600",
-    positive: true,
-  },
-  {
-    label: "Refunds",
-    value: "$1,240",
-    change: "-2.1%",
-    icon: Package,
-    tone: "bg-orange-50 text-orange-600",
-    positive: false,
-  },
-];
-
-const orders = [
-  {
-    id: "#10482",
-    customer: "Olivia Martin",
-    product: "Canvas weekender",
-    amount: "$248.00",
-    status: "Paid",
-  },
-  {
-    id: "#10481",
-    customer: "Jackson Lee",
-    product: "Everyday sneakers",
-    amount: "$129.00",
-    status: "Paid",
-  },
-  {
-    id: "#10480",
-    customer: "Isabella Chen",
-    product: "Linen overshirt",
-    amount: "$96.00",
-    status: "Pending",
-  },
-  {
-    id: "#10479",
-    customer: "Ethan Wilson",
-    product: "Leather card holder",
-    amount: "$64.00",
-    status: "Paid",
-  },
-];
-
-const inventory = [
-  { name: "Canvas weekender", stock: 4, color: "bg-orange-500" },
-  { name: "Studio ceramic mug", stock: 7, color: "bg-amber-500" },
-  { name: "Everyday sneakers", stock: 9, color: "bg-yellow-500" },
-];
-
-const chartBars = [42, 55, 48, 68, 58, 76, 64, 82, 72, 92, 78, 96];
-const months = [
-  "Oct",
-  "Nov",
-  "Dec",
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-];
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { chartBars, inventory, metrics, months, orders } from "./mock-data";
 
 export default function DashboardPage() {
   return (
@@ -114,9 +41,7 @@ export default function DashboardPage() {
             Here is what is happening with your store today.
           </p>
         </div>
-        <button className="inline-flex h-10 items-center justify-center rounded-lg bg-slate-950 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800">
-          Download report
-        </button>
+        <Button size="lg">Download report</Button>
       </header>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -125,22 +50,20 @@ export default function DashboardPage() {
           const ChangeIcon = metric.positive ? ArrowUpRight : ArrowDownRight;
 
           return (
-            <article
-              key={metric.label}
-              className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
-            >
+            <Card key={metric.label} className="p-5">
               <div className="flex items-start justify-between">
                 <div
                   className={`flex size-10 items-center justify-center rounded-lg ${metric.tone}`}
                 >
                   <Icon className="size-5" />
                 </div>
-                <button
+                <Button
                   aria-label={`More options for ${metric.label}`}
-                  className="text-slate-400 transition hover:text-slate-700"
+                  variant="ghost"
+                  size="icon"
                 >
                   <MoreHorizontal className="size-5" />
-                </button>
+                </Button>
               </div>
               <p className="mt-5 text-sm text-slate-500">{metric.label}</p>
               <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
@@ -155,13 +78,13 @@ export default function DashboardPage() {
                   vs. last month
                 </span>
               </p>
-            </article>
+            </Card>
           );
         })}
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">
-        <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <Card className="p-5 sm:p-6">
           <div className="flex items-start justify-between">
             <div>
               <div className="flex items-center gap-2">
@@ -177,14 +100,16 @@ export default function DashboardPage() {
                 +12.8% <span className="text-slate-400">from last month</span>
               </p>
             </div>
-            <select
-              defaultValue="12-months"
-              className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-slate-400"
-            >
-              <option value="12-months">Last 12 months</option>
-              <option value="30-days">Last 30 days</option>
-              <option value="7-days">Last 7 days</option>
-            </select>
+            <Select defaultValue="12-months">
+              <SelectTrigger className="h-9 w-auto">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="12-months">Last 12 months</SelectItem>
+                <SelectItem value="30-days">Last 30 days</SelectItem>
+                <SelectItem value="7-days">Last 7 days</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="mt-8 flex h-56 items-end gap-2 border-b border-l border-slate-200 px-3 pb-0 pt-4 sm:gap-4">
             {chartBars.map((height, index) => (
@@ -205,9 +130,9 @@ export default function DashboardPage() {
               <span key={month}>{month}</span>
             ))}
           </div>
-        </article>
+        </Card>
 
-        <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <Card className="p-5 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2">
@@ -220,9 +145,9 @@ export default function DashboardPage() {
                 Products that need attention
               </p>
             </div>
-            <span className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-700">
+            <Badge className="bg-orange-50 text-orange-700 hover:bg-orange-50">
               3 items
-            </span>
+            </Badge>
           </div>
           <div className="mt-6 space-y-5">
             {inventory.map((item) => (
@@ -244,65 +169,73 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
-          <button className="mt-7 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+          <Button variant="outline" className="mt-7 w-full">
             View inventory <ArrowUpRight className="size-4" />
-          </button>
-        </article>
+          </Button>
+        </Card>
       </section>
 
-      <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
+      <Card className="p-0">
+        <CardHeader className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
           <div>
             <h2 className="font-semibold text-slate-950">Recent orders</h2>
             <p className="mt-1 text-sm text-slate-500">
               The latest activity from your store
             </p>
           </div>
-          <button className="text-sm font-medium text-blue-600 hover:text-blue-700">
+          <Button variant="link" className="px-0">
             View all
-          </button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-160 text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-6 py-3 font-medium">Order</th>
-                <th className="px-6 py-3 font-medium">Customer</th>
-                <th className="px-6 py-3 font-medium">Product</th>
-                <th className="px-6 py-3 font-medium">Amount</th>
-                <th className="px-6 py-3 font-medium">Status</th>
-                <th className="px-6 py-3 font-medium">
+          </Button>
+        </CardHeader>
+        <CardContent className="overflow-x-auto p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Order</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Product</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>
                   <span className="sr-only">Time</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {orders.map((order) => (
-                <tr key={order.id} className="transition hover:bg-slate-50/80">
-                  <td className="px-6 py-4 font-medium text-slate-900">
+                <TableRow key={order.id}>
+                  <TableCell className="font-medium text-slate-900">
                     {order.id}
-                  </td>
-                  <td className="px-6 py-4 text-slate-600">{order.customer}</td>
-                  <td className="px-6 py-4 text-slate-600">{order.product}</td>
-                  <td className="px-6 py-4 font-medium text-slate-900">
+                  </TableCell>
+                  <TableCell className="text-slate-600">
+                    {order.customer}
+                  </TableCell>
+                  <TableCell className="text-slate-600">
+                    {order.product}
+                  </TableCell>
+                  <TableCell className="font-medium text-slate-900">
                     {order.amount}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-xs font-medium ${order.status === "Paid" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      className={
+                        order.status === "Paid"
+                          ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-50"
+                          : "bg-amber-50 text-amber-700 hover:bg-amber-50"
+                      }
                     >
                       {order.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right text-slate-400">
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right text-slate-400">
                     <Clock3 className="ml-auto size-4" />
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

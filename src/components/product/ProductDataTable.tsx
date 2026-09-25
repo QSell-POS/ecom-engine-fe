@@ -4,213 +4,32 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
   ChevronDown,
   ChevronUp,
+  Download,
   FileSpreadsheet,
   FileText,
-  Pencil,
   RefreshCw,
-  Upload,
+  Search,
 } from "lucide-react";
-import {
-  columnFilteringFeature,
-  createCoreRowModel,
-  createFilteredRowModel,
-  createPaginatedRowModel,
-  createSortedRowModel,
-  filterFn_includesString,
-  globalFilteringFeature,
-  rowPaginationFeature,
-  rowSelectionFeature,
-  rowSortingFeature,
-  tableFeatures,
-  type ColumnDef,
-  type ReactTable,
-} from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { DataTable } from "@/components/common/DataTable";
-import { DeleteProductForm } from "@/components/product/DeleteProductForm";
-import type { Product } from "@/types";
-
-const features = tableFeatures({
-  columnFilteringFeature,
-  globalFilteringFeature,
-  rowPaginationFeature,
-  rowSelectionFeature,
-  rowSortingFeature,
-  coreRowModel: createCoreRowModel(),
-  filteredRowModel: createFilteredRowModel(),
-  paginatedRowModel: createPaginatedRowModel(),
-  sortedRowModel: createSortedRowModel(),
-  filterFns: { includesString: filterFn_includesString },
-});
-
-type ProductTable = ReactTable<typeof features, Product>;
-
-function escapeCsv(value: string) {
-  return `"${value.replaceAll('"', '""')}"`;
-}
-
-function SortableHeader({
-  column,
-  label,
-}: {
-  column: ProductTable["getHeaderGroups"] extends () => infer T
-    ? T extends Array<infer G>
-      ? G extends { headers: Array<infer H> }
-        ? H extends { column: infer C }
-          ? C
-          : never
-        : never
-      : never
-    : never;
-  label: string;
-}) {
-  const sorted = column.getIsSorted();
-  return (
-    <button
-      type="button"
-      className="inline-flex items-center gap-1 font-medium"
-      onClick={() => column.toggleSorting()}
-    >
-      {label}
-      {sorted === "asc" ? (
-        <ArrowUp className="size-3" />
-      ) : sorted === "desc" ? (
-        <ArrowDown className="size-3" />
-      ) : (
-        <ArrowUpDown className="size-3 text-slate-400" />
-      )}
-    </button>
-  );
-}
-
-const columns: Array<ColumnDef<typeof features, Product>> = [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        aria-label="Select all products on this page"
-        checked={
-          table.getIsSomePageRowsSelected()
-            ? "indeterminate"
-            : table.getIsAllPageRowsSelected()
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        aria-label={`Select ${row.original.name}`}
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-      />
-    ),
-    enableSorting: false,
-    enableColumnFilter: false,
-  },
-  {
-    accessorKey: "sku",
-    header: ({ column }) => <SortableHeader column={column} label="SKU" />,
-    cell: (info) => (
-      <span className="font-medium text-slate-500">
-        {info.getValue<string>()}
-      </span>
-    ),
-    filterFn: "includesString",
-  },
-  {
-    accessorKey: "name",
-    header: ({ column }) => (
-      <SortableHeader column={column} label="Product Name" />
-    ),
-    cell: (info) => (
-      <span className="font-medium text-slate-900">
-        {info.getValue<string>()}
-      </span>
-    ),
-    filterFn: "includesString",
-  },
-  {
-    id: "category",
-    header: ({ column }) => <SortableHeader column={column} label="Category" />,
-    accessorFn: (product) => product.category?.name ?? "",
-    cell: (info) => info.getValue<string>() || "-",
-    filterFn: "includesString",
-  },
-  {
-    id: "brand",
-    header: ({ column }) => <SortableHeader column={column} label="Brand" />,
-    accessorFn: (product) => product.brand?.name ?? "",
-    cell: (info) => info.getValue<string>() || "-",
-    filterFn: "includesString",
-  },
-  {
-    accessorKey: "sellingPrice",
-    header: ({ column }) => <SortableHeader column={column} label="Price" />,
-    cell: (info) => {
-      const price = Number(info.getValue<string>());
-      return Number.isFinite(price) ? `$${price.toLocaleString()}` : "-";
-    },
-  },
-  {
-    id: "unit",
-    header: "Unit",
-    accessorFn: () => "Pc",
-    enableSorting: false,
-    enableColumnFilter: false,
-  },
-  {
-    id: "quantity",
-    header: ({ column }) => <SortableHeader column={column} label="Qty" />,
-    accessorFn: (product) => product.inventory?.quantityOnHand ?? 0,
-  },
-  {
-    id: "actions",
-    header: "Actions",
-    cell: (info) => (
-      <div className="flex items-center gap-1">
-        <Link
-          title="Edit product"
-          href={`/products/${info.row.original.id}/edit`}
-          aria-label={`Edit ${info.row.original.name}`}
-          className="rounded-md border p-1"
-        >
-          <Pencil size={14} />
-        </Link>
-        <DeleteProductForm product={info.row.original} />
-      </div>
-    ),
-    enableSorting: false,
-    enableColumnFilter: false,
-  },
-];
-
-function exportProducts(products: Product[]) {
-  const rows = products.map((product) => [
-    product.sku,
-    product.name,
-    product.category?.name ?? "",
-    product.brand?.name ?? "",
-    product.sellingPrice,
-    "Pc",
-    String(product.inventory?.quantityOnHand ?? 0),
-  ]);
-  const csv = [
-    "SKU,Product Name,Category,Brand,Price,Unit,Qty",
-    ...rows.map((row) => row.map(escapeCsv).join(",")),
-  ].join("\n");
-  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "products.csv";
-  link.click();
-  URL.revokeObjectURL(url);
-}
+import {
+  exportProducts,
+  productColumns,
+  productTableFeatures,
+  type ProductTable,
+} from "@/lib/api/product/table-columns";
+import { PRODUCT_PAGE_SIZE_OPTIONS } from "@/lib/api/product/constants";
+import type { Product } from "@/lib/api/product/types";
 
 function TableToolbar({
   table,
@@ -242,52 +61,57 @@ function TableToolbar({
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
-      <input
-        value={String(table.state.globalFilter ?? "")}
-        onChange={(event) => table.setGlobalFilter(event.target.value)}
-        placeholder="Search"
-        aria-label="Search products"
-        className="h-8 w-full max-w-72 rounded-md border border-slate-200 px-3 text-xs outline-none placeholder:text-slate-400 focus:border-slate-400"
-      />
+      <div className="relative w-full max-w-72">
+        <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400" />
+        <Input
+          value={String(table.state.globalFilter ?? "")}
+          onChange={(event) => table.setGlobalFilter(event.target.value)}
+          placeholder="Search"
+          aria-label="Search products"
+          className="h-8 w-full pl-8"
+        />
+      </div>
       <div className="flex items-center gap-2">
-        <select
+        <Select
           value={category}
-          onChange={(event) =>
+          onValueChange={(value) =>
             table
               .getColumn("category")
-              ?.setFilterValue(
-                event.target.value === "all" ? undefined : event.target.value,
-              )
+              ?.setFilterValue(value === "all" ? undefined : value)
           }
-          className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-600"
-          aria-label="Filter by category"
         >
-          <option value="all">Category</option>
-          {categories.map((value) => (
-            <option key={value} value={value}>
-              {value}
-            </option>
-          ))}
-        </select>
-        <select
+          <SelectTrigger className="h-8 w-auto" aria-label="Filter by category">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Category</SelectItem>
+            {categories.map((value) => (
+              <SelectItem key={value} value={value as string}>
+                {value}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
           value={brand}
-          onChange={(event) =>
+          onValueChange={(value) =>
             table
               .getColumn("brand")
-              ?.setFilterValue(
-                event.target.value === "all" ? undefined : event.target.value,
-              )
+              ?.setFilterValue(value === "all" ? undefined : value)
           }
-          className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-600"
-          aria-label="Filter by brand"
         >
-          <option value="all">Brand</option>
-          {brands.map((value) => (
-            <option key={value} value={value}>
-              {value}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="h-8 w-auto" aria-label="Filter by brand">
+            <SelectValue placeholder="Brand" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Brand</SelectItem>
+            {brands.map((value) => (
+              <SelectItem key={value} value={value as string}>
+                {value}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );
@@ -301,18 +125,21 @@ function TableFooter({ table }: { table: ProductTable }) {
     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-4 py-3 text-xs text-slate-500">
       <div className="flex items-center gap-2">
         <span>Row Per Page</span>
-        <select
-          value={table.state.pagination.pageSize}
-          onChange={(event) => table.setPageSize(Number(event.target.value))}
-          className="h-7 rounded-md border border-slate-200 bg-white px-2 text-xs"
-          aria-label="Rows per page"
+        <Select
+          value={String(table.state.pagination.pageSize)}
+          onValueChange={(value) => table.setPageSize(Number(value))}
         >
-          {[5, 10, 20, 50].map((value) => (
-            <option key={value} value={value}>
-              {value}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="h-7 w-16" aria-label="Rows per page">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PRODUCT_PAGE_SIZE_OPTIONS.map((value) => (
+              <SelectItem key={value} value={String(value)}>
+                {value}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <span>Entries</span>
       </div>
       <div className="flex items-center gap-1">
@@ -328,10 +155,15 @@ function TableFooter({ table }: { table: ProductTable }) {
         {table.getPageOptions().map((page) => (
           <Button
             key={page}
-            variant={page === currentPage ? "default" : "ghost"}
+            variant="ghost"
             size="icon-xs"
             aria-label={`Page ${page + 1}`}
             onClick={() => table.setPageIndex(page)}
+            className={
+              page === currentPage
+                ? "bg-orange-500 text-white hover:bg-orange-500/90"
+                : ""
+            }
           >
             {page + 1}
           </Button>
@@ -364,8 +196,8 @@ export function ProductDataTable({ products }: { products: Product[] }) {
   return (
     <div className="space-y-5">
       <DataTable
-        features={features}
-        columns={columns}
+        features={productTableFeatures}
+        columns={productColumns}
         data={products}
         initialState={{
           pagination: { pageIndex: 0, pageSize: 10 },
@@ -386,19 +218,19 @@ export function ProductDataTable({ products }: { products: Product[] }) {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Button
-                variant="outline"
                 size="icon-sm"
                 aria-label="Export PDF"
                 title="Export PDF"
+                className="bg-red-500 text-white hover:bg-red-500/90"
               >
                 <FileText />
               </Button>
               <Button
-                variant="outline"
                 size="icon-sm"
                 aria-label="Export Excel"
                 title="Export Excel"
                 onClick={() => exportProducts(products)}
+                className="bg-emerald-600 text-white hover:bg-emerald-600/90"
               >
                 <FileSpreadsheet />
               </Button>
@@ -420,11 +252,19 @@ export function ProductDataTable({ products }: { products: Product[] }) {
               >
                 {isCollapsed ? <ChevronDown /> : <ChevronUp />}
               </Button>
-              <Button variant="outline" size="sm" disabled>
-                <Upload />
+              <Button
+                size="sm"
+                disabled
+                className="bg-slate-800 text-white hover:bg-slate-800/90 disabled:opacity-100"
+              >
+                <Download />
                 Import Product
               </Button>
-              <Button asChild size="sm">
+              <Button
+                asChild
+                size="sm"
+                className="bg-orange-500 text-white hover:bg-orange-500/90"
+              >
                 <Link href="/products/create">Add Product</Link>
               </Button>
             </div>

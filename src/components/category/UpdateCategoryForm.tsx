@@ -21,7 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { updateCategoryAction } from "@/lib/api/category/action";
 import { UpdateCategorySchema } from "@/lib/api/category/validation";
-import type { Category } from "@/types";
+import type { Category } from "@/lib/api/category/types";
 
 type InputValues = z.input<typeof UpdateCategorySchema>;
 type Values = z.output<typeof UpdateCategorySchema>;

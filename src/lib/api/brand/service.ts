@@ -1,16 +1,11 @@
 import "server-only";
 import { apiClient } from "@/lib/api/client";
-import { Brand, ListResponse } from "@/types";
+import { PaginationParams, ListResponse } from "@/lib/api/shared/types";
+import { Brand } from "./types";
 import { CreateBrandPayload, UpdateBrandPayload } from "./dto";
+import { BRANDS_TAG, brandTag } from "./constants";
 
-// ─────────────────────────────────────
-// Public API
-// ─────────────────────────────────────
-export async function getBrands(params?: {
-  page?: number;
-  limit?: number;
-  search?: string;
-}) {
+export async function getBrands(params?: PaginationParams) {
   const searchParams = new URLSearchParams();
 
   if (params?.page) searchParams.set("page", String(params.page));
@@ -20,33 +15,26 @@ export async function getBrands(params?: {
   const query = searchParams.toString();
 
   return apiClient<ListResponse<Brand>>(`/brands${query ? `?${query}` : ""}`, {
-    tags: ["brands"],
+    tags: [BRANDS_TAG],
     revalidate: 60,
   });
 }
 
 export async function getBrandBySlug(slug: string) {
   return apiClient<Brand>(`/brands/slug/${slug}`, {
-    tags: [`brand-${slug}`],
+    tags: [brandTag(slug)],
     revalidate: 60,
   });
 }
 
 export async function getBrandById(id: string) {
   return apiClient<Brand>(`/brands/${id}`, {
-    tags: [`brand-${id}`],
+    tags: [brandTag(id)],
     revalidate: 60,
   });
 }
 
-// ─────────────────────────────────────
-// Admin API
-// ─────────────────────────────────────
-export async function getBrandsAdmin(params?: {
-  page?: number;
-  limit?: number;
-  search?: string;
-}) {
+export async function getBrandsAdmin(params?: PaginationParams) {
   const searchParams = new URLSearchParams();
 
   if (params?.page) searchParams.set("page", String(params.page));
@@ -58,7 +46,7 @@ export async function getBrandsAdmin(params?: {
   return apiClient<ListResponse<Brand>>(
     `/admin/brands${query ? `?${query}` : ""}`,
     {
-      tags: ["brands"],
+      tags: [BRANDS_TAG],
       revalidate: 60,
     },
   );

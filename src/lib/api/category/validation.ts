@@ -1,16 +1,12 @@
 import { z } from "zod";
+import { makeIdSchema, optionalText } from "@/lib/api/shared/validation";
 
-export const CategoryIdSchema = z.object({
-  id: z.string().min(1, "Category id is required"),
-});
+export const CategoryIdSchema = makeIdSchema("Category");
 
 export const CreateCategorySchema = z.object({
   name: z.string().min(1, "Name is required"),
   slug: z.string().min(1, "Slug is required"),
-  image: z.preprocess(
-    (value) => (value === "" ? undefined : value),
-    z.string().optional(),
-  ),
+  image: optionalText,
   description: z.string().optional(),
   isActive: z.boolean().default(true),
 });

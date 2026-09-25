@@ -1,8 +1,5 @@
 import { z } from "zod";
-
-const emptyToUndefined = (value: unknown) => (value === "" ? undefined : value);
-
-const optionalText = z.preprocess(emptyToUndefined, z.string().optional());
+import { emptyToUndefined, makeIdSchema, optionalText } from "@/lib/api/shared/validation";
 
 const attributesSchema = z.preprocess(
   (value) => {
@@ -74,9 +71,7 @@ const productFields = {
   initialQuantity: z.coerce.number().int().min(0).optional(),
 };
 
-export const ProductIdSchema = z.object({
-  id: z.string().min(1, "Product id is required"),
-});
+export const ProductIdSchema = makeIdSchema("Product");
 
 export const CreateProductSchema = z.object(productFields);
 export const UpdateProductSchema = ProductIdSchema.extend({

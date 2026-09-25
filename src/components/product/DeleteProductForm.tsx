@@ -1,8 +1,8 @@
 "use client";
 
-import { TbTrash } from "react-icons/tb";
+import { Trash2 } from "lucide-react";
 import { deleteProductFromForm } from "@/lib/api/product/action";
-import type { Product } from "@/types";
+import type { Product } from "@/lib/api/product/types";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,17 +14,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 export function DeleteProductForm({ product }: { product: Product }) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <div
+        <Button
+          variant="ghost"
+          size="icon-sm"
           aria-label={`Delete ${product.name}`}
-          className="border p-1 rounded-md cursor-pointer"
+          title="Delete product"
+          className="text-slate-400 hover:bg-slate-100 hover:text-slate-600"
         >
-          <TbTrash size={14} />
-        </div>
+          <Trash2 size={14} />
+        </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

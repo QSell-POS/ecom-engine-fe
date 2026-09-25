@@ -1,7 +1,7 @@
 import { CreateCategoryForm } from "@/components/category/CreateCategoryForm";
 import { CategoryDataTable } from "@/components/category/CategoryDataTable";
 import { getCategoriesAdmin } from "@/lib/api/category/service";
-import { Category } from "@/types";
+import { Category } from "@/lib/api/category/types";
 
 export default async function CategoriesPage() {
   const { data: categories } = await getCategoriesAdmin();

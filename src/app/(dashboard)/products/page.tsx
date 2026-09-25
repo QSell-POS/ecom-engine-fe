@@ -1,6 +1,6 @@
 import { ProductDataTable } from "@/components/product/ProductDataTable";
 import { getProductsAdmin } from "@/lib/api/product";
-import { Product } from "@/types";
+import { Product } from "@/lib/api/product/types";
 
 export default async function ProductsPage() {
   const res = await getProductsAdmin();

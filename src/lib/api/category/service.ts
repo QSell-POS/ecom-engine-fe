@@ -1,16 +1,11 @@
 import "server-only";
 import { apiClient } from "@/lib/api/client";
-import { Category, ListResponse } from "@/types";
+import { PaginationParams, ListResponse } from "@/lib/api/shared/types";
+import { Category } from "./types";
 import { CreateCategoryPayload, UpdateCategoryPayload } from "./dto";
+import { CATEGORIES_TAG, categoryTag } from "./constants";
 
-// ─────────────────────────────────────
-// Public API
-// ─────────────────────────────────────
-export async function getCategories(params?: {
-  page?: number;
-  limit?: number;
-  search?: string;
-}) {
+export async function getCategories(params?: PaginationParams) {
   const searchParams = new URLSearchParams();
 
   if (params?.page) searchParams.set("page", String(params.page));
@@ -22,7 +17,7 @@ export async function getCategories(params?: {
   return apiClient<ListResponse<Category>>(
     `/categories${query ? `?${query}` : ""}`,
     {
-      tags: ["categories"],
+      tags: [CATEGORIES_TAG],
       revalidate: 60,
     },
   );
@@ -30,26 +25,19 @@ export async function getCategories(params?: {
 
 export async function getCategoriesBySlug(slug: string) {
   return apiClient<Category>(`/category/slug/${slug}`, {
-    tags: [`categories-${slug}`],
+    tags: [categoryTag(slug)],
     revalidate: 60,
   });
 }
 
 export async function getCategoriesById(id: string) {
   return apiClient<Category>(`/category/${id}`, {
-    tags: [`categories-${id}`],
+    tags: [categoryTag(id)],
     revalidate: 60,
   });
 }
 
-// ─────────────────────────────────────
-// Admin API
-// ─────────────────────────────────────
-export async function getCategoriesAdmin(params?: {
-  page?: number;
-  limit?: number;
-  search?: string;
-}) {
+export async function getCategoriesAdmin(params?: PaginationParams) {
   const searchParams = new URLSearchParams();
 
   if (params?.page) searchParams.set("page", String(params.page));
@@ -61,7 +49,7 @@ export async function getCategoriesAdmin(params?: {
   return apiClient<ListResponse<Category>>(
     `/admin/categories${query ? `?${query}` : ""}`,
     {
-      tags: ["categories"],
+      tags: [CATEGORIES_TAG],
       revalidate: 60,
     },
   );

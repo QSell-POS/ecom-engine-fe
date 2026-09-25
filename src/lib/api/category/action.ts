@@ -3,6 +3,7 @@
 import { updateTag } from "next/cache";
 import { authActionClient } from "@/lib/safe-action";
 import { createCategory, deleteCategory, updateCategory } from "./service";
+import { CATEGORIES_TAG, categoryTag } from "./constants";
 import {
   CreateCategorySchema,
   DeleteCategorySchema,
@@ -13,7 +14,7 @@ export const createCategoryAction = authActionClient
   .inputSchema(CreateCategorySchema)
   .action(async ({ parsedInput }) => {
     const category = await createCategory(parsedInput);
-    updateTag("categories");
+    updateTag(CATEGORIES_TAG);
     return { category };
   });
 
@@ -22,8 +23,8 @@ export const updateCategoryAction = authActionClient
   .action(async ({ parsedInput }) => {
     const { id, ...data } = parsedInput;
     const category = await updateCategory(id, data);
-    updateTag("categories");
-    updateTag(`categories-${id}`);
+    updateTag(CATEGORIES_TAG);
+    updateTag(categoryTag(id));
     return { category };
   });
 
@@ -31,8 +32,8 @@ export const deleteCategoryAction = authActionClient
   .inputSchema(DeleteCategorySchema)
   .action(async ({ parsedInput }) => {
     await deleteCategory(parsedInput.id);
-    updateTag("categories");
-    updateTag(`categories-${parsedInput.id}`);
+    updateTag(CATEGORIES_TAG);
+    updateTag(categoryTag(parsedInput.id));
     return { success: true };
   });
 
