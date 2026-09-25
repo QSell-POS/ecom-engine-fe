@@ -1,8 +1,8 @@
 "use client";
 
-import { TbTrash } from "react-icons/tb";
+import { Trash2 } from "lucide-react";
 import { deleteCategoryFromForm } from "@/lib/api/category/action";
-import type { Category } from "@/types";
+import type { Category } from "@/lib/api/category/types";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +25,7 @@ export function DeleteCategoryForm({ category }: { category: Category }) {
           size="icon-sm"
           aria-label={`Delete ${category.name}`}
         >
-          <TbTrash />
+          <Trash2 size={14} />
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>

@@ -1,7 +1,7 @@
 "use client";
 
-import { Brand } from "@/types";
-import { TbTrash } from "react-icons/tb";
+import { Brand } from "@/lib/api/brand/types";
+import { Trash2 } from "lucide-react";
 import { deleteBrandFromForm } from "@/lib/api/brand/action";
 import {
   AlertDialog,
@@ -30,7 +30,7 @@ export function DeleteBrandForm({ brand }: DeleteBrandFormProps) {
           size="sm"
           className="rounded-xl"
         >
-          <TbTrash size={14} />
+          <Trash2 size={14} />
         </Button>
       </AlertDialogTrigger>
 

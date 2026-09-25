@@ -1,13 +1,11 @@
 import "server-only";
 import { apiClient } from "@/lib/api/client";
-import { ListResponse, Product } from "@/types";
+import { PaginationParams, ListResponse } from "@/lib/api/shared/types";
+import { Product } from "./types";
 import { CreateProductPayload, UpdateProductPayload } from "./dto";
+import { PRODUCTS_TAG, productTag } from "./constants";
 
-export async function getProductsAdmin(params?: {
-  page?: number;
-  limit?: number;
-  search?: string;
-}) {
+export async function getProductsAdmin(params?: PaginationParams) {
   const searchParams = new URLSearchParams();
   if (params?.page) searchParams.set("page", String(params.page));
   if (params?.limit) searchParams.set("limit", String(params.limit));
@@ -16,13 +14,13 @@ export async function getProductsAdmin(params?: {
 
   return apiClient<ListResponse<Product>>(
     `/admin/products${query ? `?${query}` : ""}`,
-    { tags: ["products"], revalidate: 60 },
+    { tags: [PRODUCTS_TAG], revalidate: 60 },
   );
 }
 
 export async function getProductAdmin(id: string) {
   return apiClient<Product>(`/admin/products/${id}`, {
-    tags: [`product-${id}`],
+    tags: [productTag(id)],
     revalidate: 60,
   });
 }

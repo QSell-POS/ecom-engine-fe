@@ -3,6 +3,7 @@
 import { updateTag } from "next/cache";
 import { authActionClient } from "@/lib/safe-action";
 import { createProduct, deleteProduct, updateProduct } from "./service";
+import { PRODUCTS_TAG, productTag } from "./constants";
 import {
   CreateProductSchema,
   DeleteProductSchema,
@@ -13,7 +14,7 @@ export const createProductAction = authActionClient
   .inputSchema(CreateProductSchema)
   .action(async ({ parsedInput }) => {
     const product = await createProduct(parsedInput);
-    updateTag("products");
+    updateTag(PRODUCTS_TAG);
     return { product };
   });
 
@@ -21,8 +22,8 @@ export const updateProductAction = authActionClient
   .inputSchema(UpdateProductSchema)
   .action(async ({ parsedInput }) => {
     const product = await updateProduct(parsedInput);
-    updateTag("products");
-    updateTag(`product-${parsedInput.id}`);
+    updateTag(PRODUCTS_TAG);
+    updateTag(productTag(parsedInput.id));
     return { product };
   });
 
@@ -30,8 +31,8 @@ export const deleteProductAction = authActionClient
   .inputSchema(DeleteProductSchema)
   .action(async ({ parsedInput }) => {
     await deleteProduct(parsedInput.id);
-    updateTag("products");
-    updateTag(`product-${parsedInput.id}`);
+    updateTag(PRODUCTS_TAG);
+    updateTag(productTag(parsedInput.id));
     return { success: true };
   });
 

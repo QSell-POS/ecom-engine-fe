@@ -1,7 +1,7 @@
 import { CreateBrandForm } from "@/components/brand/CreateBrandForm";
 import { BrandDataTable } from "@/components/brand/BrandDataTable";
 import { getBrandsAdmin } from "@/lib/api/brand";
-import { Brand } from "@/types";
+import { Brand } from "@/lib/api/brand/types";
 
 export default async function BrandsPage() {
   const res = await getBrandsAdmin();

@@ -1,136 +1,32 @@
 "use client";
 
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { TbChevronLeft, TbChevronRight } from "react-icons/tb";
-import {
-  columnFilteringFeature,
-  createCoreRowModel,
-  createFilteredRowModel,
-  createPaginatedRowModel,
-  createSortedRowModel,
-  filterFn_includesString,
-  globalFilteringFeature,
-  rowPaginationFeature,
-  rowSortingFeature,
-  tableFeatures,
-  type Column,
-  type ColumnDef,
-  type ReactTable,
-} from "@tanstack/react-table";
 import { DataTable } from "@/components/common/DataTable";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { UpdateCategoryForm } from "@/components/category/UpdateCategoryForm";
-import { DeleteCategoryForm } from "@/components/category/DeleteCategoryForm";
-import type { Category } from "@/types";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../ui/select";
-
-const features = tableFeatures({
-  columnFilteringFeature,
-  globalFilteringFeature,
-  rowPaginationFeature,
-  rowSortingFeature,
-  coreRowModel: createCoreRowModel(),
-  filteredRowModel: createFilteredRowModel(),
-  paginatedRowModel: createPaginatedRowModel(),
-  sortedRowModel: createSortedRowModel(),
-  filterFns: { includesString: filterFn_includesString },
-});
-type CategoryTable = ReactTable<typeof features, Category>;
-
-function SortableHeader({
-  column,
-  label,
-}: {
-  column: Column<typeof features, Category>;
-  label: string;
-}) {
-  const sorted = column.getIsSorted();
-  return (
-    <button
-      type="button"
-      className="inline-flex items-center gap-1 font-medium"
-      onClick={() => column.toggleSorting()}
-    >
-      {label}
-      {sorted === "asc" ? (
-        <ArrowUp className="size-3" />
-      ) : sorted === "desc" ? (
-        <ArrowDown className="size-3" />
-      ) : (
-        <ArrowUpDown className="size-3 text-slate-400" />
-      )}
-    </button>
-  );
-}
-
-const columns: Array<ColumnDef<typeof features, Category>> = [
-  {
-    accessorKey: "name",
-    header: ({ column }) => <SortableHeader column={column} label="Name" />,
-    filterFn: "includesString",
-  },
-  {
-    accessorKey: "slug",
-    header: ({ column }) => <SortableHeader column={column} label="Slug" />,
-    cell: (info) => info.getValue<string>() || "-",
-    filterFn: "includesString",
-  },
-  {
-    accessorKey: "description",
-    header: "Description",
-    cell: (info) => info.getValue<string>() || "-",
-    filterFn: "includesString",
-  },
-  {
-    accessorKey: "isActive",
-    header: "Status",
-    cell: (info) => {
-      const active = Boolean(info.getValue());
-      return (
-        <Badge variant={active ? "default" : "secondary"}>
-          {active ? "Active" : "Inactive"}
-        </Badge>
-      );
-    },
-    enableSorting: false,
-  },
-  {
-    accessorKey: "updatedAt",
-    header: ({ column }) => <SortableHeader column={column} label="Updated" />,
-    cell: (info) => {
-      const value = String(info.getValue() ?? "");
-      return value ? new Date(value).toLocaleDateString() : "-";
-    },
-  },
-  {
-    id: "actions",
-    header: "Actions",
-    cell: (info) => (
-      <div className="flex items-center gap-2">
-        <UpdateCategoryForm category={info.row.original} />
-        <DeleteCategoryForm category={info.row.original} />
-      </div>
-    ),
-    enableSorting: false,
-    enableColumnFilter: false,
-  },
-];
+} from "@/components/ui/select";
+import {
+  categoryColumns,
+  categoryTableFeatures,
+  type CategoryTable,
+} from "@/lib/api/category/table-columns";
+import { CATEGORY_PAGE_SIZE_OPTIONS } from "@/lib/api/category/constants";
+import type { Category } from "@/lib/api/category/types";
 
 function Toolbar({ table }: { table: CategoryTable }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
-      <input
+      <Input
         value={String(table.state.globalFilter ?? "")}
         onChange={(event) => table.setGlobalFilter(event.target.value)}
         placeholder="Search categories"
-        className="h-8 w-full max-w-72 rounded-md border border-slate-200 px-3 text-xs"
+        className="h-8 w-full max-w-72"
         aria-label="Search categories"
       />
     </div>
@@ -146,14 +42,11 @@ function Footer({ table }: { table: CategoryTable }) {
           value={String(table.state.pagination.pageSize)}
           onValueChange={(value) => table.setPageSize(Number(value))}
         >
-          <SelectTrigger
-            className="h-7 w-auto rounded-md border border-slate-200 bg-white px-2"
-            aria-label="Rows per page"
-          >
+          <SelectTrigger className="h-7 w-auto" aria-label="Rows per page">
             <SelectValue placeholder="Rows per page" />
           </SelectTrigger>
           <SelectContent>
-            {[5, 25, 50, 100].map((value) => (
+            {CATEGORY_PAGE_SIZE_OPTIONS.map((value) => (
               <SelectItem key={value} value={String(value)}>
                 {value}
               </SelectItem>
@@ -207,8 +100,8 @@ function Footer({ table }: { table: CategoryTable }) {
 export function CategoryDataTable({ categories }: { categories: Category[] }) {
   return (
     <DataTable
-      features={features}
-      columns={columns}
+      features={categoryTableFeatures}
+      columns={categoryColumns}
       data={categories}
       initialState={{
         pagination: { pageIndex: 0, pageSize: 25 },

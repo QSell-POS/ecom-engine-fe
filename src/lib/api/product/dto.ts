@@ -1,4 +1,4 @@
-import type { ProductAttribute } from "@/types";
+import type { ProductAttribute } from "./types";
 
 export type CreateProductPayload = {
   name: string;

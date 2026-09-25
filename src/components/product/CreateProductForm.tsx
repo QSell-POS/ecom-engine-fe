@@ -15,7 +15,9 @@ import {
   updateProductAction,
 } from "@/lib/api/product/action";
 import { CreateProductSchema } from "@/lib/api/product/validation";
-import type { Brand, Category, Product } from "@/types";
+import type { Brand } from "@/lib/api/brand/types";
+import type { Category } from "@/lib/api/category/types";
+import type { Product } from "@/lib/api/product/types";
 
 type CreateProductInput = z.input<typeof CreateProductSchema>;
 type CreateProductValues = z.output<typeof CreateProductSchema>;
