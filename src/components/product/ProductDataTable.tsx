@@ -6,10 +6,11 @@ import { useRouter } from "next/navigation";
 import {
   ChevronDown,
   ChevronUp,
+  Download,
   FileSpreadsheet,
   FileText,
   RefreshCw,
-  Upload,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,13 +61,16 @@ function TableToolbar({
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
-      <Input
-        value={String(table.state.globalFilter ?? "")}
-        onChange={(event) => table.setGlobalFilter(event.target.value)}
-        placeholder="Search"
-        aria-label="Search products"
-        className="h-8 w-full max-w-72"
-      />
+      <div className="relative w-full max-w-72">
+        <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400" />
+        <Input
+          value={String(table.state.globalFilter ?? "")}
+          onChange={(event) => table.setGlobalFilter(event.target.value)}
+          placeholder="Search"
+          aria-label="Search products"
+          className="h-8 w-full pl-8"
+        />
+      </div>
       <div className="flex items-center gap-2">
         <Select
           value={category}
@@ -151,10 +155,15 @@ function TableFooter({ table }: { table: ProductTable }) {
         {table.getPageOptions().map((page) => (
           <Button
             key={page}
-            variant={page === currentPage ? "default" : "ghost"}
+            variant="ghost"
             size="icon-xs"
             aria-label={`Page ${page + 1}`}
             onClick={() => table.setPageIndex(page)}
+            className={
+              page === currentPage
+                ? "bg-orange-500 text-white hover:bg-orange-500/90"
+                : ""
+            }
           >
             {page + 1}
           </Button>
@@ -209,19 +218,19 @@ export function ProductDataTable({ products }: { products: Product[] }) {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Button
-                variant="outline"
                 size="icon-sm"
                 aria-label="Export PDF"
                 title="Export PDF"
+                className="bg-red-500 text-white hover:bg-red-500/90"
               >
                 <FileText />
               </Button>
               <Button
-                variant="outline"
                 size="icon-sm"
                 aria-label="Export Excel"
                 title="Export Excel"
                 onClick={() => exportProducts(products)}
+                className="bg-emerald-600 text-white hover:bg-emerald-600/90"
               >
                 <FileSpreadsheet />
               </Button>
@@ -243,11 +252,19 @@ export function ProductDataTable({ products }: { products: Product[] }) {
               >
                 {isCollapsed ? <ChevronDown /> : <ChevronUp />}
               </Button>
-              <Button variant="outline" size="sm" disabled>
-                <Upload />
+              <Button
+                size="sm"
+                disabled
+                className="bg-slate-800 text-white hover:bg-slate-800/90 disabled:opacity-100"
+              >
+                <Download />
                 Import Product
               </Button>
-              <Button asChild size="sm">
+              <Button
+                asChild
+                size="sm"
+                className="bg-orange-500 text-white hover:bg-orange-500/90"
+              >
                 <Link href="/products/create">Add Product</Link>
               </Button>
             </div>

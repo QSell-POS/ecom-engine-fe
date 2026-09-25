@@ -21,9 +21,11 @@ export function DeleteProductForm({ product }: { product: Product }) {
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button
-          variant="outline"
+          variant="ghost"
           size="icon-sm"
           aria-label={`Delete ${product.name}`}
+          title="Delete product"
+          className="text-slate-400 hover:bg-slate-100 hover:text-slate-600"
         >
           <Trash2 size={14} />
         </Button>

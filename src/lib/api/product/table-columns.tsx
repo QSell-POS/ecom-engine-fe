@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pencil } from "lucide-react";
+import { Eye, Package, Pencil } from "lucide-react";
 import {
   columnFilteringFeature,
   createCoreRowModel,
@@ -16,9 +16,26 @@ import {
   type ReactTable,
 } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SortableHeader } from "@/components/common/SortableHeader";
 import { DeleteProductForm } from "@/components/product/DeleteProductForm";
 import type { Product } from "./types";
+
+const PRODUCT_ICON_COLORS = [
+  "bg-indigo-100 text-indigo-500",
+  "bg-rose-100 text-rose-500",
+  "bg-amber-100 text-amber-600",
+  "bg-emerald-100 text-emerald-500",
+  "bg-sky-100 text-sky-500",
+  "bg-violet-100 text-violet-500",
+];
+
+function productIconColor(seed: string) {
+  const index = seed
+    .split("")
+    .reduce((total, char) => total + char.charCodeAt(0), 0);
+  return PRODUCT_ICON_COLORS[index % PRODUCT_ICON_COLORS.length];
+}
 
 export const productTableFeatures = tableFeatures({
   columnFilteringFeature,
@@ -103,9 +120,18 @@ export const productColumns: Array<
       <SortableHeader column={column} label="Product Name" />
     ),
     cell: (info) => (
-      <span className="font-medium text-slate-900">
-        {info.getValue<string>()}
-      </span>
+      <div className="flex items-center gap-2">
+        <span
+          className={`flex size-7 shrink-0 items-center justify-center rounded-md ${productIconColor(
+            info.row.original.sku,
+          )}`}
+        >
+          <Package size={14} />
+        </span>
+        <span className="font-medium text-slate-900">
+          {info.getValue<string>()}
+        </span>
+      </div>
     ),
     filterFn: "includesString",
   },
@@ -144,15 +170,39 @@ export const productColumns: Array<
     accessorFn: (product) => product.inventory?.quantityOnHand ?? 0,
   },
   {
+    id: "createdBy",
+    header: "Created By",
+    cell: () => (
+      <div className="flex items-center gap-2">
+        <Avatar size="sm">
+          <AvatarFallback className="bg-slate-100 text-[0.65rem] font-medium text-slate-500">
+            A
+          </AvatarFallback>
+        </Avatar>
+        <span className="text-slate-700">Admin</span>
+      </div>
+    ),
+    enableSorting: false,
+    enableColumnFilter: false,
+  },
+  {
     id: "actions",
     header: "Actions",
     cell: (info) => (
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 text-slate-400">
+        <Link
+          title="View product"
+          href={`/products/${info.row.original.id}/edit`}
+          aria-label={`View ${info.row.original.name}`}
+          className="rounded-md p-1 hover:bg-slate-100 hover:text-slate-600"
+        >
+          <Eye size={14} />
+        </Link>
         <Link
           title="Edit product"
           href={`/products/${info.row.original.id}/edit`}
           aria-label={`Edit ${info.row.original.name}`}
-          className="rounded-md border p-1"
+          className="rounded-md p-1 hover:bg-slate-100 hover:text-slate-600"
         >
           <Pencil size={14} />
         </Link>
