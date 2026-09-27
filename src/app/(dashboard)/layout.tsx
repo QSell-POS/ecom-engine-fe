@@ -1,8 +1,8 @@
 import React from "react";
 import { AdminNavbar } from "@/components/common/AdminNavbar";
 import { AdminSidebar } from "@/components/common/AdminSidebar";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { AppScrollArea } from "@/components/common/AppScrollArea";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 export default function AdminLayout({
   children,
@@ -10,16 +10,20 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <SidebarProvider>
+    // Fixed-height shell: the window never scrolls, AppScrollArea does.
+    // overflow-clip, not hidden: hidden boxes can still be scrolled by
+    // scrollIntoView/focus, which would push the navbar out of view.
+    <SidebarProvider className="h-dvh min-h-0 overflow-clip">
       <AdminSidebar />
-      <div className="flex w-full h-svh flex-col">
+      <SidebarInset className="min-h-0 min-w-0 overflow-clip">
         <AdminNavbar />
-        <ScrollArea className="min-h-0 flex-1 overflow-hidden">
-          <main className="flex min-h-full flex-col">
-            <div className="p-5">{children}</div>
-          </main>
-        </ScrollArea>
-      </div>
+        <AppScrollArea>
+          {/* A master–detail workspace ([data-workspace]) takes the whole area edge to edge. */}
+          <div className="group/page mx-auto w-full max-w-7xl px-6 pt-8 pb-16 has-data-workspace:max-w-none has-data-workspace:p-0">
+            {children}
+          </div>
+        </AppScrollArea>
+      </SidebarInset>
     </SidebarProvider>
   );
 }

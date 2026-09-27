@@ -1,21 +1,22 @@
-import { CreateBrandForm } from "@/components/brand/CreateBrandForm";
-import { BrandDataTable } from "@/components/brand/BrandDataTable";
+import type { Metadata } from "next";
+import { CreateBrandButton } from "@/components/brand/BrandFormDialog";
+import { BrandsGrid } from "@/components/brand/BrandsGrid";
+import { PageHeader } from "@/components/common/PageHeader";
 import { getBrandsAdmin } from "@/lib/api/brand";
-import { Brand } from "@/lib/api/brand/types";
+
+export const metadata: Metadata = { title: "Brands" };
 
 export default async function BrandsPage() {
-  const res = await getBrandsAdmin();
-  const brands: Brand[] = res.data;
+  const { data: brands } = await getBrandsAdmin({ limit: 1000 });
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h1 className="mt-1 text-2xl font-semibold text-slate-900">Brands</h1>
-
-        <CreateBrandForm />
-      </div>
-
-      <BrandDataTable brands={brands} />
-    </div>
+    <>
+      <PageHeader
+        title="Brands"
+        description="The manufacturers and labels behind your products."
+        actions={<CreateBrandButton />}
+      />
+      <BrandsGrid brands={brands} />
+    </>
   );
 }

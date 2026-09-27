@@ -5,4 +5,7 @@ export const ROUTES = {
   brands: "/brand",
   categories: "/categories",
   products: "/products",
+  themes: "/themes",
+  themeStore: "/themes/store",
+  customize: "/themes/customize",
 };

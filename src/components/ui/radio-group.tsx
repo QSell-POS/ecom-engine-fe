@@ -1,9 +1,8 @@
 "use client"
 
 import * as React from "react"
+import { cn } from "cn"
 import { RadioGroup as RadioGroupPrimitive } from "radix-ui"
-
-import { cn } from "@/lib/utils"
 
 function RadioGroup({
   className,
@@ -12,7 +11,7 @@ function RadioGroup({
   return (
     <RadioGroupPrimitive.Root
       data-slot="radio-group"
-      className={cn("grid w-full gap-3", className)}
+      className={cn("grid w-full gap-2", className)}
       {...props}
     />
   )

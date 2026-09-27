@@ -45,18 +45,23 @@ export async function apiClient<T>(
     token,
   } = options;
 
-  const res = await fetch(`${API_URL}${endpoint}`, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...headers,
-      ...apiHeaders,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-    next: { tags, revalidate },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${endpoint}`, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...headers,
+        ...apiHeaders,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      next: { tags, revalidate },
+    });
+  } catch (cause) {
+    throw new ApiError(503, "Can't reach the API server. Check that it's running and try again.", { cause });
+  }
 
   if (res.status === 204) return null as T;
   const data = await res.json().catch(() => null);

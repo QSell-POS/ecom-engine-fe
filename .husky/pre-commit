@@ -1,1 +1,4 @@
-npx lint-staged
+# Smaller file batches: lint-staged's Windows default (8191) doesn't account for
+# quoting and the npx/eslint.cmd wrapper, so large commits fail with
+# "The command line is too long".
+npx lint-staged --max-arg-length 4000

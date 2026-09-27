@@ -11,7 +11,7 @@ export const emptyToUndefined = (value: unknown) =>
 
 export const optionalUrl = z.preprocess(
   emptyToUndefined,
-  z.url().optional(),
+  z.url("Enter a full link, like https://example.com").optional(),
 );
 
 export const optionalText = z.preprocess(

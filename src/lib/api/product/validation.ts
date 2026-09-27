@@ -48,7 +48,7 @@ const badgesSchema = z.preprocess(
 
 const productFields = {
   name: z.string().min(1, "Name is required"),
-  slug: z.string().min(1, "Slug is required"),
+  slug: z.string().min(1, "URL handle is required"),
   description: optionalText,
   sku: z.string().min(1, "SKU is required"),
   barcode: optionalText,

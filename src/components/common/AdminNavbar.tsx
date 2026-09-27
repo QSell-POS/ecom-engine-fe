@@ -1,80 +1,54 @@
 "use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
-  TbMail,
-  TbBell,
-  TbMaximize,
-  TbSearch,
-  TbSettings,
-} from "react-icons/tb";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "../ui/input-group";
-import { Button } from "../ui/button";
-import { ReactNode } from "react";
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { navItemForPath } from "@/lib/constants/nav";
 
-type IconButtonProps = {
-  label: string;
-  icon: ReactNode;
-  onClick: () => void;
-};
+const SUBPAGE_LABELS: Record<string, string> = { create: "New", edit: "Edit" };
 
-const IconButton = ({ label, icon, onClick }: IconButtonProps) => {
-  return (
-    <Button
-      aria-label={label}
-      className="bg-accent hover:bg-accent/80"
-      onClick={onClick}
-      size="icon"
-      title={label}
-      type="button"
-      variant="ghost"
-    >
-      {icon}
-    </Button>
-  );
-};
-
-export const AdminNavbar = () => {
-  const handleMaximize = () => undefined;
-  const handleMessages = () => undefined;
-  const handleNotifications = () => undefined;
-  const handleSettings = () => undefined;
+export function AdminNavbar() {
+  const pathname = usePathname();
+  const section = navItemForPath(pathname);
+  const leaf = pathname.split("/").filter(Boolean).at(-1) ?? "";
+  const subpage = section && pathname !== section.href ? SUBPAGE_LABELS[leaf] : undefined;
 
   return (
-    <div className="relative shrink-0 border-b bg-background border-b-gray-300">
-      <div className="px-8 py-4 w-full flex items-center justify-between">
-        <InputGroup className="w-64 bg-background">
-          <InputGroupAddon>
-            <TbSearch />
-          </InputGroupAddon>
-          <InputGroupInput placeholder="Search" />
-        </InputGroup>
-
-        <div className="flex gap-2 items-center">
-          <IconButton
-            icon={<TbMaximize />}
-            label="Maximize"
-            onClick={handleMaximize}
-          />
-          <IconButton
-            icon={<TbMail />}
-            label="Messages"
-            onClick={handleMessages}
-          />
-          <IconButton
-            icon={<TbBell />}
-            label="Notifications"
-            onClick={handleNotifications}
-          />
-          <IconButton
-            icon={<TbSettings />}
-            label="Settings"
-            onClick={handleSettings}
-          />
-        </div>
-      </div>
-    </div>
+    <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4">
+      <SidebarTrigger className="-ml-1 text-muted-foreground" />
+      <Separator orientation="vertical" className="h-4!" />
+      <Breadcrumb>
+        <BreadcrumbList>
+          {section && (
+            <BreadcrumbItem>
+              {subpage ? (
+                <BreadcrumbLink asChild>
+                  <Link href={section.href}>{section.label}</Link>
+                </BreadcrumbLink>
+              ) : (
+                <BreadcrumbPage>{section.label}</BreadcrumbPage>
+              )}
+            </BreadcrumbItem>
+          )}
+          {subpage && (
+            <>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{subpage}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </>
+          )}
+        </BreadcrumbList>
+      </Breadcrumb>
+    </header>
   );
-};
+}
