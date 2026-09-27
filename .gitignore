@@ -42,3 +42,6 @@ next-env.d.ts
 
 # packages
 package-lock.json
+
+# local mock database (theme engine)
+/.data/

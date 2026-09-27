@@ -1,13 +1,43 @@
+import { LayoutDashboard, LayoutTemplate, Package, Palette, Shapes, Store, Tag, type LucideIcon } from "lucide-react";
 import { ROUTES } from "./routes";
 
 export type NavItem = {
   label: string;
   href: string;
+  icon: LucideIcon;
 };
 
-export const NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard", href: ROUTES.dashboard },
-  { label: "Brands", href: ROUTES.brands },
-  { label: "Categories", href: ROUTES.categories },
-  { label: "Products", href: ROUTES.products },
+export type NavGroup = {
+  label: string | null;
+  items: NavItem[];
+};
+
+export const NAV_GROUPS: NavGroup[] = [
+  {
+    label: null,
+    items: [{ label: "Dashboard", href: ROUTES.dashboard, icon: LayoutDashboard }],
+  },
+  {
+    label: "Catalog",
+    items: [
+      { label: "Products", href: ROUTES.products, icon: Package },
+      { label: "Categories", href: ROUTES.categories, icon: Shapes },
+      { label: "Brands", href: ROUTES.brands, icon: Tag },
+    ],
+  },
+  {
+    label: "Online store",
+    items: [
+      { label: "Themes", href: ROUTES.themes, icon: LayoutTemplate },
+      { label: "Customize", href: ROUTES.customize, icon: Palette },
+      { label: "Theme store", href: ROUTES.themeStore, icon: Store },
+    ],
+  },
 ];
+
+export const NAV_ITEMS: NavItem[] = NAV_GROUPS.flatMap((group) => group.items);
+
+/** The nav item that owns a pathname (e.g. /products/12/edit → Products). The most specific match wins. */
+export function navItemForPath(pathname: string): NavItem | undefined {
+  return NAV_ITEMS.filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`)).sort((a, b) => b.href.length - a.href.length)[0];
+}

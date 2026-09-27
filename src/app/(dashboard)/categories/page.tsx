@@ -1,20 +1,23 @@
-import { CreateCategoryForm } from "@/components/category/CreateCategoryForm";
-import { CategoryDataTable } from "@/components/category/CategoryDataTable";
+import type { Metadata } from "next";
+import { CategoriesGrid } from "@/components/category/CategoriesGrid";
+import { CreateCategoryButton } from "@/components/category/CategoryFormDialog";
+import { PageHeader } from "@/components/common/PageHeader";
 import { getCategoriesAdmin } from "@/lib/api/category/service";
-import { Category } from "@/lib/api/category/types";
+import type { Category } from "@/lib/api/category/types";
+
+export const metadata: Metadata = { title: "Categories" };
 
 export default async function CategoriesPage() {
-  const { data: categories } = await getCategoriesAdmin();
+  const { data } = await getCategoriesAdmin({ limit: 1000 });
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h1 className="mt-1 text-2xl font-semibold text-slate-900">
-          Categories
-        </h1>
-        <CreateCategoryForm />
-      </div>
-      <CategoryDataTable categories={categories as Category[]} />
-    </div>
+    <>
+      <PageHeader
+        title="Categories"
+        description="How products are grouped in your store's navigation."
+        actions={<CreateCategoryButton />}
+      />
+      <CategoriesGrid categories={data as Category[]} />
+    </>
   );
 }
