@@ -1,16 +1,38 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useDndContext, useDraggable, useDroppable } from "@dnd-kit/core";
-import { ArrowDown, ArrowUp, Copy, GripVertical, LayoutTemplate, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Copy,
+  GripVertical,
+  LayoutTemplate,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { StoreFrame } from "@/components/storefront/overlay";
 import { StoreChrome } from "@/components/storefront/shell";
-import { StoreProvider, type StoreInfo } from "@/components/storefront/store-context";
+import {
+  StoreProvider,
+  type StoreInfo,
+} from "@/components/storefront/store-context";
 import { ThemeRenderer } from "@/components/storefront/ThemeRenderer";
 import { EditorBridgeProvider } from "@/components/storefront/editor-bridge";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { HomeData } from "@/lib/storefront/types";
 import { getSectionSchema } from "@/lib/theme-engine/schema";
 import type { Device, SectionInstance } from "@/lib/theme-engine/types";
@@ -19,16 +41,31 @@ import type { DragData, DropData } from "./dnd";
 import { SectionIcon } from "./section-icons";
 import { useEditor, useEditorStore } from "./store";
 
-export const DEVICE_WIDTHS: Record<Device, number> = { desktop: 1280, tablet: 768, mobile: 390 };
+export const DEVICE_WIDTHS: Record<Device, number> = {
+  desktop: 1280,
+  tablet: 768,
+  mobile: 390,
+};
 
 // Editor chrome rendered inside the scaled frame is counter-scaled so it
 // always appears at its true size, whatever the device zoom.
 const ScaleContext = createContext(1);
 
-function Unscaled({ children, origin, className }: { children: ReactNode; origin: string; className?: string }) {
+function Unscaled({
+  children,
+  origin,
+  className,
+}: {
+  children: ReactNode;
+  origin: string;
+  className?: string;
+}) {
   const scale = useContext(ScaleContext);
   return (
-    <div className={className} style={{ transform: `scale(${1 / scale})`, transformOrigin: origin }}>
+    <div
+      className={className}
+      style={{ transform: `scale(${1 / scale})`, transformOrigin: origin }}
+    >
       {children}
     </div>
   );
@@ -38,7 +75,10 @@ function DropIndicator({ label }: { label: string }) {
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-50 -translate-y-1/2">
       <div className="h-0.5 bg-selection" />
-      <Unscaled origin="top right" className="absolute top-0 right-3 -translate-y-1/2">
+      <Unscaled
+        origin="top right"
+        className="absolute top-0 right-3 -translate-y-1/2"
+      >
         <span className="block rounded-sm bg-selection px-2 py-0.5 text-xs font-medium whitespace-nowrap text-white shadow-sm">
           {label}
         </span>
@@ -54,7 +94,17 @@ function useDropLabel() {
   return "Move here";
 }
 
-function ToolbarButton({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {
+function ToolbarButton({
+  label,
+  onClick,
+  disabled,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  children: ReactNode;
+}) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -76,7 +126,19 @@ function ToolbarButton({ label, onClick, disabled, children }: { label: string; 
   );
 }
 
-function CanvasSection({ section, index, count, node, showDropLine }: { section: SectionInstance; index: number; count: number; node: ReactNode; showDropLine: boolean }) {
+function CanvasSection({
+  section,
+  index,
+  count,
+  node,
+  showDropLine,
+}: {
+  section: SectionInstance;
+  index: number;
+  count: number;
+  node: ReactNode;
+  showDropLine: boolean;
+}) {
   const store = useEditorStore();
   const schema = getSectionSchema(section.type);
   const name = schema?.name ?? section.type;
@@ -86,23 +148,47 @@ function CanvasSection({ section, index, count, node, showDropLine }: { section:
   const ref = useRef<HTMLDivElement | null>(null);
 
   const dropData: DropData = { kind: "canvas-section", index };
-  const { setNodeRef: setDropRef } = useDroppable({ id: `canvas-drop:${section.id}`, data: dropData });
-  const dragData: DragData = { kind: "section", zone: "canvas", sectionId: section.id, sectionType: section.type, index, label: name };
-  const { setNodeRef: setDragRef, attributes, listeners, isDragging } = useDraggable({ id: `canvas-drag:${section.id}`, data: dragData });
+  const { setNodeRef: setDropRef } = useDroppable({
+    id: `canvas-drop:${section.id}`,
+    data: dropData,
+  });
+  const dragData: DragData = {
+    kind: "section",
+    zone: "canvas",
+    sectionId: section.id,
+    sectionType: section.type,
+    index,
+    label: name,
+  };
+  const {
+    setNodeRef: setDragRef,
+    attributes,
+    listeners,
+    isDragging,
+  } = useDraggable({ id: `canvas-drag:${section.id}`, data: dragData });
 
-  const isSelected = selection?.kind === "section" && selection.sectionId === section.id;
-  const hasSelectedBlock = selection?.kind === "block" && selection.sectionId === section.id;
+  const isSelected =
+    selection?.kind === "section" && selection.sectionId === section.id;
+  const hasSelectedBlock =
+    selection?.kind === "block" && selection.sectionId === section.id;
 
   // Reveal newly inserted/duplicated sections.
   useEffect(() => {
-    if (lastInserted?.sectionId === section.id && !lastInserted.blockId && Date.now() - lastInserted.at < 1500) {
+    if (
+      lastInserted?.sectionId === section.id &&
+      !lastInserted.blockId &&
+      Date.now() - lastInserted.at < 1500
+    ) {
       ref.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
   }, [lastInserted, section.id]);
 
   function run(action: () => void, message?: string) {
     action();
-    if (message) toast(message, { action: { label: "Undo", onClick: () => store.getState().undo() } });
+    if (message)
+      toast(message, {
+        action: { label: "Undo", onClick: () => store.getState().undo() },
+      });
   }
 
   return (
@@ -151,7 +237,9 @@ function CanvasSection({ section, index, count, node, showDropLine }: { section:
           }}
           className={cn(
             "flex h-6 cursor-grab items-center gap-1 rounded-br-md pr-2 pl-1 text-xs font-medium whitespace-nowrap active:cursor-grabbing",
-            isSelected ? "bg-selection text-white" : "bg-selection/85 text-white",
+            isSelected
+              ? "bg-selection text-white"
+              : "bg-selection/85 text-white",
           )}
         >
           <GripVertical className="size-3.5 opacity-80" />
@@ -166,19 +254,38 @@ function CanvasSection({ section, index, count, node, showDropLine }: { section:
             className="flex items-center gap-0.5 rounded-lg border bg-background p-0.5 shadow-md"
             onClick={(event) => event.stopPropagation()}
           >
-            <ToolbarButton label="Move up" disabled={index === 0} onClick={() => store.getState().moveSection(index, index - 1)}>
+            <ToolbarButton
+              label="Move up"
+              disabled={index === 0}
+              onClick={() => store.getState().moveSection(index, index - 1)}
+            >
               <ArrowUp className="size-4" />
             </ToolbarButton>
-            <ToolbarButton label="Move down" disabled={index === count - 1} onClick={() => store.getState().moveSection(index, index + 1)}>
+            <ToolbarButton
+              label="Move down"
+              disabled={index === count - 1}
+              onClick={() => store.getState().moveSection(index, index + 1)}
+            >
               <ArrowDown className="size-4" />
             </ToolbarButton>
             {!schema?.singleton && (
-              <ToolbarButton label="Duplicate" onClick={() => store.getState().duplicateSection(section.id)}>
+              <ToolbarButton
+                label="Duplicate"
+                onClick={() => store.getState().duplicateSection(section.id)}
+              >
                 <Copy className="size-4" />
               </ToolbarButton>
             )}
             <div className="mx-0.5 h-4 w-px bg-border" />
-            <ToolbarButton label="Remove" onClick={() => run(() => store.getState().removeSection(section.id), `${name} removed`)}>
+            <ToolbarButton
+              label="Remove"
+              onClick={() =>
+                run(
+                  () => store.getState().removeSection(section.id),
+                  `${name} removed`,
+                )
+              }
+            >
               <Trash2 className="size-4" />
             </ToolbarButton>
           </div>
@@ -195,14 +302,19 @@ function EmptyPage() {
   const sections = useEditor((s) => s.doc.sections);
   return (
     <Unscaled origin="top center" className="flex justify-center px-6 py-24">
-      <div className="flex max-w-sm flex-col items-center gap-4 text-center text-foreground" style={{ fontFamily: "var(--font-sans)" }}>
+      <div
+        className="flex max-w-sm flex-col items-center gap-4 text-center text-foreground"
+        style={{ fontFamily: "var(--font-sans)" }}
+      >
         <span className="flex size-10 items-center justify-center rounded-md border bg-background text-muted-foreground">
           <LayoutTemplate className="size-5" />
         </span>
         <div className="space-y-1">
           <p className="text-base font-semibold">This page is empty</p>
           <p className="text-sm text-muted-foreground">
-            Drag sections here from <span className="font-medium text-foreground">Add section</span>, or start with the essentials:
+            Drag sections here from{" "}
+            <span className="font-medium text-foreground">Add section</span>, or
+            start with the essentials:
           </p>
         </div>
         <div className="flex flex-wrap justify-center gap-2">
@@ -229,7 +341,13 @@ function EmptyPage() {
   );
 }
 
-function CanvasEnd({ empty, showDropLine }: { empty: boolean; showDropLine: boolean }) {
+function CanvasEnd({
+  empty,
+  showDropLine,
+}: {
+  empty: boolean;
+  showDropLine: boolean;
+}) {
   const { active } = useDndContext();
   const dropLabel = useDropLabel();
   const dropData: DropData = { kind: "canvas-end" };
@@ -238,7 +356,10 @@ function CanvasEnd({ empty, showDropLine }: { empty: boolean; showDropLine: bool
   return (
     <div
       ref={setNodeRef}
-      className={cn("relative", empty ? "min-h-[560px] bg-background" : active ? "min-h-40" : "min-h-0")}
+      className={cn(
+        "relative",
+        empty ? "min-h-140 bg-background" : active ? "min-h-40" : "min-h-0",
+      )}
     >
       {showDropLine && <DropIndicator label={dropLabel} />}
       {empty && !showDropLine && <EmptyPage />}
@@ -246,7 +367,15 @@ function CanvasEnd({ empty, showDropLine }: { empty: boolean; showDropLine: bool
   );
 }
 
-export function Canvas({ data, store, dropIndex }: { data: HomeData; store: StoreInfo; dropIndex: number | null }) {
+export function Canvas({
+  data,
+  store,
+  dropIndex,
+}: {
+  data: HomeData;
+  store: StoreInfo;
+  dropIndex: number | null;
+}) {
   const doc = useEditor((s) => s.doc);
   const device = useEditor((s) => s.device);
   const selection = useEditor((s) => s.selection);
@@ -272,32 +401,46 @@ export function Canvas({ data, store, dropIndex }: { data: HomeData; store: Stor
 
   const width = DEVICE_WIDTHS[device];
   const scale = available > 0 ? Math.min(1, available / width) : 1;
-  const selectedBlockId = selection?.kind === "block" ? selection.blockId : null;
+  const selectedBlockId =
+    selection?.kind === "block" ? selection.blockId : null;
 
   return (
     <div
       ref={viewportRef}
       role="region"
       aria-label="Page canvas"
-      className="relative min-w-0 flex-1 overflow-auto bg-muted/70 px-8 py-8 [scrollbar-gutter:stable]"
+      className="relative min-w-0 flex-1 overflow-auto bg-muted/70 px-8 py-8 scrollbar-gutter:stable"
       onClick={() => select(null)}
     >
       <div
         className="mx-auto overflow-hidden rounded-lg bg-background shadow-[0_0_0_1px_oklch(0_0_0/0.06),0_8px_24px_-8px_oklch(0_0_0/0.12)] transition-[width,height] duration-200 ease-out"
-        style={{ width: width * scale, height: frameHeight * scale, opacity: available > 0 ? 1 : 0 }}
+        style={{
+          width: width * scale,
+          height: frameHeight * scale,
+          opacity: available > 0 ? 1 : 0,
+        }}
       >
         <div
           ref={frameRef}
-          style={{ width, transform: `scale(${scale})`, transformOrigin: "top left" }}
+          style={{
+            width,
+            transform: `scale(${scale})`,
+            transformOrigin: "top left",
+          }}
           // The canvas is a live storefront: stop links and forms from navigating away.
           onClickCapture={(event) => {
-            if ((event.target as HTMLElement).closest("a")) event.preventDefault();
+            if ((event.target as HTMLElement).closest("a"))
+              event.preventDefault();
           }}
           onSubmitCapture={(event) => event.preventDefault()}
         >
           <ScaleContext.Provider value={scale}>
             <EditorBridgeProvider
-              value={{ selectedBlockId, selectBlock: (sectionId, blockId) => select({ kind: "block", sectionId, blockId }) }}
+              value={{
+                selectedBlockId,
+                selectBlock: (sectionId, blockId) =>
+                  select({ kind: "block", sectionId, blockId }),
+              }}
             >
               {/* The whole store (header, footer, drawers) with the draft's settings, so the canvas is exactly what customers get. */}
               <StoreProvider store={{ ...store, settings: doc.settings }}>
@@ -307,9 +450,20 @@ export function Canvas({ data, store, dropIndex }: { data: HomeData; store: Stor
                       document={doc}
                       data={data}
                       renderSection={(section, index, node) => (
-                        <CanvasSection section={section} index={index} count={doc.sections.length} node={node} showDropLine={dropIndex === index} />
+                        <CanvasSection
+                          section={section}
+                          index={index}
+                          count={doc.sections.length}
+                          node={node}
+                          showDropLine={dropIndex === index}
+                        />
                       )}
-                      after={<CanvasEnd empty={doc.sections.length === 0} showDropLine={dropIndex === doc.sections.length} />}
+                      after={
+                        <CanvasEnd
+                          empty={doc.sections.length === 0}
+                          showDropLine={dropIndex === doc.sections.length}
+                        />
+                      }
                     />
                   </StoreChrome>
                 </StoreFrame>
