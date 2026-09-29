@@ -1,0 +1,1251 @@
+{
+  "version": 3,
+  "tenants": [
+    {
+      "id": "tnt_acme",
+      "name": "Acme Apparel",
+      "slug": "acme",
+      "vertical": "fashion",
+      "plan": "Basic",
+      "themeLimit": 3,
+      "apiKey": "pk_test_acme_7f3a9c21",
+      "liveThemeId": "thm_239c49d51a37",
+      "profile": {
+        "name": "Acme Apparel",
+        "tagline": "Everyday clothing, thoughtfully made.",
+        "logo": "",
+        "favicon": "",
+        "currency": "USD",
+        "contact": {
+          "email": "hello@acmeapparel.com",
+          "phone": "+1 (555) 014-2290",
+          "address": "118 Mercer Street, New York, NY 10012"
+        },
+        "social": {
+          "instagram": "https://instagram.com/acmeapparel",
+          "facebook": "https://facebook.com/acmeapparel",
+          "x": "",
+          "tiktok": "https://tiktok.com/@acmeapparel",
+          "youtube": "",
+          "pinterest": "https://pinterest.com/acmeapparel"
+        },
+        "announcement": {
+          "enabled": false,
+          "text": "Free shipping on orders over $75 · 30-day returns",
+          "link": "/products"
+        },
+        "navigation": [
+          {
+            "label": "New in",
+            "href": "/products?collection=new-arrivals"
+          },
+          {
+            "label": "Outerwear",
+            "href": "/categories/outerwear"
+          },
+          {
+            "label": "Knitwear",
+            "href": "/categories/knitwear"
+          },
+          {
+            "label": "Denim",
+            "href": "/categories/denim"
+          },
+          {
+            "label": "Dresses",
+            "href": "/categories/dresses"
+          },
+          {
+            "label": "Sale",
+            "href": "/products?collection=sale"
+          }
+        ],
+        "checkout": {
+          "freeShippingThreshold": 75,
+          "standardRate": 6,
+          "expressRate": 15,
+          "taxRate": 0.08
+        }
+      }
+    },
+    {
+      "id": "tnt_nova",
+      "name": "Nova Electronics",
+      "slug": "nova",
+      "vertical": "electronics",
+      "plan": "Pro",
+      "themeLimit": 6,
+      "apiKey": "pk_test_nova_2b8e4d10",
+      "liveThemeId": "thm_440a2e5f0bb6",
+      "profile": {
+        "name": "Nova Electronics",
+        "tagline": "Smart tech at honest prices.",
+        "logo": "",
+        "favicon": "",
+        "currency": "USD",
+        "contact": {
+          "email": "hello@novaelectronics.com",
+          "phone": "+1 (555) 014-2290",
+          "address": "118 Mercer Street, New York, NY 10012"
+        },
+        "social": {
+          "instagram": "https://instagram.com/novaelectronics",
+          "facebook": "https://facebook.com/novaelectronics",
+          "x": "",
+          "tiktok": "https://tiktok.com/@novaelectronics",
+          "youtube": "",
+          "pinterest": ""
+        },
+        "announcement": {
+          "enabled": true,
+          "text": "Free shipping on orders over $75 · 30-day returns",
+          "link": "/products"
+        },
+        "navigation": [
+          {
+            "label": "New in",
+            "href": "/products?collection=new-arrivals"
+          },
+          {
+            "label": "Audio",
+            "href": "/categories/audio"
+          },
+          {
+            "label": "Phones",
+            "href": "/categories/phones"
+          },
+          {
+            "label": "Laptops & Tablets",
+            "href": "/categories/laptops"
+          },
+          {
+            "label": "Wearables",
+            "href": "/categories/wearables"
+          },
+          {
+            "label": "Sale",
+            "href": "/products?collection=sale"
+          }
+        ],
+        "checkout": {
+          "freeShippingThreshold": 75,
+          "standardRate": 6,
+          "expressRate": 15,
+          "taxRate": 0.08
+        }
+      }
+    },
+    {
+      "id": "tnt_bloom",
+      "name": "Bloom Beauty",
+      "slug": "bloom",
+      "vertical": "beauty",
+      "plan": "Starter",
+      "themeLimit": 2,
+      "apiKey": "pk_test_bloom_5c1f6e77",
+      "liveThemeId": null,
+      "profile": {
+        "name": "Bloom Beauty",
+        "tagline": "Clean beauty for every skin.",
+        "logo": "",
+        "favicon": "",
+        "currency": "USD",
+        "contact": {
+          "email": "hello@bloombeauty.com",
+          "phone": "+1 (555) 014-2290",
+          "address": "118 Mercer Street, New York, NY 10012"
+        },
+        "social": {
+          "instagram": "https://instagram.com/bloombeauty",
+          "facebook": "https://facebook.com/bloombeauty",
+          "x": "",
+          "tiktok": "https://tiktok.com/@bloombeauty",
+          "youtube": "",
+          "pinterest": ""
+        },
+        "announcement": {
+          "enabled": true,
+          "text": "Free shipping on orders over $75 · 30-day returns",
+          "link": "/products"
+        },
+        "navigation": [
+          {
+            "label": "New in",
+            "href": "/products?collection=new-arrivals"
+          },
+          {
+            "label": "Skincare",
+            "href": "/categories/skincare"
+          },
+          {
+            "label": "Serums & Oils",
+            "href": "/categories/serums"
+          },
+          {
+            "label": "Makeup",
+            "href": "/categories/makeup"
+          },
+          {
+            "label": "Fragrance",
+            "href": "/categories/fragrance"
+          },
+          {
+            "label": "Sale",
+            "href": "/products?collection=sale"
+          }
+        ],
+        "checkout": {
+          "freeShippingThreshold": 75,
+          "standardRate": 6,
+          "expressRate": 15,
+          "taxRate": 0.08
+        }
+      }
+    }
+  ],
+  "themes": [
+    {
+      "id": "thm_239c49d51a37",
+      "tenantId": "tnt_acme",
+      "name": "Maison",
+      "presetId": "maison",
+      "draft": {
+        "settings": {
+          "colorBackground": "#faf8f5",
+          "colorSurface": "#efe9e1",
+          "colorText": "#1c1917",
+          "colorPrimary": "#1e3a5f",
+          "colorPrimaryText": "#ffffff",
+          "colorSale": "#9f1239",
+          "fontHeading": "fraunces",
+          "fontBody": "manrope",
+          "headingScale": 115,
+          "headingCase": "none",
+          "pageWidth": 1320,
+          "radius": 0,
+          "buttonShape": "sharp",
+          "headerLayout": "center",
+          "headerSticky": true,
+          "cardImageRatio": "portrait",
+          "cardHoverImage": true,
+          "cardShowBrand": true,
+          "cardShowRating": true,
+          "cardQuickAdd": true,
+          "animations": true
+        },
+        "sections": [
+          {
+            "id": "sec_899b5da9a0db",
+            "type": "hero",
+            "settings": {
+              "layout": "overlay",
+              "image": "",
+              "eyebrow": "The Autumn Edit",
+              "heading": "Quiet luxury, everyday",
+              "text": "Soft tailoring, rich textures and pieces you'll wear for years.",
+              "alignment": "left",
+              "height": "full",
+              "overlay": 30,
+              "colorScheme": "default"
+            },
+            "blocks": [
+              {
+                "id": "blk_11b0b34cc580",
+                "type": "button",
+                "settings": {
+                  "label": "Shop new arrivals",
+                  "url": "/products?collection=new-arrivals",
+                  "style": "primary"
+                }
+              },
+              {
+                "id": "blk_f74e3bd3c601",
+                "type": "button",
+                "settings": {
+                  "label": "Explore the edit",
+                  "url": "/products",
+                  "style": "secondary"
+                }
+              }
+            ]
+          },
+          {
+            "id": "sec_d9cad7fed292",
+            "type": "categories",
+            "settings": {
+              "heading": "Shop by category",
+              "subheading": "",
+              "count": 4,
+              "columns": 4,
+              "style": "overlay",
+              "colorScheme": "default",
+              "spacing": "large"
+            },
+            "blocks": []
+          },
+          {
+            "id": "sec_06d4c4fc3598",
+            "type": "products",
+            "settings": {
+              "heading": "New arrivals",
+              "subheading": "Just landed this week",
+              "collection": "new-arrivals",
+              "count": 8,
+              "columns": 4,
+              "layout": "grid",
+              "showViewAll": true,
+              "colorScheme": "default",
+              "spacing": "medium"
+            },
+            "blocks": []
+          },
+          {
+            "id": "sec_b1c78473fbba",
+            "type": "collection-tiles",
+            "settings": {
+              "heading": "",
+              "colorScheme": "default",
+              "spacing": "small"
+            },
+            "blocks": [
+              {
+                "id": "blk_d7126e170e02",
+                "type": "tile",
+                "settings": {
+                  "image": "",
+                  "title": "Knitwear",
+                  "label": "Shop knitwear",
+                  "url": "/categories/knitwear"
+                }
+              },
+              {
+                "id": "blk_e84db3f39b86",
+                "type": "tile",
+                "settings": {
+                  "image": "",
+                  "title": "The shoe edit",
+                  "label": "Shop shoes",
+                  "url": "/categories/shoes"
+                }
+              }
+            ]
+          },
+          {
+            "id": "sec_b46ad1e3d7f3",
+            "type": "products",
+            "settings": {
+              "heading": "Best sellers",
+              "subheading": "",
+              "collection": "best-sellers",
+              "count": 4,
+              "columns": 4,
+              "layout": "carousel",
+              "showViewAll": true,
+              "colorScheme": "default",
+              "spacing": "medium"
+            },
+            "blocks": []
+          },
+          {
+            "id": "sec_77d2f9f99cfe",
+            "type": "image-with-text",
+            "settings": {
+              "image": "",
+              "imagePosition": "right",
+              "eyebrow": "Our atelier",
+              "heading": "Made slowly, made to last",
+              "text": "We work with a handful of family-run workshops in Portugal and Italy, using natural fibres and deadstock fabrics. Fewer pieces, made properly.",
+              "buttonLabel": "Discover the collection",
+              "buttonUrl": "/products",
+              "colorScheme": "surface",
+              "spacing": "medium"
+            },
+            "blocks": []
+          },
+          {
+            "id": "sec_9bf623c82b2f",
+            "type": "testimonials",
+            "settings": {
+              "heading": "Worn and loved",
+              "colorScheme": "default",
+              "spacing": "medium"
+            },
+            "blocks": [
+              {
+                "id": "blk_ed627e7c157a",
+                "type": "testimonial",
+                "settings": {
+                  "quote": "The quality is exceptional. My leather jacket gets better every week I wear it.",
+                  "author": "Sofia R.",
+                  "detail": "Cropped Leather Jacket",
+                  "rating": 5
+                }
+              },
+              {
+                "id": "blk_faddb18af480",
+                "type": "testimonial",
+                "settings": {
+                  "quote": "Beautiful packaging, fast shipping and the linen dress fits like a dream.",
+                  "author": "Emma W.",
+                  "detail": "Linen Wrap Dress",
+                  "rating": 5
+                }
+              },
+              {
+                "id": "blk_76d0f1199562",
+                "type": "testimonial",
+                "settings": {
+                  "quote": "Finally, basics that don't lose their shape after a few washes.",
+                  "author": "Noah B.",
+                  "detail": "Essential Cotton Tee",
+                  "rating": 5
+                }
+              }
+            ]
+          },
+          {
+            "id": "sec_23fa1d0ace5d",
+            "type": "newsletter",
+            "settings": {
+              "heading": "Join the Maison list",
+              "text": "Early access to new collections and private sales.",
+              "buttonLabel": "Subscribe",
+              "colorScheme": "dark",
+              "spacing": "medium"
+            },
+            "blocks": []
+          }
+        ]
+      },
+      "published": {
+        "settings": {
+          "colorBackground": "#faf8f5",
+          "colorSurface": "#efe9e1",
+          "colorText": "#1c1917",
+          "colorPrimary": "#1e3a5f",
+          "colorPrimaryText": "#ffffff",
+          "colorSale": "#9f1239",
+          "fontHeading": "fraunces",
+          "fontBody": "manrope",
+          "headingScale": 115,
+          "headingCase": "none",
+          "pageWidth": 1320,
+          "radius": 0,
+          "buttonShape": "sharp",
+          "headerLayout": "center",
+          "headerSticky": true,
+          "cardImageRatio": "portrait",
+          "cardHoverImage": true,
+          "cardShowBrand": true,
+          "cardShowRating": true,
+          "cardQuickAdd": true,
+          "animations": true
+        },
+        "sections": [
+          {
+            "id": "sec_899b5da9a0db",
+            "type": "hero",
+            "settings": {
+              "layout": "overlay",
+              "image": "",
+              "eyebrow": "The Autumn Edit",
+              "heading": "Quiet luxury, everyday",
+              "text": "Soft tailoring, rich textures and pieces you'll wear for years.",
+              "alignment": "left",
+              "height": "full",
+              "overlay": 30,
+              "colorScheme": "default"
+            },
+            "blocks": [
+              {
+                "id": "blk_11b0b34cc580",
+                "type": "button",
+                "settings": {
+                  "label": "Shop new arrivals",
+                  "url": "/products?collection=new-arrivals",
+                  "style": "primary"
+                }
+              },
+              {
+                "id": "blk_f74e3bd3c601",
+                "type": "button",
+                "settings": {
+                  "label": "Explore the edit",
+                  "url": "/products",
+                  "style": "secondary"
+                }
+              }
+            ]
+          },
+          {
+            "id": "sec_d9cad7fed292",
+            "type": "categories",
+            "settings": {
+              "heading": "Shop by category",
+              "subheading": "",
+              "count": 4,
+              "columns": 4,
+              "style": "overlay",
+              "colorScheme": "default",
+              "spacing": "large"
+            },
+            "blocks": []
+          },
+          {
+            "id": "sec_06d4c4fc3598",
+            "type": "products",
+            "settings": {
+              "heading": "New arrivals",
+              "subheading": "Just landed this week",
+              "collection": "new-arrivals",
+              "count": 8,
+              "columns": 4,
+              "layout": "grid",
+              "showViewAll": true,
+              "colorScheme": "default",
+              "spacing": "medium"
+            },
+            "blocks": []
+          },
+          {
+            "id": "sec_b1c78473fbba",
+            "type": "collection-tiles",
+            "settings": {
+              "heading": "",
+              "colorScheme": "default",
+              "spacing": "small"
+            },
+            "blocks": [
+              {
+                "id": "blk_d7126e170e02",
+                "type": "tile",
+                "settings": {
+                  "image": "",
+                  "title": "Knitwear",
+                  "label": "Shop knitwear",
+                  "url": "/categories/knitwear"
+                }
+              },
+              {
+                "id": "blk_e84db3f39b86",
+                "type": "tile",
+                "settings": {
+                  "image": "",
+                  "title": "The shoe edit",
+                  "label": "Shop shoes",
+                  "url": "/categories/shoes"
+                }
+              }
+            ]
+          },
+          {
+            "id": "sec_b46ad1e3d7f3",
+            "type": "products",
+            "settings": {
+              "heading": "Best sellers",
+              "subheading": "",
+              "collection": "best-sellers",
+              "count": 4,
+              "columns": 4,
+              "layout": "carousel",
+              "showViewAll": true,
+              "colorScheme": "default",
+              "spacing": "medium"
+            },
+            "blocks": []
+          },
+          {
+            "id": "sec_77d2f9f99cfe",
+            "type": "image-with-text",
+            "settings": {
+              "image": "",
+              "imagePosition": "right",
+              "eyebrow": "Our atelier",
+              "heading": "Made slowly, made to last",
+              "text": "We work with a handful of family-run workshops in Portugal and Italy, using natural fibres and deadstock fabrics. Fewer pieces, made properly.",
+              "buttonLabel": "Discover the collection",
+              "buttonUrl": "/products",
+              "colorScheme": "surface",
+              "spacing": "medium"
+            },
+            "blocks": []
+          },
+          {
+            "id": "sec_9bf623c82b2f",
+            "type": "testimonials",
+            "settings": {
+              "heading": "Worn and loved",
+              "colorScheme": "default",
+              "spacing": "medium"
+            },
+            "blocks": [
+              {
+                "id": "blk_ed627e7c157a",
+                "type": "testimonial",
+                "settings": {
+                  "quote": "The quality is exceptional. My leather jacket gets better every week I wear it.",
+                  "author": "Sofia R.",
+                  "detail": "Cropped Leather Jacket",
+                  "rating": 5
+                }
+              },
+              {
+                "id": "blk_faddb18af480",
+                "type": "testimonial",
+                "settings": {
+                  "quote": "Beautiful packaging, fast shipping and the linen dress fits like a dream.",
+                  "author": "Emma W.",
+                  "detail": "Linen Wrap Dress",
+                  "rating": 5
+                }
+              },
+              {
+                "id": "blk_76d0f1199562",
+                "type": "testimonial",
+                "settings": {
+                  "quote": "Finally, basics that don't lose their shape after a few washes.",
+                  "author": "Noah B.",
+                  "detail": "Essential Cotton Tee",
+                  "rating": 5
+                }
+              }
+            ]
+          },
+          {
+            "id": "sec_23fa1d0ace5d",
+            "type": "newsletter",
+            "settings": {
+              "heading": "Join the Maison list",
+              "text": "Early access to new collections and private sales.",
+              "buttonLabel": "Subscribe",
+              "colorScheme": "dark",
+              "spacing": "medium"
+            },
+            "blocks": []
+          }
+        ]
+      },
+      "createdAt": "2026-09-27T12:19:41.699Z",
+      "updatedAt": "2026-09-28T04:54:47.566Z",
+      "publishedAt": "2026-09-28T04:54:47.566Z"
+    },
+    {
+      "id": "thm_440a2e5f0bb6",
+      "tenantId": "tnt_nova",
+      "name": "Volt",
+      "presetId": "volt",
+      "draft": {
+        "settings": {
+          "colorBackground": "#ffffff",
+          "colorSurface": "#f1f5f9",
+          "colorText": "#0b1220",
+          "colorPrimary": "#2563eb",
+          "colorPrimaryText": "#ffffff",
+          "colorSale": "#dc2626",
+          "fontHeading": "space-grotesk",
+          "fontBody": "inter",
+          "headingScale": 105,
+          "headingCase": "none",
+          "pageWidth": 1320,
+          "radius": 12,
+          "buttonShape": "rounded",
+          "headerLayout": "left",
+          "headerSticky": true,
+          "cardImageRatio": "square",
+          "cardHoverImage": false,
+          "cardShowBrand": true,
+          "cardShowRating": true,
+          "cardQuickAdd": true,
+          "animations": true
+        },
+        "sections": [
+          {
+            "id": "sec_ad420d5fb563",
+            "type": "hero",
+            "settings": {
+              "layout": "split",
+              "image": "",
+              "eyebrow": "New · Aurora ANC",
+              "heading": "Sound that moves with you",
+              "text": "Adaptive noise cancelling, 30-hour battery and studio-grade drivers. Now with free next-day delivery.",
+              "alignment": "left",
+              "height": "medium",
+              "overlay": 25,
+              "colorScheme": "surface"
+            },
+            "blocks": [
+              {
+                "id": "blk_e56af70ab24b",
+                "type": "button",
+                "settings": {
+                  "label": "Shop audio",
+                  "url": "/categories/audio",
+                  "style": "primary"
+                }
+              },
+              {
+                "id": "blk_87ca6501ca23",
+                "type": "button",
+                "settings": {
+                  "label": "See all deals",
+                  "url": "/products?collection=sale",
+                  "style": "secondary"
+                }
+              }
+            ]
+          },
+          {
+            "id": "sec_7bf3c030c733",
+            "type": "features",
+            "settings": {
+              "heading": "",
+              "columns": 4,
+              "alignment": "left",
+              "colorScheme": "default",
+              "spacing": "small"
+            },
+            "blocks": [
+              {
+                "id": "blk_05369af6f1fc",
+                "type": "feature",
+                "settings": {
+                  "icon": "truck",
+                  "title": "Free next-day delivery",
+                  "text": "On orders over $75"
+                }
+              },
+              {
+                "id": "blk_c596da232ea5",
+                "type": "feature",
+                "settings": {
+                  "icon": "shield",
+                  "title": "2-year warranty",
+                  "text": "On everything we sell"
+                }
+              },
+              {
+                "id": "blk_01b4422646ed",
+                "type": "feature",
+                "settings": {
+                  "icon": "refresh",
+                  "title": "30-day returns",
+                  "text": "No questions asked"
+                }
+              },
+              {
+                "id": "blk_bf985c8b0cb5",
+                "type": "feature",
+                "settings": {
+                  "icon": "message",
+                  "title": "Expert support",
+                  "text": "Real people, 7 days a week"
+                }
+              }
+            ]
+          },
+          {
+            "id": "sec_c7b73bde3e94",
+            "type": "categories",
+            "settings": {
+              "heading": "Shop by category",
+              "subheading": "",
+              "count": 6,
+              "columns": 3,
+              "style": "overlay",
+              "colorScheme": "default",
+              "spacing": "medium"
+            },
+            "blocks": []
+          },
+          {
+            "id": "sec_79265eb11632",
+            "type": "products",
+            "settings": {
+              "heading": "Best sellers",
+              "subheading": "What everyone's buying right now",
+              "collection": "best-sellers",
+              "count": 8,
+              "columns": 4,
+              "layout": "carousel",
+              "showViewAll": true,
+              "colorScheme": "default",
+              "spacing": "medium"
+            },
+            "blocks": []
+          },
+          {
+            "id": "sec_eb7ea4fda957",
+            "type": "promo-banner",
+            "settings": {
+              "image": "",
+              "eyebrow": "This week only",
+              "heading": "Up to 25% off laptops & audio",
+              "text": "Save on our most-loved tech. Ends Sunday.",
+              "buttonLabel": "Shop the sale",
+              "buttonUrl": "/products?collection=sale",
+              "alignment": "left",
+              "height": "medium",
+              "overlay": 35,
+              "colorScheme": "default",
+              "spacing": "medium"
+            },
+            "blocks": []
+          },
+          {
+            "id": "sec_efe53f63aca0",
+            "type": "products",
+            "settings": {
+              "heading": "On sale now",
+              "subheading": "",
+              "collection": "sale",
+              "count": 4,
+              "columns": 4,
+              "layout": "grid",
+              "showViewAll": true,
+              "colorScheme": "default",
+              "spacing": "medium"
+            },
+            "blocks": []
+          },
+          {
+            "id": "sec_fb36e6ed0d94",
+            "type": "brands",
+            "settings": {
+              "heading": "Shop by brand",
+              "style": "cards",
+              "colorScheme": "surface",
+              "spacing": "medium"
+            },
+            "blocks": []
+          },
+          {
+            "id": "sec_4372e6b1cdfb",
+            "type": "newsletter",
+            "settings": {
+              "heading": "Get deals first",
+              "text": "Weekly drops, restocks and subscriber-only discounts.",
+              "buttonLabel": "Subscribe",
+              "colorScheme": "inverse",
+              "spacing": "medium"
+            },
+            "blocks": []
+          }
+        ]
+      },
+      "published": {
+        "settings": {
+          "colorBackground": "#ffffff",
+          "colorSurface": "#f1f5f9",
+          "colorText": "#0b1220",
+          "colorPrimary": "#2563eb",
+          "colorPrimaryText": "#ffffff",
+          "colorSale": "#dc2626",
+          "fontHeading": "space-grotesk",
+          "fontBody": "inter",
+          "headingScale": 105,
+          "headingCase": "none",
+          "pageWidth": 1320,
+          "radius": 12,
+          "buttonShape": "rounded",
+          "headerLayout": "left",
+          "headerSticky": true,
+          "cardImageRatio": "square",
+          "cardHoverImage": false,
+          "cardShowBrand": true,
+          "cardShowRating": true,
+          "cardQuickAdd": true,
+          "animations": true
+        },
+        "sections": [
+          {
+            "id": "sec_ad420d5fb563",
+            "type": "hero",
+            "settings": {
+              "layout": "split",
+              "image": "",
+              "eyebrow": "New · Aurora ANC",
+              "heading": "Sound that moves with you",
+              "text": "Adaptive noise cancelling, 30-hour battery and studio-grade drivers. Now with free next-day delivery.",
+              "alignment": "left",
+              "height": "medium",
+              "overlay": 25,
+              "colorScheme": "surface"
+            },
+            "blocks": [
+              {
+                "id": "blk_e56af70ab24b",
+                "type": "button",
+                "settings": {
+                  "label": "Shop audio",
+                  "url": "/categories/audio",
+                  "style": "primary"
+                }
+              },
+              {
+                "id": "blk_87ca6501ca23",
+                "type": "button",
+                "settings": {
+                  "label": "See all deals",
+                  "url": "/products?collection=sale",
+                  "style": "secondary"
+                }
+              }
+            ]
+          },
+          {
+            "id": "sec_7bf3c030c733",
+            "type": "features",
+            "settings": {
+              "heading": "",
+              "columns": 4,
+              "alignment": "left",
+              "colorScheme": "default",
+              "spacing": "small"
+            },
+            "blocks": [
+              {
+                "id": "blk_05369af6f1fc",
+                "type": "feature",
+                "settings": {
+                  "icon": "truck",
+                  "title": "Free next-day delivery",
+                  "text": "On orders over $75"
+                }
+              },
+              {
+                "id": "blk_c596da232ea5",
+                "type": "feature",
+                "settings": {
+                  "icon": "shield",
+                  "title": "2-year warranty",
+                  "text": "On everything we sell"
+                }
+              },
+              {
+                "id": "blk_01b4422646ed",
+                "type": "feature",
+                "settings": {
+                  "icon": "refresh",
+                  "title": "30-day returns",
+                  "text": "No questions asked"
+                }
+              },
+              {
+                "id": "blk_bf985c8b0cb5",
+                "type": "feature",
+                "settings": {
+                  "icon": "message",
+                  "title": "Expert support",
+                  "text": "Real people, 7 days a week"
+                }
+              }
+            ]
+          },
+          {
+            "id": "sec_c7b73bde3e94",
+            "type": "categories",
+            "settings": {
+              "heading": "Shop by category",
+              "subheading": "",
+              "count": 6,
+              "columns": 3,
+              "style": "overlay",
+              "colorScheme": "default",
+              "spacing": "medium"
+            },
+            "blocks": []
+          },
+          {
+            "id": "sec_79265eb11632",
+            "type": "products",
+            "settings": {
+              "heading": "Best sellers",
+              "subheading": "What everyone's buying right now",
+              "collection": "best-sellers",
+              "count": 8,
+              "columns": 4,
+              "layout": "carousel",
+              "showViewAll": true,
+              "colorScheme": "default",
+              "spacing": "medium"
+            },
+            "blocks": []
+          },
+          {
+            "id": "sec_eb7ea4fda957",
+            "type": "promo-banner",
+            "settings": {
+              "image": "",
+              "eyebrow": "This week only",
+              "heading": "Up to 25% off laptops & audio",
+              "text": "Save on our most-loved tech. Ends Sunday.",
+              "buttonLabel": "Shop the sale",
+              "buttonUrl": "/products?collection=sale",
+              "alignment": "left",
+              "height": "medium",
+              "overlay": 35,
+              "colorScheme": "default",
+              "spacing": "medium"
+            },
+            "blocks": []
+          },
+          {
+            "id": "sec_efe53f63aca0",
+            "type": "products",
+            "settings": {
+              "heading": "On sale now",
+              "subheading": "",
+              "collection": "sale",
+              "count": 4,
+              "columns": 4,
+              "layout": "grid",
+              "showViewAll": true,
+              "colorScheme": "default",
+              "spacing": "medium"
+            },
+            "blocks": []
+          },
+          {
+            "id": "sec_fb36e6ed0d94",
+            "type": "brands",
+            "settings": {
+              "heading": "Shop by brand",
+              "style": "cards",
+              "colorScheme": "surface",
+              "spacing": "medium"
+            },
+            "blocks": []
+          },
+          {
+            "id": "sec_4372e6b1cdfb",
+            "type": "newsletter",
+            "settings": {
+              "heading": "Get deals first",
+              "text": "Weekly drops, restocks and subscriber-only discounts.",
+              "buttonLabel": "Subscribe",
+              "colorScheme": "inverse",
+              "spacing": "medium"
+            },
+            "blocks": []
+          }
+        ]
+      },
+      "createdAt": "2026-09-27T12:19:41.700Z",
+      "updatedAt": "2026-09-27T12:19:41.700Z",
+      "publishedAt": "2026-09-27T12:19:41.700Z"
+    },
+    {
+      "id": "thm_cadc6b5acaa9",
+      "tenantId": "tnt_nova",
+      "name": "Hearth (redesign)",
+      "presetId": "hearth",
+      "draft": {
+        "settings": {
+          "colorBackground": "#f7f4ef",
+          "colorSurface": "#ebe4d8",
+          "colorText": "#2d2a26",
+          "colorPrimary": "#4a5a45",
+          "colorPrimaryText": "#f7f4ef",
+          "colorSale": "#b45309",
+          "fontHeading": "playfair",
+          "fontBody": "outfit",
+          "headingScale": 105,
+          "headingCase": "none",
+          "pageWidth": 1320,
+          "radius": 4,
+          "buttonShape": "rounded",
+          "headerLayout": "left",
+          "headerSticky": true,
+          "cardImageRatio": "square",
+          "cardHoverImage": true,
+          "cardShowBrand": true,
+          "cardShowRating": true,
+          "cardQuickAdd": true,
+          "animations": true
+        },
+        "sections": [
+          {
+            "id": "sec_f188e64fba5b",
+            "type": "hero",
+            "settings": {
+              "layout": "overlay",
+              "image": "",
+              "eyebrow": "Autumn at home",
+              "heading": "Slow living, made beautiful",
+              "text": "Solid wood, natural linen and hand-thrown ceramics for a home that restores you.",
+              "alignment": "center",
+              "height": "large",
+              "overlay": 30,
+              "colorScheme": "default"
+            },
+            "blocks": [
+              {
+                "id": "blk_21cbf77e5d48",
+                "type": "button",
+                "settings": {
+                  "label": "Shop the collection",
+                  "url": "/products",
+                  "style": "primary"
+                }
+              }
+            ]
+          },
+          {
+            "id": "sec_aa8c35fa1377",
+            "type": "categories",
+            "settings": {
+              "heading": "Shop by room",
+              "subheading": "",
+              "count": 5,
+              "columns": 5,
+              "style": "overlay",
+              "colorScheme": "default",
+              "spacing": "medium"
+            },
+            "blocks": []
+          },
+          {
+            "id": "sec_83618568db29",
+            "type": "products",
+            "settings": {
+              "heading": "New in",
+              "subheading": "Fresh pieces for the season",
+              "collection": "new-arrivals",
+              "count": 8,
+              "columns": 4,
+              "layout": "grid",
+              "showViewAll": true,
+              "colorScheme": "default",
+              "spacing": "medium"
+            },
+            "blocks": []
+          },
+          {
+            "id": "sec_1946caf64a0a",
+            "type": "collection-tiles",
+            "settings": {
+              "heading": "",
+              "colorScheme": "default",
+              "spacing": "medium"
+            },
+            "blocks": [
+              {
+                "id": "blk_e7895176af6f",
+                "type": "tile",
+                "settings": {
+                  "image": "",
+                  "title": "Living room",
+                  "label": "Shop sofas & chairs",
+                  "url": "/categories/living"
+                }
+              },
+              {
+                "id": "blk_9f4357e22163",
+                "type": "tile",
+                "settings": {
+                  "image": "",
+                  "title": "Lighting",
+                  "label": "Shop lighting",
+                  "url": "/categories/lighting"
+                }
+              },
+              {
+                "id": "blk_af0f0ce11495",
+                "type": "tile",
+                "settings": {
+                  "image": "",
+                  "title": "Bedroom",
+                  "label": "Shop bedroom",
+                  "url": "/categories/bedroom"
+                }
+              }
+            ]
+          },
+          {
+            "id": "sec_0ccca090c06a",
+            "type": "image-with-text",
+            "settings": {
+              "image": "",
+              "imagePosition": "left",
+              "eyebrow": "Our makers",
+              "heading": "Built to be passed down",
+              "text": "Every piece is made by independent workshops using solid hardwoods and natural finishes. Delivered free by our own two-person team.",
+              "buttonLabel": "Meet our brands",
+              "buttonUrl": "/brands",
+              "colorScheme": "default",
+              "spacing": "medium"
+            },
+            "blocks": []
+          },
+          {
+            "id": "sec_525505acf95c",
+            "type": "features",
+            "settings": {
+              "heading": "",
+              "columns": 3,
+              "alignment": "center",
+              "colorScheme": "surface",
+              "spacing": "medium"
+            },
+            "blocks": [
+              {
+                "id": "blk_5b7a3521d955",
+                "type": "feature",
+                "settings": {
+                  "icon": "truck",
+                  "title": "Free white-glove delivery",
+                  "text": "Placed in the room of your choice."
+                }
+              },
+              {
+                "id": "blk_1bd6f4de3d56",
+                "type": "feature",
+                "settings": {
+                  "icon": "leaf",
+                  "title": "Responsibly made",
+                  "text": "FSC-certified woods and natural fibres."
+                }
+              },
+              {
+                "id": "blk_c73f1659fa28",
+                "type": "feature",
+                "settings": {
+                  "icon": "shield",
+                  "title": "10-year guarantee",
+                  "text": "On every frame we build."
+                }
+              }
+            ]
+          },
+          {
+            "id": "sec_93dd3e49b572",
+            "type": "brands",
+            "settings": {
+              "heading": "Makers we love",
+              "style": "cards",
+              "colorScheme": "default",
+              "spacing": "medium"
+            },
+            "blocks": []
+          },
+          {
+            "id": "sec_fca23d8e391f",
+            "type": "newsletter",
+            "settings": {
+              "heading": "Letters from Hearth",
+              "text": "Seasonal edits, styling ideas and first look at new pieces.",
+              "buttonLabel": "Subscribe",
+              "colorScheme": "inverse",
+              "spacing": "medium"
+            },
+            "blocks": []
+          }
+        ]
+      },
+      "published": null,
+      "createdAt": "2026-09-27T12:19:41.701Z",
+      "updatedAt": "2026-09-27T12:19:41.701Z",
+      "publishedAt": null
+    }
+  ]
+}
