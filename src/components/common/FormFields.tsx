@@ -4,6 +4,7 @@ import type { ComponentProps, ReactNode } from "react";
 import { Controller, type FieldValues, type Path, type UseFormReturn } from "react-hook-form";
 import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -92,6 +93,50 @@ export function SwitchField<T extends FieldValues, TOut extends FieldValues>({
           <Switch id={id} checked={Boolean(field.value)} onCheckedChange={field.onChange} />
         )}
       />
+    </Field>
+  );
+}
+
+export function SelectField<T extends FieldValues, TOut extends FieldValues>({
+  form,
+  name,
+  label,
+  description,
+  optional,
+  options,
+  placeholder = "Select…",
+}: BaseProps<T, TOut> & {
+  options: { value: string; label: string }[];
+  placeholder?: string;
+}) {
+  const error = useFieldError(form, name);
+  const id = `field-${String(name)}`;
+
+  return (
+    <Field data-invalid={Boolean(error)}>
+      <FieldLabel htmlFor={id}>
+        <LabelText label={label} optional={optional} />
+      </FieldLabel>
+      <Controller
+        name={name}
+        control={form.control}
+        render={({ field }) => (
+          <Select value={field.value ? String(field.value) : undefined} onValueChange={field.onChange}>
+            <SelectTrigger id={id} aria-invalid={Boolean(error)} className="w-full">
+              <SelectValue placeholder={placeholder} />
+            </SelectTrigger>
+            <SelectContent>
+              {options.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      />
+      {description && !error && <FieldDescription>{description}</FieldDescription>}
+      <FieldError>{error}</FieldError>
     </Field>
   );
 }

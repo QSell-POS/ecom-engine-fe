@@ -8,6 +8,7 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { SwitchField, TextField } from "@/components/common/FormFields";
+import { MediaField } from "@/components/common/MediaField";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,7 +48,7 @@ export function BrandFormDialog({
       name: brand?.name ?? "",
       slug: brand?.slug ?? "",
       description: brand?.description ?? "",
-      logo: brand?.logo ?? "",
+      logoId: brand?.logo?.id ?? undefined,
       website: brand?.website ?? "",
       isActive: brand?.isActive ?? true,
     },
@@ -110,10 +111,8 @@ export function BrandFormDialog({
               />
             </div>
             <TextField form={form} name="description" label="Description" optional multiline />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <TextField form={form} name="logo" label="Logo URL" optional type="url" placeholder="https://" />
-              <TextField form={form} name="website" label="Website" optional type="url" placeholder="https://" />
-            </div>
+            <TextField form={form} name="website" label="Website" optional type="url" placeholder="https://" />
+            <MediaField form={form} name="logoId" label="Logo" optional folder="brand" currentUrl={brand?.logo?.url} description="Uploaded to your media library." />
             <SwitchField
               form={form}
               name="isActive"

@@ -1,19 +1,45 @@
-import { Brand } from "@/lib/api/brand/types";
-import { Category } from "@/lib/api/category/types";
+import type { Brand } from "@/lib/api/brand/types";
+import type { Category } from "@/lib/api/category/types";
+import type { Decimal, MediaRef } from "@/lib/api/shared/types";
 
+/** One attribute with every value it can take: { name: "Colour", values: ["Brown", "Cream"] }. */
 export type ProductAttribute = {
   name: string;
-  value: string;
+  values: string[];
 };
 
+/** `available` is `quantity − reserved`. Show that, not `quantity`. */
 export type ProductInventory = {
-  id: string;
-  productId: string;
-  quantityOnHand: number;
-  quantityReserved: number;
-  createdAt?: string;
-  updatedAt?: string;
+  quantity: number;
+  reserved: number;
+  available: number;
+  stockAlert?: number | null;
 };
+
+/** A product image. The entry at position 0 is the primary image. */
+export type ProductMedia = {
+  id: string;
+  mediaId: string;
+  position: number;
+  media: MediaRef;
+};
+
+export type ProductTag = { id: string; name: string };
+
+export const PRODUCT_BADGES = [
+  "featured",
+  "best_seller",
+  "top_selling",
+  "limited_edition",
+  "new_arrival",
+  "trending",
+  "premium",
+  "exclusive",
+  "clearance",
+  "hot_deal",
+] as const;
+
+export type ProductBadge = (typeof PRODUCT_BADGES)[number];
 
 export type Product = {
   id: string;
@@ -24,18 +50,24 @@ export type Product = {
   barcode?: string | null;
   hsCode?: string | null;
   isActive?: boolean;
-  sellingPrice: string;
-  compareAtPrice?: string | null;
+  /** Decimal strings, not numbers — parse with toAmount before arithmetic. */
+  sellingPrice: Decimal;
+  compareAtPrice?: Decimal | null;
   stockAlert?: number | null;
   attributes?: ProductAttribute[] | null;
-  badges?: string[];
-  tags?: string[];
+  badges?: ProductBadge[];
+  tags?: ProductTag[];
   brandId?: string | null;
   categoryId?: string | null;
-  brand?: Brand | null;
-  category?: Category | null;
+  brand?: Pick<Brand, "id" | "name" | "slug"> | null;
+  category?: Pick<Category, "id" | "name" | "slug"> | null;
+  media?: ProductMedia[];
   inventory?: ProductInventory | null;
-  tagIds?: string[];
   createdAt?: string;
   updatedAt?: string;
 };
+
+export function primaryImage(product: Product): MediaRef | undefined {
+  const sorted = [...(product.media ?? [])].sort((a, b) => a.position - b.position);
+  return sorted[0]?.media;
+}

@@ -65,7 +65,13 @@ export function CategoryDetail({
             ],
             ["URL handle", `/${category.slug}`],
             ["Position", category.position ?? null],
-            ["Image", category.image && <span className="truncate font-mono text-[13px]">{category.image}</span>],
+            [
+              "Image",
+              category.image?.url && (
+                // eslint-disable-next-line @next/next/no-img-element -- the R2 host is not configured for next/image
+                <img src={category.image.url} alt="" className="size-12 rounded-md border object-cover" />
+              ),
+            ],
           ]}
         />
       </DetailSection>

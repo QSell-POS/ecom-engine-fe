@@ -1,73 +1,43 @@
 import "server-only";
-import { apiClient } from "@/lib/api/client";
-import { PaginationParams, ListResponse } from "@/lib/api/shared/types";
-import { Brand } from "./types";
-import { CreateBrandPayload, UpdateBrandPayload } from "./dto";
+import { apiClient, apiList } from "@/lib/api/client";
+import { buildQuery, type ListParams, type ListResponse } from "@/lib/api/shared/types";
+import type { Brand } from "./types";
+import type { CreateBrandPayload, UpdateBrandPayload } from "./dto";
 import { BRANDS_TAG, brandTag } from "./constants";
 
-export async function getBrands(params?: PaginationParams) {
-  const searchParams = new URLSearchParams();
+// Public catalog reads: API key only, so they stay cacheable.
 
-  if (params?.page) searchParams.set("page", String(params.page));
-  if (params?.limit) searchParams.set("limit", String(params.limit));
-  if (params?.search) searchParams.set("search", params.search);
-
-  const query = searchParams.toString();
-
-  return apiClient<ListResponse<Brand>>(`/brands${query ? `?${query}` : ""}`, {
-    tags: [BRANDS_TAG],
-    revalidate: 60,
-  });
+export async function getBrands(params?: ListParams): Promise<ListResponse<Brand>> {
+  return apiList<Brand>(`/brands${buildQuery(params)}`, { auth: "key", tags: [BRANDS_TAG], revalidate: 60 });
 }
 
 export async function getBrandBySlug(slug: string) {
-  return apiClient<Brand>(`/brands/slug/${slug}`, {
-    tags: [brandTag(slug)],
-    revalidate: 60,
-  });
+  return apiClient<Brand>(`/brands/slug/${slug}`, { auth: "key", tags: [brandTag(slug)], revalidate: 60, allow404: true });
 }
 
 export async function getBrandById(id: string) {
-  return apiClient<Brand>(`/brands/${id}`, {
-    tags: [brandTag(id)],
-    revalidate: 60,
-  });
+  return apiClient<Brand>(`/brands/${id}`, { auth: "key", tags: [brandTag(id)], revalidate: 60, allow404: true });
 }
 
-export async function getBrandsAdmin(params?: PaginationParams) {
-  const searchParams = new URLSearchParams();
+// Admin: includes inactive brands.
 
-  if (params?.page) searchParams.set("page", String(params.page));
-  if (params?.limit) searchParams.set("limit", String(params.limit));
-  if (params?.search) searchParams.set("search", params.search);
+export async function getBrandsAdmin(params?: ListParams): Promise<ListResponse<Brand>> {
+  return apiList<Brand>(`/admin/brands${buildQuery(params)}`, { auth: "owner", tags: [BRANDS_TAG], revalidate: 60 });
+}
 
-  const query = searchParams.toString();
-
-  return apiClient<ListResponse<Brand>>(
-    `/admin/brands${query ? `?${query}` : ""}`,
-    {
-      tags: [BRANDS_TAG],
-      revalidate: 60,
-    },
-  );
+export async function getBrandAdmin(id: string) {
+  return apiClient<Brand>(`/admin/brands/${id}`, { auth: "owner", tags: [brandTag(id)], revalidate: 60 });
 }
 
 export async function createBrand(data: CreateBrandPayload) {
-  return apiClient<Brand>("/admin/brands", {
-    method: "POST",
-    body: data,
-  });
+  return apiClient<Brand>("/admin/brands", { method: "POST", body: data, auth: "owner" });
 }
 
 export async function updateBrand(id: string, data: UpdateBrandPayload) {
-  return apiClient<Brand>(`/admin/brands/${id}`, {
-    method: "PUT",
-    body: data,
-  });
+  return apiClient<Brand>(`/admin/brands/${id}`, { method: "PUT", body: data, auth: "owner" });
 }
 
 export async function deleteBrand(id: string) {
-  return apiClient<null>(`/admin/brands/${id}`, {
-    method: "DELETE",
-  });
+  // 409 when products still reference the brand.
+  return apiClient<null>(`/admin/brands/${id}`, { method: "DELETE", auth: "owner" });
 }

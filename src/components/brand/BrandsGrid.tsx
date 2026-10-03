@@ -22,17 +22,10 @@ async function settle(results: Promise<SafeResult>[], message: string): Promise<
   return { ok: false, error: failed[0]?.serverError ?? `${failed.length} of ${settled.length} failed. Please try again.` };
 }
 
-// The update endpoint expects the full brand, so status changes resend it.
+// Every field on PUT /admin/brands/:id is optional and unknown properties are
+// rejected outright, so a status flip sends the flag alone.
 function setActive(brand: Brand, isActive: boolean) {
-  return updateBrandAction({
-    id: brand.id,
-    name: brand.name,
-    slug: brand.slug,
-    description: brand.description ?? "",
-    logo: brand.logo || undefined,
-    website: brand.website || undefined,
-    isActive,
-  });
+  return updateBrandAction({ id: brand.id, name: brand.name, slug: brand.slug, isActive });
 }
 
 export function BrandsGrid({ brands }: { brands: Brand[] }) {
@@ -94,7 +87,6 @@ export function BrandsGrid({ brands }: { brands: Brand[] }) {
           slug: r.slug || r.urlhandle || slugify(r.name),
           description: r.description ?? "",
           website: r.website || undefined,
-          logo: r.logo || r.logourl || undefined,
           isActive: r.status ? !/^(inactive|no|false)$/i.test(r.status) : true,
         }),
       ),

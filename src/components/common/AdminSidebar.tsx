@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -15,8 +16,10 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { NAV_GROUPS, navItemForPath } from "@/lib/constants/nav";
+import type { TenantSummary } from "@/lib/api/session";
+import { TenantMenu } from "./TenantMenu";
 
-export function AdminSidebar() {
+export function AdminSidebar({ tenant }: { tenant: TenantSummary | null }) {
   const pathname = usePathname();
   const active = navItemForPath(pathname);
 
@@ -54,6 +57,9 @@ export function AdminSidebar() {
           </SidebarGroup>
         ))}
       </SidebarContent>
+      <SidebarFooter>
+        <TenantMenu tenant={tenant} />
+      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );

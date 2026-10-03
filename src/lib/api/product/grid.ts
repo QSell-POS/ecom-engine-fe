@@ -17,7 +17,7 @@ export const stockStatuses = {
 };
 
 export function stockLevel(product: Product): keyof typeof stockStatuses {
-  const quantity = product.inventory?.quantityOnHand ?? 0;
+  const quantity = product.inventory?.available ?? 0;
   if (quantity <= 0) return "out";
   if ((product.stockAlert ?? 0) > 0 && quantity <= (product.stockAlert ?? 0))
     return "low";
@@ -56,7 +56,7 @@ export const productColumns = defineColumns<Product>([
     id: "stock",
     header: "Inventory",
     description: "Quantity on hand. Low stock uses each product's alert level.",
-    accessor: (p) => p.inventory?.quantityOnHand ?? 0,
+    accessor: (p) => p.inventory?.available ?? 0,
     type: "number",
     format: (value) =>
       Number(value) > 0 ? `${value} in stock` : "Out of stock",

@@ -1,0 +1,57 @@
+# Production stack for a single EC2 instance: the Next.js server plus an Nginx
+# reverse proxy that terminates TLS. Both read ./.env (see deploy/.env.example).
+
+services:
+  web:
+    build:
+      context: .
+      args:
+        # Inlined into the browser bundle, so a change needs a rebuild.
+        NEXT_PUBLIC_DEFAULT_CURRENCY: ${NEXT_PUBLIC_DEFAULT_CURRENCY:-NPR}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
+    image: ecom-engine-fe:latest
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      # Read at request time, so these change without a rebuild.
+      API_URL: ${API_URL:?set API_URL in .env}
+      API_KEY: ${API_KEY:?set API_KEY in .env}
+      R2_PUBLIC_HOST: ${R2_PUBLIC_HOST:-}
+    expose:
+      - "3000"
+    networks:
+      - edge
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN:?set ADMIN_DOMAIN in .env}
+      SHOP_DOMAIN: ${SHOP_DOMAIN:?set SHOP_DOMAIN in .env}
+    volumes:
+      # envsubst-templated: Nginx expands ${ADMIN_DOMAIN}/${SHOP_DOMAIN} on start.
+      - ./deploy/nginx/app.conf.template:/etc/nginx/templates/app.conf.template:ro
+      - ./deploy/certbot/conf:/etc/letsencrypt:ro
+      - ./deploy/certbot/www:/var/www/certbot:ro
+    networks:
+      - edge
+
+  # One-shot: issues or renews the certificates, then exits. `deploy.sh --tls`
+  # runs it; a cron entry renews.
+  certbot:
+    image: certbot/certbot:latest
+    profiles: ["tls"]
+    volumes:
+      - ./deploy/certbot/conf:/etc/letsencrypt
+      - ./deploy/certbot/www:/var/www/certbot
+    entrypoint: /bin/sh
+    command: -c "echo 'Run deploy/deploy.sh --tls instead of this service directly.'"
+
+networks:
+  edge:

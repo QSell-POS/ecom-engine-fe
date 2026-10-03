@@ -136,7 +136,7 @@ export function ProductsGrid({ initialResult, facets }: { initialResult?: GridRe
         sku: (p) => <span className="font-mono text-[13px] text-muted-foreground">{p.sku}</span>,
         stock: (p) => {
           const level = stockStatuses[stockLevel(p)];
-          const quantity = p.inventory?.quantityOnHand ?? 0;
+          const quantity = p.inventory?.available ?? 0;
           return level.tone === "success" ? (
             <span className="tabular-nums">{quantity} in stock</span>
           ) : (

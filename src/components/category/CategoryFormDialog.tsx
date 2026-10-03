@@ -8,6 +8,7 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { SwitchField, TextField } from "@/components/common/FormFields";
+import { MediaField } from "@/components/common/MediaField";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,7 +47,7 @@ export function CategoryFormDialog({
     defaultValues: {
       name: category?.name ?? "",
       slug: category?.slug ?? "",
-      image: category?.image ?? "",
+      imageId: category?.image?.id ?? undefined,
       description: category?.description ?? "",
       isActive: category?.isActive ?? true,
     },
@@ -109,7 +110,7 @@ export function CategoryFormDialog({
               />
             </div>
             <TextField form={form} name="description" label="Description" optional multiline />
-            <TextField form={form} name="image" label="Image URL" optional type="url" placeholder="https://" />
+            <MediaField form={form} name="imageId" label="Image" optional folder="category" currentUrl={category?.image?.url} description="Uploaded to your media library." />
             <SwitchField
               form={form}
               name="isActive"
