@@ -189,6 +189,29 @@ bash deploy/deploy.sh --no-pull
 
 (`deploy.sh` without `--no-pull` would reset you back to the branch head.)
 
+## SSH to GitHub is blocked
+
+If the deploy key is registered but `ssh -T git@github.com` times out, the
+instance cannot open port 22 outbound — a restricted egress rule on the
+security group, or a corporate network in front of it. GitHub serves SSH on
+443 as well, which almost always gets through:
+
+```bash
+cat >> ~/.ssh/config <<'CONF'
+Host github.com
+  Hostname ssh.github.com
+  Port 443
+  User git
+CONF
+chmod 600 ~/.ssh/config
+
+ssh-keyscan -p 443 ssh.github.com >> ~/.ssh/known_hosts
+ssh -T git@github.com
+```
+
+Everything else — the clone, `deploy.sh`, the renewal cron — picks this up
+automatically, because it is the same `github.com` host alias.
+
 ## When it does not come up
 
 - **`deploy.sh` says the app never became healthy** — it prints the last 60

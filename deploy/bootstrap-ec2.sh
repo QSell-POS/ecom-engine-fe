@@ -15,6 +15,11 @@ set -Eeuo pipefail
 REPO_URL="${REPO_URL:-git@github.com:QSell-POS/ecom-engine-fe.git}"
 DEPLOY_KEY="${DEPLOY_KEY:-$HOME/.ssh/id_ed25519}"
 REPO_DIR="${REPO_DIR:-$HOME/ecom-engine-fe}"
+# On an existing clone, stay on whatever branch is checked out: switching it
+# silently would discard the branch the box is actually running.
+if [[ -z "${BRANCH:-}" && -d "$REPO_DIR/.git" ]]; then
+  BRANCH="$(git -C "$REPO_DIR" rev-parse --abbrev-ref HEAD)"
+fi
 BRANCH="${BRANCH:-main}"
 
 log() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
@@ -93,19 +98,34 @@ if [[ "$REPO_URL" == git@* ]]; then
     exit 0
   fi
 
-  if ! ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+  # ssh -T against GitHub always exits non-zero (no shell access), so the
+  # output is the signal, not the status.
+  SSH_OUT="$(ssh -o BatchMode=yes -o IdentitiesOnly=yes -i "$DEPLOY_KEY" -T git@github.com 2>&1 || true)"
+
+  if [[ "$SSH_OUT" != *"successfully authenticated"* ]]; then
     printf '
-[1mThis key is not accepted by GitHub yet. Add it as a deploy key:[0m
-'
-    printf '  GitHub > the repo > Settings > Deploy keys > Add deploy key
+[1mGitHub did not accept this key. What ssh said:[0m
 
 '
-    cat "$DEPLOY_KEY.pub"
+    printf '%s
+
+' "$SSH_OUT"
+    printf '[1mThe key on this instance:[0m
+'
+    ssh-keygen -lf "$DEPLOY_KEY.pub"
     printf '
+Compare that SHA256 with the one shown at
+'
+    printf '  https://github.com/QSell-POS/ecom-engine-fe/settings/keys
+'
+    printf 'If they match and ssh timed out, outbound port 22 is blocked — see
+'
+    printf 'docs/deploy-ec2.md, "SSH to GitHub is blocked".
+
 '
     die "Deploy key not authorised."
   fi
-  echo "Deploy key accepted."
+  echo "Deploy key accepted: ${SSH_OUT%%,*}"
 fi
 
 log "Fetching the repo"
