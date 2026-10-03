@@ -113,23 +113,76 @@ nano .env                        # paste the real key
 bash deploy/deploy.sh --no-pull
 ```
 
+## Where the image is built
+
+**On GitHub, not on the instance.** A Next.js build needs ~2 GB, which is all
+a t3.small has, so building on the box swaps it to death. Pushing to
+`production` triggers [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml),
+which builds and publishes to GHCR:
+
+```
+ghcr.io/qsell-pos/ecom-engine-fe:production
+ghcr.io/qsell-pos/ecom-engine-fe:<commit sha>
+```
+
+The instance only pulls. A deploy is a download, not a compile.
+
+### One-time GHCR setup
+
+The repo is private, so the package is too, and the instance needs a token to
+pull it.
+
+1. **GitHub → Settings → Developer settings → Personal access tokens →
+   Tokens (classic) → Generate new token.** Scope: **`read:packages` only.**
+   Nothing else — this token sits on a server.
+2. Put it in `.env` on the instance:
+   ```ini
+   GHCR_USER=your-github-username
+   GHCR_TOKEN=ghp_...
+   ```
+3. **Settings → Secrets and variables → Actions → Variables** on the repo, add
+   the browser-visible values the image is compiled with:
+   | Variable | Value |
+   | --- | --- |
+   | `NEXT_PUBLIC_API_URL` | `https://api.abhishekpun.com.np` |
+   | `NEXT_PUBLIC_DEFAULT_CURRENCY` | `NPR` |
+
+   These end up in the JavaScript sent to browsers, so they are variables, not
+   secrets. Changing one needs a new image, which the next push produces.
+
 ## Every deploy after that
+
+Push to `production`, wait for the Actions run (2–4 minutes, mostly cached),
+then on the instance:
 
 ```bash
 cd ~/ecom-engine-fe && bash deploy/deploy.sh
 ```
 
-One command: pull → build → run → health-check → reload Nginx → prune.
-It pulls the current branch, resets to `origin/<branch>`, builds the image
-(`npm ci` happens inside the build, so the host never installs anything),
-starts the stack, waits for the container's health check, reloads Nginx and
-removes dangling images. Re-running it is safe.
+Pull code → log in to GHCR → pull image → run → health-check → reload Nginx →
+prune. Usually under a minute. Re-running it is safe.
 
 | Flag | Effect |
 | --- | --- |
-| *(none)* | Pull and redeploy |
-| `--no-pull` | Rebuild what is checked out — use after editing `.env` |
+| *(none)* | Pull the published image and redeploy |
+| `--no-pull` | Skip the git reset — use after editing `.env` |
+| `--build` | Build on this host instead of pulling (needs ~2 GB free) |
 | `--tls` | Also issue or renew certificates |
+
+### Rolling back
+
+Every build is tagged with its commit SHA, so a rollback is one line in `.env`
+and no rebuild at all:
+
+```ini
+WEB_IMAGE=ghcr.io/qsell-pos/ecom-engine-fe:9fc0b34...
+```
+
+```bash
+bash deploy/deploy.sh --no-pull
+```
+
+Comment the line out again to return to the latest `production` build.
 
 ## Configuration
 
@@ -179,15 +232,7 @@ docker compose down                    # stop everything
 sudo systemctl status ecom-engine-fe   # the boot unit
 ```
 
-Rolling back is a checkout plus a rebuild:
-
-```bash
-git log --oneline -10
-git checkout <sha>
-bash deploy/deploy.sh --no-pull
-```
-
-(`deploy.sh` without `--no-pull` would reset you back to the branch head.)
+Rolling back is the `WEB_IMAGE` pin described above — no checkout, no rebuild.
 
 ## SSH to GitHub is blocked
 
@@ -227,7 +272,18 @@ automatically, because it is the same `github.com` host alias.
   another tenant. Mint a new one in the dashboard.
 - **Certbot fails** — DNS is not pointing here yet, or port 80 is closed.
   Check with `dig +short $ADMIN_DOMAIN`.
-- **Build killed** — the instance is too small. t3.small minimum.
+- **`Could not pull the image`** — either the Actions run has not finished
+  (check the repo's Actions tab) or `GHCR_USER`/`GHCR_TOKEN` are wrong. Test
+  by hand: `docker login ghcr.io -u <user>` then
+  `docker pull ghcr.io/qsell-pos/ecom-engine-fe:production`.
+- **Build killed, or the box freezes during `--build`** — that is the memory
+  ceiling this setup exists to avoid. Do not build on the instance; let the
+  workflow do it. If you must, add swap first:
+  ```bash
+  sudo fallocate -l 4G /swapfile && sudo chmod 600 /swapfile
+  sudo mkswap /swapfile && sudo swapon /swapfile
+  echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+  ```
 
 ## A note on `GET /tenant` and `PATCH /tenant/:id/status`
 

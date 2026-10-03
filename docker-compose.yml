@@ -3,13 +3,10 @@
 
 services:
   web:
-    build:
-      context: .
-      args:
-        # Inlined into the browser bundle, so a change needs a rebuild.
-        NEXT_PUBLIC_DEFAULT_CURRENCY: ${NEXT_PUBLIC_DEFAULT_CURRENCY:-NPR}
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
-    image: ecom-engine-fe:latest
+    # Built by GitHub Actions and pulled from GHCR: a Next.js build needs more
+    # memory than a small instance has. To build on the host instead, add the
+    # override: docker compose -f docker-compose.yml -f docker-compose.build.yml build web
+    image: ${WEB_IMAGE:-ghcr.io/qsell-pos/ecom-engine-fe:production}
     restart: unless-stopped
     environment:
       NODE_ENV: production

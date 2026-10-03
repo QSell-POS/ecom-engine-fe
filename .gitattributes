@@ -1,0 +1,18 @@
+# Normalise to LF in the repo. Without this, a checkout on Windows can write
+# CRLF into the shell scripts, and bash on the EC2 instance then fails on the
+# stray carriage returns.
+* text=auto eol=lf
+
+*.sh      text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+Dockerfile text eol=lf
+*.template text eol=lf
+
+# Binary: never touch these.
+*.png binary
+*.jpg binary
+*.ico binary
+*.webp binary
+*.woff  binary
+*.woff2 binary

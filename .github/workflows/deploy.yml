@@ -1,0 +1,74 @@
+# Builds the production image on GitHub's runners and publishes it to GHCR, so
+# the EC2 instance only ever pulls. A Next.js build needs ~2 GB and the box has
+# exactly that; moving the build here removes the ceiling and turns a deploy
+# into a download.
+
+name: Build and publish image
+
+on:
+  push:
+    branches: [production]
+    # Docs and CI config do not change the image.
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # GHCR requires a lowercase path; the org is "QSell-POS".
+      - name: Resolve the image name
+        id: image
+        run: echo "name=${REGISTRY}/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.image.outputs.name }}:production
+            ${{ steps.image.outputs.name }}:${{ github.sha }}
+          # NEXT_PUBLIC_* values are compiled into the browser bundle, so they
+          # are fixed at build time. Set them as repository *variables*
+          # (Settings > Secrets and variables > Actions > Variables), not
+          # secrets — they ship to the browser either way.
+          build-args: |
+            NEXT_PUBLIC_DEFAULT_CURRENCY=${{ vars.NEXT_PUBLIC_DEFAULT_CURRENCY || 'NPR' }}
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+          # Layer cache in GitHub's cache service: npm ci and node_modules are
+          # reused between runs, so a typical build is a couple of minutes.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Summary
+        run: |
+          {
+            echo "### Image published"
+            echo
+            echo '```'
+            echo "${{ steps.image.outputs.name }}:production"
+            echo "${{ steps.image.outputs.name }}:${{ github.sha }}"
+            echo '```'
+            echo
+            echo "Deploy it: \`cd ~/ecom-engine-fe && bash deploy/deploy.sh\`"
+          } >> "$GITHUB_STEP_SUMMARY"

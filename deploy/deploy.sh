@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # One command: pull, install, build, run.
 #
-#   bash deploy/deploy.sh            # pull + rebuild + restart
+#   bash deploy/deploy.sh            # pull the published image + restart
 #   bash deploy/deploy.sh --tls      # also issue/renew the certificates
-#   bash deploy/deploy.sh --no-pull  # rebuild what is already checked out
+#   bash deploy/deploy.sh --no-pull  # redeploy what is already checked out
+#   bash deploy/deploy.sh --build    # build here instead of pulling (needs ~2 GB)
 #
 # Safe to re-run. Nothing here is interactive, so it also works from cron or
 # a CI runner over SSH.
@@ -14,10 +15,12 @@ cd "$REPO_DIR"
 
 PULL=1
 TLS=0
+BUILD=0
 for arg in "$@"; do
   case "$arg" in
     --no-pull) PULL=0 ;;
     --tls) TLS=1 ;;
+    --build) BUILD=1 ;;
     -h|--help) sed -n '2,12p' "${BASH_SOURCE[0]}"; exit 0 ;;
     *) echo "Unknown option: $arg" >&2; exit 2 ;;
   esac
@@ -88,9 +91,22 @@ if ! cert_exists; then
   die "No certificate for ${ADMIN_DOMAIN}. Run: bash deploy/deploy.sh --tls"
 fi
 
-log "Building the image"
-# npm ci runs inside the build, so the host needs no node_modules.
-docker compose build web
+if [[ "$BUILD" == 1 ]]; then
+  log "Building the image here"
+  # Needs ~2 GB free. On a small instance, prefer the published image.
+  docker compose -f docker-compose.yml -f docker-compose.build.yml build web
+else
+  log "Pulling the published image"
+  # The package is private because the repo is, so GHCR needs a token with
+  # read:packages. Skipped when the image is public or already cached.
+  if [[ -n "${GHCR_USER:-}" && -n "${GHCR_TOKEN:-}" ]]; then
+    printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin >/dev/null
+  fi
+
+  if ! docker compose pull web; then
+    die "Could not pull the image. Check that the GitHub Actions run finished, and that GHCR_USER/GHCR_TOKEN in .env are set (token needs read:packages)."
+  fi
+fi
 
 log "Starting the stack"
 docker compose up -d --remove-orphans
@@ -112,7 +128,8 @@ log "Reloading Nginx"
 docker compose exec -T nginx nginx -s reload 2>/dev/null || docker compose restart nginx
 
 log "Cleaning up old images"
-docker image prune -f --filter "dangling=true" >/dev/null
+# Untagged layers from previous pulls; a small instance fills up fast.
+docker image prune -f >/dev/null
 
 log "Deployed"
 docker compose ps
