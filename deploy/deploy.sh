@@ -75,7 +75,12 @@ if [[ "$TLS" == 1 ]]; then
   trap - EXIT
 fi
 
-if [[ ! -f "deploy/certbot/conf/live/${ADMIN_DOMAIN}/fullchain.pem" ]]; then
+# certbot writes these as root, and archive/<domain> is 0700, so a plain
+# `-f` test fails for the deploying user even when the certificate is there:
+# resolving the symlink needs to traverse a directory it cannot enter. `-L`
+# checks the link itself, which only needs live/<domain> (0755).
+CERT_PATH="deploy/certbot/conf/live/${ADMIN_DOMAIN}/fullchain.pem"
+if [[ ! -L "$CERT_PATH" && ! -f "$CERT_PATH" ]]; then
   die "No certificate for ${ADMIN_DOMAIN}. Run: bash deploy/deploy.sh --tls"
 fi
 
