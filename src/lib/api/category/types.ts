@@ -10,7 +10,11 @@ export type Category = {
   position?: number | null;
   isActive?: boolean;
   metadata?: Record<string, unknown>;
-  /** Read shape. Writes send `imageId` (a media asset id) instead. */
+  /**
+   * Reads return both: `imageId` is the asset id, `image` the resolved object
+   * (null when there is none). Writes send `imageId`.
+   */
+  imageId?: string | null;
   image?: MediaRef | null;
   createdAt?: string;
   updatedAt?: string;

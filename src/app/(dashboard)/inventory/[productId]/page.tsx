@@ -29,7 +29,7 @@ export default async function ProductInventoryPage({ params }: { params: Promise
   // Batches and the log are independent reads, so fetch them together.
   const [batches, transactions] = await Promise.all([
     getProductBatches(productId, { limit: 100 }),
-    getProductTransactions(productId, { limit: 200 }),
+    getProductTransactions(productId, { limit: 100 }),
   ]);
 
   const state = stockStates[stockState(item)];

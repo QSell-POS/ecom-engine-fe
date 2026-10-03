@@ -1,6 +1,7 @@
 import "server-only";
 import { applyQuery, deriveOptions, type FilterOption, type GridQuery, type GridResult } from "@/lib/data-grid";
 import { productColumns } from "./grid";
+import { loadAllPages } from "@/lib/api/shared/types";
 import { getProductsAdmin } from "./service";
 import type { Product } from "./types";
 
@@ -10,8 +11,8 @@ import type { Product } from "./types";
 // here instead. Callers (route handler, pages, native apps) don't change.
 
 async function loadCatalog(): Promise<Product[]> {
-  const response = await getProductsAdmin({ limit: 1000 });
-  return response?.data ?? [];
+  // The API caps a page at 100 and 400s above it, so walk the pages.
+  return loadAllPages(getProductsAdmin);
 }
 
 export async function queryProducts(query: GridQuery): Promise<GridResult<Product>> {

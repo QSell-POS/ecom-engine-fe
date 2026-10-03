@@ -12,7 +12,9 @@ services:
       NODE_ENV: production
       # Read at request time, so these change without a rebuild.
       API_URL: ${API_URL:?set API_URL in .env}
-      API_KEY: ${API_KEY:?set API_KEY in .env}
+      # Only the storefront needs this; the dashboard authenticates with the
+      # owner JWT alone, so an empty value still lets you sign in and mint one.
+      API_KEY: ${API_KEY:-}
       R2_PUBLIC_HOST: ${R2_PUBLIC_HOST:-}
     expose:
       - "3000"

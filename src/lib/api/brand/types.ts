@@ -7,7 +7,11 @@ export type Brand = {
   description?: string | null;
   website?: string | null;
   isActive?: boolean;
-  /** Read shape. Writes send `logoId` (a media asset id) instead. */
+  /**
+   * Reads return both: `logoId` is the asset id, `logo` the resolved object
+   * (null when there is none). Writes send `logoId`.
+   */
+  logoId?: string | null;
   logo?: MediaRef | null;
   createdAt?: string;
   updatedAt?: string;

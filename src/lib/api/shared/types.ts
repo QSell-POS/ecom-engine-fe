@@ -11,9 +11,14 @@ export type ListResponse<T> = {
   meta?: Partial<PageMeta> & Partial<CursorMeta>;
 };
 
+/** The API rejects anything larger with a 400, it does not clamp. */
+export const MAX_PAGE_LIMIT = 100;
+/** Tighter on a customer's own order history. */
+export const MAX_CUSTOMER_ORDER_LIMIT = 50;
+
 export type PaginationParams = {
   page?: number;
-  /** Capped at 100 by the API (50 for a customer's own orders). */
+  /** Capped at MAX_PAGE_LIMIT by the API. */
   limit?: number;
   search?: string;
 };
@@ -30,6 +35,12 @@ export function buildQuery(params?: ListParams): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value === undefined || value === null || value === "") continue;
+    // The API returns 400 for limit > 100 rather than clamping, so clamp here:
+    // one oversized page size would otherwise take a whole screen down.
+    if (key === "limit") {
+      search.set(key, String(Math.min(Number(value) || MAX_PAGE_LIMIT, MAX_PAGE_LIMIT)));
+      continue;
+    }
     search.set(key, String(value));
   }
   const query = search.toString();
@@ -91,4 +102,31 @@ export function formatAddress(address?: Partial<Address> | null): string {
   if (!address) return "";
   if (address.address) return address.address;
   return [address.buildingStreet, address.area, address.city, address.region, address.postalCode].filter(Boolean).join(", ");
+}
+
+/**
+ * Walks a paginated endpoint and returns every row.
+ *
+ * The admin grids filter and sort in the browser, so they want the whole set,
+ * but the API caps a page at 100. This pages through until it has everything
+ * or hits `max` — a ceiling, so a tenant with 50,000 products cannot hang the
+ * page; past that, the grid wants a server-side data source instead.
+ */
+export async function loadAllPages<T>(
+  load: (params: ListParams) => Promise<ListResponse<T>>,
+  { max = 1000, limit = MAX_PAGE_LIMIT, ...params }: ListParams & { max?: number } = {},
+): Promise<T[]> {
+  const first = await load({ ...params, page: 1, limit });
+  const rows = [...first.data];
+
+  const totalPages = first.meta?.totalPages ?? 1;
+  const lastPage = Math.min(totalPages, Math.ceil(max / limit));
+
+  for (let page = 2; page <= lastPage; page += 1) {
+    const next = await load({ ...params, page, limit });
+    rows.push(...next.data);
+    if (next.data.length < limit) break;
+  }
+
+  return rows;
 }

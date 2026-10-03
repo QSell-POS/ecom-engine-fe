@@ -13,12 +13,17 @@ reaches the browser.
 | --- | --- | --- |
 | `"public"` | none | `/health`, `/tenant/login`, `/tenant/register` |
 | `"key"` | `x-api-key` | public catalog, customer signup and login |
-| `"owner"` | `x-api-key` + owner bearer | everything under `/admin`, plus `/api-keys` and `/tenant/me` |
+| `"owner"` | owner bearer **only** | everything under `/admin`, plus `/api-keys` and `/tenant/me` |
 | `"customer"` | `x-api-key` + customer bearer | cart, orders, addresses, wishlist, writing reviews |
 
 `auth` is inferred from the path when it is not passed: anything under
 `/admin`, `/api-keys` or `/tenant/me` gets `"owner"`, everything else
 `"key"`. Pass it explicitly when that would be wrong.
+
+Owner routes take the bearer alone. Sending `x-api-key` alongside it gets the
+request rejected when the key is absent, stale or from another tenant — and it
+would make the dashboard unusable before a key exists, which is a deadlock,
+since keys are minted from inside the dashboard.
 
 The owner and customer tokens are **not** interchangeable — they carry a `typ`
 claim and the API rejects the wrong one — so they live in separate cookies

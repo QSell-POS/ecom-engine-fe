@@ -3,11 +3,12 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { CreateDeliveryRateButton } from "@/components/delivery-rate/DeliveryRateFormDialog";
 import { DeliveryRatesGrid } from "@/components/delivery-rate/DeliveryRatesGrid";
 import { getDeliveryRates } from "@/lib/api/delivery-rate/service";
+import { loadAllPages } from "@/lib/api/shared/types";
 
 export const metadata: Metadata = { title: "Delivery rates" };
 
 export default async function DeliveryRatesPage() {
-  const { data: rates } = await getDeliveryRates({ limit: 200 });
+  const rates = await loadAllPages(getDeliveryRates);
 
   return (
     <>

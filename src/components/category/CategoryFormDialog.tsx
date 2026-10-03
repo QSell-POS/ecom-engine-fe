@@ -47,7 +47,7 @@ export function CategoryFormDialog({
     defaultValues: {
       name: category?.name ?? "",
       slug: category?.slug ?? "",
-      imageId: category?.image?.id ?? undefined,
+      imageId: category?.imageId ?? category?.image?.id ?? undefined,
       description: category?.description ?? "",
       isActive: category?.isActive ?? true,
     },

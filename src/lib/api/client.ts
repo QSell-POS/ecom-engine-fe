@@ -90,13 +90,24 @@ function inferAuth(endpoint: string): ApiAuth {
 
 async function authHeaders(auth: ApiAuth, override?: string): Promise<Record<string, string>> {
   if (auth === "public") return {};
+
+  // The owner token stands alone: admin routes and /api-keys authenticate the
+  // tenant from the JWT. Sending x-api-key as well gets the request rejected
+  // when that key is absent, stale or belongs to another tenant — and it
+  // would make the dashboard unusable until a key exists, which you can only
+  // mint from inside the dashboard.
+  if (auth === "owner") {
+    const token = override ?? (await getOwnerToken());
+    if (!token) throw new ApiError(401, "Your session has expired. Please sign in again.");
+    return { Authorization: `Bearer ${token}` };
+  }
+
+  // Storefront reads need the key; a signed-in shopper needs both.
   const headers: Record<string, string> = { "x-api-key": apiKey() };
   if (auth === "key") return headers;
 
-  const token = override ?? (auth === "owner" ? await getOwnerToken() : await getCustomerToken());
-  if (!token) {
-    throw new ApiError(401, auth === "owner" ? "Your session has expired. Please sign in again." : "Please sign in to continue.");
-  }
+  const token = override ?? (await getCustomerToken());
+  if (!token) throw new ApiError(401, "Please sign in to continue.");
   headers.Authorization = `Bearer ${token}`;
   return headers;
 }

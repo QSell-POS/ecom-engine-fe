@@ -48,7 +48,7 @@ export function BrandFormDialog({
       name: brand?.name ?? "",
       slug: brand?.slug ?? "",
       description: brand?.description ?? "",
-      logoId: brand?.logo?.id ?? undefined,
+      logoId: brand?.logoId ?? brand?.logo?.id ?? undefined,
       website: brand?.website ?? "",
       isActive: brand?.isActive ?? true,
     },
