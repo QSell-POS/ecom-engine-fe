@@ -75,12 +75,16 @@ if [[ "$TLS" == 1 ]]; then
   trap - EXIT
 fi
 
-# certbot writes these as root, and archive/<domain> is 0700, so a plain
-# `-f` test fails for the deploying user even when the certificate is there:
-# resolving the symlink needs to traverse a directory it cannot enter. `-L`
-# checks the link itself, which only needs live/<domain> (0755).
-CERT_PATH="deploy/certbot/conf/live/${ADMIN_DOMAIN}/fullchain.pem"
-if [[ ! -L "$CERT_PATH" && ! -f "$CERT_PATH" ]]; then
+# certbot writes everything under conf/ as root with 0700 directories, so the
+# deploying user cannot see the certificate at all — not even to lstat the
+# symlink. Ask something that runs as root instead; nginx:alpine is already
+# pulled, so this costs nothing.
+cert_exists() {
+  [[ -e "deploy/certbot/conf/live/${ADMIN_DOMAIN}/fullchain.pem" ]] && return 0
+  docker run --rm -v "$REPO_DIR/deploy/certbot/conf:/etc/letsencrypt:ro"     nginx:1.27-alpine test -e "/etc/letsencrypt/live/${ADMIN_DOMAIN}/fullchain.pem" 2>/dev/null
+}
+
+if ! cert_exists; then
   die "No certificate for ${ADMIN_DOMAIN}. Run: bash deploy/deploy.sh --tls"
 fi
 
