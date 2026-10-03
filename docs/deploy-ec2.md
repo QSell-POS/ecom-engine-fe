@@ -7,30 +7,111 @@ Nginx, both in Docker. Two domains, one container.
 
 Launch **t3.small or larger** (a `next build` needs ~2 GB; t3.micro will OOM),
 Amazon Linux 2023 or Ubuntu 24.04, 20 GB disk. In its security group open
-**22** (your IP only), **80** and **443** (anywhere).
+**22** (your IP only), **80** and **443** (anywhere). Attach an Elastic IP, or
+the address changes on every stop/start and takes DNS with it.
 
-Point both domains' **A records** at the instance's public IP before asking for
-certificates — Let's Encrypt validates over HTTP, so DNS has to resolve first.
+Point both domains' **A records** at that IP before asking for certificates —
+Let's Encrypt validates over HTTP, so DNS has to resolve first.
 
-SSH in and run:
+### 1. Connect
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/QSell-POS/ecom-engine-fe/main/deploy/bootstrap-ec2.sh | bash
+From Windows `cmd` (OpenSSH ships with Windows 10/11, no PuTTY needed). SSH
+refuses a key that other accounts can read, so lock the `.pem` down first:
+
+```bat
+icacls "%USERPROFILE%\Downloads\ecom-key.pem" /inheritance:r
+icacls "%USERPROFILE%\Downloads\ecom-key.pem" /grant:r "%USERNAME%":R
+
+ssh -i "%USERPROFILE%\Downloads\ecom-key.pem" ec2-user@<ELASTIC-IP>
 ```
 
-That installs Docker and compose v2, clones the repo to `~/ecom-engine-fe`,
-copies `.env`, installs a systemd unit so the stack comes back after a reboot,
-and adds a weekly cron for certificate renewal.
+`ec2-user` on Amazon Linux, `ubuntu` on Ubuntu.
 
-Then:
+### 2. Deploy key
+
+The repo is private, so the instance needs its own read-only key. Install git,
+then let the bootstrap script mint the keypair:
 
 ```bash
-nano ~/ecom-engine-fe/.env     # fill in the five required values
-newgrp docker                  # so docker works without sudo
-cd ~/ecom-engine-fe && bash deploy/deploy.sh --tls
+sudo dnf -y install git          # Amazon Linux
+# sudo apt-get update -y && sudo apt-get install -y git   # Ubuntu
+
+curl -fsSL -o bootstrap-ec2.sh   "https://raw.githubusercontent.com/QSell-POS/ecom-engine-fe/main/deploy/bootstrap-ec2.sh"
+```
+
+That `curl` needs the repo to be public. For a private repo, paste the script
+in by hand instead (`nano bootstrap-ec2.sh`), or generate the key directly:
+
+```bash
+ssh-keygen -t ed25519 -N "" -C "ecom-engine-fe deploy" -f ~/.ssh/id_ed25519
+cat ~/.ssh/id_ed25519.pub
+```
+
+Copy that single line into **GitHub → the repo → Settings → Deploy keys → Add
+deploy key**. Title it after the instance. Leave **Allow write access
+unchecked** — deploys only read.
+
+Then verify and clone:
+
+```bash
+ssh-keyscan -t rsa,ecdsa,ed25519 github.com >> ~/.ssh/known_hosts
+ssh -T git@github.com            # "successfully authenticated" is the pass
+git clone git@github.com:QSell-POS/ecom-engine-fe.git ~/ecom-engine-fe
+```
+
+A deploy key is scoped to one repo, so it cannot reach anything else in the
+org if the instance is compromised — which is why this is not a personal
+access token or an account SSH key.
+
+### 3. Bootstrap
+
+```bash
+cd ~/ecom-engine-fe && bash deploy/bootstrap-ec2.sh
+```
+
+Installs Docker and compose v2, pins GitHub's host key, copies `.env` from the
+template, installs a systemd unit so the stack returns after a reboot, and
+adds a weekly cron for certificate renewal. Re-running it is safe.
+
+### 4. Environment file
+
+Two ways. On the instance:
+
+```bash
+nano ~/ecom-engine-fe/.env
+```
+
+Or write it locally and copy it up — from Windows `cmd`, in the directory
+holding the file:
+
+```bat
+scp -i "%USERPROFILE%\Downloads\ecom-key.pem" .env.production ec2-user@<ELASTIC-IP>:~/ecom-engine-fe/.env
+```
+
+Do **not** copy your development `.env` as-is: its `API_URL` points at
+localhost and its `API_KEY` is a dev key.
+
+### 5. Go live
+
+```bash
+newgrp docker                    # so docker needs no sudo, this session
+cd ~/ecom-engine-fe
+bash deploy/deploy.sh --tls
 ```
 
 `--tls` is only needed the first time; the cron handles renewals.
+
+### Chicken and egg: the API key
+
+`.env` wants an `API_KEY`, which is minted *in* the dashboard. Order that
+works: put a placeholder in `API_KEY`, run `deploy.sh --tls`, open
+`https://admin.yourdomain.com/register`, create the store, go to **API keys →
+New key**, copy it (shown once), then:
+
+```bash
+nano .env                        # paste the real key
+bash deploy/deploy.sh --no-pull
+```
 
 ## Every deploy after that
 

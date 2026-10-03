@@ -2,16 +2,18 @@
 # First run on a fresh Amazon Linux 2023 or Ubuntu 22.04/24.04 instance:
 # installs Docker, clones the repo, and leaves you one edit away from a deploy.
 #
-#   curl -fsSL https://raw.githubusercontent.com/QSell-POS/ecom-engine-fe/main/deploy/bootstrap-ec2.sh | bash
-#
-# or, once the repo is on the box:
-#
 #   bash deploy/bootstrap-ec2.sh
+#
+# The repo is private, so the clone goes over SSH and needs a deploy key on
+# this instance (see docs/deploy-ec2.md). This script generates the keypair if
+# there is none and stops with the public half printed, so you can paste it
+# into GitHub before re-running.
 #
 # Idempotent: re-running it skips what is already in place.
 set -Eeuo pipefail
 
-REPO_URL="${REPO_URL:-https://github.com/QSell-POS/ecom-engine-fe.git}"
+REPO_URL="${REPO_URL:-git@github.com:QSell-POS/ecom-engine-fe.git}"
+DEPLOY_KEY="${DEPLOY_KEY:-$HOME/.ssh/id_ed25519}"
 REPO_DIR="${REPO_DIR:-$HOME/ecom-engine-fe}"
 BRANCH="${BRANCH:-main}"
 
@@ -62,6 +64,49 @@ sudo systemctl enable --now docker
 # So docker works without sudo. It takes effect on the next login, which is
 # why the rest of this script still uses sudo where it must.
 sudo usermod -aG docker "$USER"
+
+# Deploy key, so git works here and from cron without a password prompt.
+if [[ "$REPO_URL" == git@* ]]; then
+  log "Checking the deploy key"
+  mkdir -p "$HOME/.ssh"
+  chmod 700 "$HOME/.ssh"
+
+  # Pin GitHub's host key, or a non-interactive git would hang on the prompt.
+  if ! grep -q "^github.com " "$HOME/.ssh/known_hosts" 2>/dev/null; then
+    ssh-keyscan -t rsa,ecdsa,ed25519 github.com >> "$HOME/.ssh/known_hosts" 2>/dev/null
+    chmod 600 "$HOME/.ssh/known_hosts"
+  fi
+
+  if [[ ! -f "$DEPLOY_KEY" ]]; then
+    ssh-keygen -t ed25519 -N "" -C "ecom-engine-fe deploy @ $(hostname)" -f "$DEPLOY_KEY" >/dev/null
+    printf '
+[1mAdd this as a deploy key, then run this script again:[0m
+'
+    printf '  GitHub > the repo > Settings > Deploy keys > Add deploy key
+'
+    printf '  Leave "Allow write access" unchecked.
+
+'
+    cat "$DEPLOY_KEY.pub"
+    printf '
+'
+    exit 0
+  fi
+
+  if ! ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+    printf '
+[1mThis key is not accepted by GitHub yet. Add it as a deploy key:[0m
+'
+    printf '  GitHub > the repo > Settings > Deploy keys > Add deploy key
+
+'
+    cat "$DEPLOY_KEY.pub"
+    printf '
+'
+    die "Deploy key not authorised."
+  fi
+  echo "Deploy key accepted."
+fi
 
 log "Fetching the repo"
 if [[ -d "$REPO_DIR/.git" ]]; then
