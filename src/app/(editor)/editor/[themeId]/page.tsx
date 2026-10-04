@@ -19,7 +19,7 @@ export default async function ThemeEditorPage({ params }: Props) {
   // Scoped to the current tenant: another tenant's theme id 404s.
   const theme = await getTheme(tenant.id, themeId);
   if (!theme) notFound();
-  const data = await getCatalogApi({ storeKey: tenant.apiKey, vertical: tenant.vertical }).home();
+  const data = await getCatalogApi({ storeKey: tenant.apiKey, vertical: tenant.vertical, host: tenant.apiKey }).home();
 
   return (
     <ThemeEditor

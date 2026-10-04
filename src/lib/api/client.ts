@@ -1,7 +1,7 @@
 import "server-only";
 import { getCustomerToken, getOwnerToken } from "./session";
 import type { ListResponse } from "./shared/types";
-import { STORE_HOST_HEADER } from "./store-host";
+import { getStoreHost, STORE_HOST_HEADER } from "./store-host";
 
 /**
  * The one way this app talks to the ecom-engine API.
@@ -94,6 +94,15 @@ function inferAuth(endpoint: string): ApiAuth {
     : "key";
 }
 
+async function requestStoreHost(): Promise<string | undefined> {
+  try {
+    return await getStoreHost();
+  } catch {
+    // Outside a request scope (e.g. a cached fetch) there is no host to read.
+    return undefined;
+  }
+}
+
 async function authHeaders(auth: ApiAuth, override?: string, storeHost?: string): Promise<Record<string, string>> {
   if (auth === "public") return {};
 
@@ -111,7 +120,10 @@ async function authHeaders(auth: ApiAuth, override?: string, storeHost?: string)
   // Storefront reads need the key; a signed-in shopper needs both.
   const headers: Record<string, string> = { "x-api-key": apiKey() };
   // A platform key can reach any store, so it has to be told which one.
-  if (storeHost) headers[STORE_HOST_HEADER] = storeHost;
+  // Callers that don't pass one (customer login, cart, wishlist…) get the
+  // host this request arrived on, which proxy.ts attached on a storefront.
+  const host = storeHost ?? (await requestStoreHost());
+  if (host) headers[STORE_HOST_HEADER] = host;
   if (auth === "key") return headers;
 
   const token = override ?? (await getCustomerToken());
