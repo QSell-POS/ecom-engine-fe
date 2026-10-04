@@ -1,10 +1,17 @@
 "use server";
 
 import { updateTag } from "next/cache";
-import { authActionClient } from "@/lib/safe-action";
-import { deleteReview, updateReviewVisibility } from "./service";
+import { authActionClient, customerActionClient } from "@/lib/safe-action";
+import { createReview, deleteReview, updateReviewVisibility } from "./service";
 import { REVIEWS_TAG, productReviewsTag, reviewTag } from "./constants";
-import { DeleteReviewSchema, UpdateReviewVisibilitySchema } from "./validation";
+import { CreateReviewSchema, DeleteReviewSchema, UpdateReviewVisibilitySchema } from "./validation";
+
+/** Only a customer with a qualifying order may post; the API 403s otherwise. */
+export const submitReviewAction = customerActionClient.inputSchema(CreateReviewSchema).action(async ({ parsedInput }) => {
+  const review = await createReview(parsedInput);
+  updateTag(productReviewsTag(parsedInput.productId));
+  return { review };
+});
 
 export const updateReviewVisibilityAction = authActionClient.inputSchema(UpdateReviewVisibilitySchema).action(async ({ parsedInput }) => {
   const { id, isVisible } = parsedInput;

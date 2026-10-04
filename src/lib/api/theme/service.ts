@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { apiClient, apiList } from "@/lib/api/client";
 import { getStorefrontTheme } from "@/lib/api/storefront/theme";
 import { getStoreHost } from "@/lib/api/store-host";
@@ -23,20 +24,40 @@ export async function listTenants(): Promise<Tenant[]> {
   return [await getCurrentTenant()];
 }
 
-export async function getCurrentTenant(): Promise<Tenant> {
-  const [tenant, profile] = await Promise.all([getTenantFromApi(), getStoreProfile()]);
+/**
+ * The signed-in merchant, as the theme screens want it. Deduplicated per
+ * request: the customizer, the editor and the previews each ask for it.
+ *
+ * `liveThemeId` comes from the themes list — the API marks the live one with
+ * `isLive` rather than carrying an id on the tenant. Getting this wrong makes
+ * every theme screen behave as though no theme is installed.
+ */
+export const getCurrentTenant = cache(async (): Promise<Tenant> => {
+  const [tenant, profile, themes] = await Promise.all([getTenantFromApi(), getStoreProfile(), listThemes()]);
+  const slug = tenant.subdomain ?? tenant.id;
+
   return {
     id: tenant.id,
     name: tenant.name,
-    // The storefront label, which is also the subdomain.
-    slug: tenant.subdomain ?? tenant.id,
-    apiKey: "",
+    slug,
+    // The dashboard reads the catalog with its own credentials; this is the
+    // host its storefront previews are about.
+    apiKey: tenant.storefrontHost ?? slug,
     plan: "standard",
-    themeLimit: 5,
-    liveThemeId: null,
+    themeLimit: THEME_LIMIT,
+    liveThemeId: themes.find((theme) => theme.isLive)?.id ?? null,
     vertical: "fashion",
     profile,
   };
+});
+
+/** Matches the API's THEME_LIMIT default; it is not a per-tenant column yet. */
+export const THEME_LIMIT = 5;
+
+/** The published theme a merchant's store is serving, if they have chosen one. */
+export async function getLiveTheme(): Promise<Theme | null> {
+  const live = (await listThemes()).find((theme) => theme.isLive);
+  return live ? getTheme("", live.id) : null;
 }
 
 export async function listThemes(): Promise<ThemeSummary[]> {

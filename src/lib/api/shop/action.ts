@@ -3,7 +3,8 @@
 import { updateTag } from "next/cache";
 import { z } from "zod";
 import { actionClient, customerActionClient } from "@/lib/safe-action";
-import { clearCustomerSession, setCustomerSession } from "@/lib/api/session";
+import type { ListParams } from "@/lib/api/shared/types";
+import { clearCustomerSession, getCustomerSummary, setCustomerSession } from "@/lib/api/session";
 import {
   cancelShopOrder,
   changeCartItem,
@@ -11,6 +12,11 @@ import {
   clearWishlist,
   createShopAddress,
   deleteShopAddress,
+  getCart,
+  getShopAddresses,
+  getShopOrder,
+  getShopOrders,
+  getWishlist,
   initiatePayment,
   loginShopCustomer,
   placeShopOrder,
@@ -30,7 +36,7 @@ const ProductSchema = z.object({ productId: z.uuid("Product is required") });
 
 export const shopLoginAction = actionClient.inputSchema(ShopLoginSchema).action(async ({ parsedInput }) => {
   const { customer, accessToken } = await loginShopCustomer(parsedInput);
-  await setCustomerSession(accessToken);
+  await setCustomerSession(accessToken, customer);
   updateTag(CART_TAG);
   updateTag(WISHLIST_TAG);
   return { customer };
@@ -38,8 +44,33 @@ export const shopLoginAction = actionClient.inputSchema(ShopLoginSchema).action(
 
 export const shopRegisterAction = actionClient.inputSchema(ShopRegisterSchema).action(async ({ parsedInput }) => {
   const { customer, accessToken } = await registerShopCustomer(parsedInput);
-  await setCustomerSession(accessToken);
+  await setCustomerSession(accessToken, customer);
   return { customer };
+});
+
+/**
+ * Hydrates the storefront's shopper state on mount. There is no `/me` route,
+ * so "signed in, as whom" comes from the readable cookie `setCustomerSession`
+ * wrote at login — not from a network call — and cart/wishlist are only
+ * fetched once that cookie says there is someone to fetch them for.
+ */
+export const getShopSessionAction = actionClient.inputSchema(z.object({})).action(async () => {
+  const customer = await getCustomerSummary();
+  if (!customer) return { customer: null, cart: null, wishlist: [] };
+  const [cart, wishlist] = await Promise.all([getCart(), getWishlist()]);
+  return { customer, cart, wishlist };
+});
+
+export const getShopOrdersAction = customerActionClient
+  .inputSchema(z.object({ page: z.number().optional(), limit: z.number().optional() }).optional())
+  .action(async ({ parsedInput }) => {
+    const result = await getShopOrders(parsedInput as ListParams | undefined);
+    return { orders: result.data };
+  });
+
+export const getShopOrderAction = customerActionClient.inputSchema(IdSchema).action(async ({ parsedInput }) => {
+  const order = await getShopOrder(parsedInput.id);
+  return { order };
 });
 
 export async function shopLogoutAction() {
@@ -96,6 +127,10 @@ export const initiatePaymentAction = customerActionClient.inputSchema(IdSchema).
 export const retryPaymentAction = customerActionClient.inputSchema(IdSchema).action(async ({ parsedInput }) => {
   const initiation = await retryPayment(parsedInput.id);
   return { initiation };
+});
+
+export const getShopAddressesAction = customerActionClient.inputSchema(z.object({})).action(async () => {
+  return { addresses: await getShopAddresses() };
 });
 
 export const saveAddressAction = customerActionClient

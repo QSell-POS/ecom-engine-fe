@@ -4,7 +4,10 @@ export type Tenant = {
   email: string;
   /** The tenant's Postgres schema, e.g. "tnt_OdjTfg3L". Informational only. */
   schemaName?: string;
+  /** The storefront label, and the store's address: `<subdomain>.qsellpos.com`. */
   subdomain?: string | null;
+  /** The full host, returned by register and login. */
+  storefrontHost?: string | null;
   isActive?: boolean;
   shopId?: string | null;
   countryId?: string | null;

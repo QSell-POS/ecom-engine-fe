@@ -174,9 +174,9 @@ Bootstrap done.
 
 Next, on this instance:
 
-  1. nano $REPO_DIR/.env          # API_URL, API_KEY, ADMIN_DOMAIN, SHOP_DOMAIN, CERTBOT_EMAIL
-  2. Point both domains' A records at this instance's public IP, and open
-     ports 80 and 443 in its security group.
+  1. nano $REPO_DIR/.env          # API_URL, API_KEY, ADMIN_DOMAIN, ROOT_DOMAIN, CLOUDFLARE_API_TOKEN, CERTBOT_EMAIL
+  2. Point ADMIN_DOMAIN's A record and a *.ROOT_DOMAIN wildcard A record at
+     this instance's public IP, and open ports 80 and 443 in its security group.
   3. newgrp docker                # or log out and back in, so docker needs no sudo
   4. cd $REPO_DIR && bash deploy/deploy.sh --tls
 

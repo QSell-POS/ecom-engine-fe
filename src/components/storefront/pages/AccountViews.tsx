@@ -6,21 +6,24 @@ import { motion } from "framer-motion";
 import { Check, ChevronRight, LogOut, MapPin, Package, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDate, formatMoney } from "@/lib/storefront/format";
+import { paymentMethodLabel } from "@/lib/api/order/types";
 import type { Address, Customer, Order, OrderStatus } from "@/lib/storefront/types";
 import { cn } from "@/lib/utils";
 import { EASE } from "../motion";
 import { SfDrawer } from "../overlay";
-import { Breadcrumbs, EmptyState, Spinner, StoreImage, StoreLink } from "../primitives";
+import { Breadcrumbs, EmptyState, Spinner, StoreLink } from "../primitives";
 import { useStoreHref, useStorefront } from "../store-context";
 import { OrderSummaryCard } from "./CheckoutView";
-import { AddressFields, Field, formatAddress, readAddress } from "./forms";
+import { AddressFields, formatAddress, readAddress } from "./forms";
 
 const STATUS: Record<OrderStatus, { label: string; tone: string }> = {
+  pending: { label: "Pending", tone: "bg-zinc-400" },
   confirmed: { label: "Confirmed", tone: "bg-sky-500" },
   processing: { label: "Processing", tone: "bg-amber-500" },
   shipped: { label: "Shipped", tone: "bg-indigo-500" },
   delivered: { label: "Delivered", tone: "bg-emerald-500" },
   cancelled: { label: "Cancelled", tone: "bg-zinc-400" },
+  refunded: { label: "Refunded", tone: "bg-zinc-400" },
 };
 
 function StatusPill({ status }: { status: OrderStatus }) {
@@ -113,10 +116,8 @@ function OrderRow({ order }: { order: Order }) {
   const { store } = useStorefront();
   return (
     <StoreLink href={`/account/orders/${order.id}`} className="group/order flex flex-wrap items-center gap-x-6 gap-y-3 rounded-(--sf-radius) border border-(--sf-line) p-4 transition-colors hover:border-(--sf-text) @3xl:p-5">
-      <div className="flex -space-x-3">
-        {order.lines.slice(0, 3).map((line) => (
-          <StoreImage key={line.id} src={line.image.url} alt="" sizes="56px" className="aspect-4/5 w-12 rounded-(--sf-radius) ring-2 ring-(--sf-bg)" />
-        ))}
+      <div className="flex size-12 items-center justify-center rounded-(--sf-radius) bg-(--sf-surface)">
+        <Package className="size-5 text-(--sf-muted)" />
       </div>
       <div className="min-w-0 flex-1">
         <p className="font-medium">Order {order.number}</p>
@@ -128,57 +129,6 @@ function OrderRow({ order }: { order: Order }) {
       <span className="w-20 text-right font-medium tabular-nums">{formatMoney(order.total, store.profile.currency)}</span>
       <ChevronRight className="size-4 text-(--sf-muted) transition-transform group-hover/order:translate-x-0.5" />
     </StoreLink>
-  );
-}
-
-function ProfileForm({ customer }: { customer: Customer }) {
-  const { api, setCustomer } = useStorefront();
-  const [pending, setPending] = useState(false);
-
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    setPending(true);
-    try {
-      setCustomer(
-        await api.updateProfile({
-          firstName: String(form.get("firstName") ?? "").trim(),
-          lastName: String(form.get("lastName") ?? "").trim(),
-          phone: String(form.get("phone") ?? "").trim(),
-          marketingOptIn: form.get("marketing") === "on",
-        }),
-      );
-      toast.success("Profile updated");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Couldn't save your profile.");
-    } finally {
-      setPending(false);
-    }
-  }
-
-  return (
-    <form onSubmit={submit} className="grid gap-4 @xl:grid-cols-2">
-      <Field label="First name" htmlFor="firstName">
-        <input id="firstName" name="firstName" required defaultValue={customer.firstName} className="sf-input" />
-      </Field>
-      <Field label="Last name" htmlFor="lastName">
-        <input id="lastName" name="lastName" required defaultValue={customer.lastName} className="sf-input" />
-      </Field>
-      <Field label="Email" htmlFor="email">
-        <input id="email" value={customer.email} disabled className="sf-input opacity-60" />
-      </Field>
-      <Field label="Phone" htmlFor="phone">
-        <input id="phone" name="phone" type="tel" defaultValue={customer.phone} className="sf-input" />
-      </Field>
-      <label className="flex items-center gap-2.5 text-sm @xl:col-span-2">
-        <input type="checkbox" name="marketing" defaultChecked={customer.marketingOptIn} className="size-4 accent-(--sf-primary)" /> Send me news and offers by email
-      </label>
-      <div className="@xl:col-span-2">
-        <button type="submit" disabled={pending} className="sf-btn sf-btn-primary">
-          {pending && <Spinner />} Save changes
-        </button>
-      </div>
-    </form>
   );
 }
 
@@ -205,8 +155,8 @@ function Overview({ customer }: { customer: Customer }) {
   return (
     <div className="space-y-12">
       <div>
-        <p className="sf-heading sf-h3">Hi, {customer.firstName}</p>
-        <p className="mt-1 text-sm text-(--sf-muted)">Member since {formatDate(customer.createdAt)}</p>
+        <p className="sf-heading sf-h3">Hi, {customer.firstName || customer.email}</p>
+        <p className="mt-1 text-sm text-(--sf-muted)">{customer.email}{customer.phone && ` · ${customer.phone}`}</p>
       </div>
       <section className="space-y-4">
         <div className="flex items-center justify-between">
@@ -221,25 +171,19 @@ function Overview({ customer }: { customer: Customer }) {
           <div className="space-y-3">{orders.slice(0, 2).map((order) => <OrderRow key={order.id} order={order} />)}</div>
         )}
       </section>
-      <div className="grid gap-12 @4xl:grid-cols-[1fr_16rem]">
-        <section className="space-y-4">
-          <h2 className="text-lg font-medium">Profile</h2>
-          <ProfileForm customer={customer} />
-        </section>
-        <section className="space-y-4">
-          <h2 className="text-lg font-medium">Default address</h2>
-          {address === undefined ? (
-            <div className="h-24 animate-pulse rounded-(--sf-radius) bg-(--sf-soft)" />
-          ) : address ? (
-            <div className="space-y-0.5 text-sm">
-              {formatAddress(address).map((line) => <p key={line} className="first:font-medium">{line}</p>)}
-            </div>
-          ) : (
-            <p className="text-sm text-(--sf-muted)">No saved address yet.</p>
-          )}
-          <StoreLink href="/account/addresses" className="sf-link text-sm">Manage addresses</StoreLink>
-        </section>
-      </div>
+      <section className="space-y-4 @4xl:max-w-sm">
+        <h2 className="text-lg font-medium">Default address</h2>
+        {address === undefined ? (
+          <div className="h-24 animate-pulse rounded-(--sf-radius) bg-(--sf-soft)" />
+        ) : address ? (
+          <div className="space-y-0.5 text-sm">
+            {formatAddress(address).map((line) => <p key={line} className="first:font-medium">{line}</p>)}
+          </div>
+        ) : (
+          <p className="text-sm text-(--sf-muted)">No saved address yet.</p>
+        )}
+        <StoreLink href="/account/addresses" className="sf-link text-sm">Manage addresses</StoreLink>
+      </section>
     </div>
   );
 }
@@ -274,6 +218,7 @@ export function OrderDetailView({ orderId }: { orderId: string }) {
 function OrderDetail({ orderId }: { orderId: string }) {
   const { api } = useStorefront();
   const [order, setOrder] = useState<Order | null | undefined>(undefined);
+  const [cancelling, setCancelling] = useState(false);
   useEffect(() => {
     let cancelled = false;
     api.getOrder(orderId).then((result) => !cancelled && setOrder(result));
@@ -285,22 +230,45 @@ function OrderDetail({ orderId }: { orderId: string }) {
   if (order === undefined) return <div className="h-64 animate-pulse rounded-(--sf-radius) bg-(--sf-soft)" />;
   if (order === null) return <EmptyState icon={<Package />} title="Order not found" text="This order doesn't exist or belongs to another account." action={<StoreLink href="/account/orders" className="sf-btn sf-btn-primary">Your orders</StoreLink>} />;
 
-  const reached = order.status === "cancelled" ? 0 : FLOW.indexOf(order.status);
+  const cancellable = order.status === "pending" || order.status === "confirmed";
+  const reached = ["cancelled", "refunded"].includes(order.status) ? 0 : FLOW.indexOf(order.status);
+
   return (
     <div className="space-y-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="sf-heading sf-h3">Order {order.number}</p>
-          <p className="text-sm text-(--sf-muted)">Placed {formatDate(order.createdAt)}</p>
+          <p className="text-sm text-(--sf-muted)">Placed {formatDate(order.createdAt)} · {paymentMethodLabel(order.paymentMethod)}</p>
         </div>
-        <StatusPill status={order.status} />
+        <div className="flex items-center gap-3">
+          <StatusPill status={order.status} />
+          {cancellable && (
+            <button
+              type="button"
+              disabled={cancelling}
+              onClick={async () => {
+                setCancelling(true);
+                try {
+                  setOrder(await api.cancelOrder(order.id));
+                  toast.success("Order cancelled");
+                } catch (error) {
+                  toast.error(error instanceof Error ? error.message : "Couldn't cancel this order.");
+                } finally {
+                  setCancelling(false);
+                }
+              }}
+              className="sf-btn sf-btn-ghost sf-btn-sm text-(--sf-muted)"
+            >
+              {cancelling && <Spinner />} Cancel order
+            </button>
+          )}
+        </div>
       </div>
 
-      {order.status !== "cancelled" && (
+      {!["cancelled", "refunded"].includes(order.status) && (
         <ol className="grid grid-cols-4 gap-2" aria-label="Order progress">
           {FLOW.map((status, i) => {
             const done = i <= reached;
-            const event = order.timeline.find((t) => t.status === status);
             return (
               <li key={status} className="space-y-2.5">
                 <div className="h-1 overflow-hidden rounded-full bg-(--sf-soft)">
@@ -308,10 +276,7 @@ function OrderDetail({ orderId }: { orderId: string }) {
                 </div>
                 <div className="flex items-start gap-1.5 text-xs @3xl:text-sm">
                   {done && <Check className="mt-0.5 size-3.5 shrink-0" />}
-                  <div>
-                    <p className={cn("font-medium", !done && "text-(--sf-muted)")}>{STATUS[status].label}</p>
-                    {event && <p className="hidden text-(--sf-muted) @3xl:block">{formatDate(event.at)}</p>}
-                  </div>
+                  <p className={cn("font-medium", !done && "text-(--sf-muted)")}>{STATUS[status].label}</p>
                 </div>
               </li>
             );
@@ -375,7 +340,9 @@ function AddressBook() {
         {addresses.map((address) => (
           <div key={address.id} className="flex flex-col rounded-(--sf-radius) border border-(--sf-line) p-5">
             <div className="mb-3 flex items-center justify-between">
-              <MapPin className="size-4 text-(--sf-muted)" />
+              <span className="flex items-center gap-1.5 text-xs font-medium text-(--sf-muted) uppercase tracking-wide">
+                <MapPin className="size-4" /> {address.label}
+              </span>
               {address.isDefault && <span className="rounded-full bg-(--sf-surface) px-2.5 py-0.5 text-xs font-medium">Default</span>}
             </div>
             <div className="flex-1 space-y-0.5 text-sm">

@@ -259,7 +259,7 @@ function BuyBox({ product, onAddedVisibility }: { product: Product; onAddedVisib
 // ------------------------------------------------------------------ reviews
 
 function ReviewForm({ product, onSubmitted }: { product: Product; onSubmitted: (review: Review) => void }) {
-  const { api, customer } = useStorefront();
+  const { api } = useStorefront();
   const [rating, setRating] = useState(5);
   const [hover, setHover] = useState(0);
   const [pending, setPending] = useState(false);
@@ -269,16 +269,11 @@ function ReviewForm({ product, onSubmitted }: { product: Product; onSubmitted: (
     const form = new FormData(event.currentTarget);
     setPending(true);
     try {
-      const review = await api.submitReview({
-        productId: product.id,
-        rating,
-        title: String(form.get("title") ?? ""),
-        body: String(form.get("body") ?? ""),
-        author: String(form.get("author") ?? ""),
-      });
+      const review = await api.submitReview({ productId: product.id, rating, comment: String(form.get("comment") ?? "") });
       onSubmitted(review);
       toast.success("Thanks for your review!");
     } catch (error) {
+      // Only a customer with a qualifying order may post; the API 403s otherwise.
       toast.error(error instanceof Error ? error.message : "Couldn't post your review.");
     } finally {
       setPending(false);
@@ -297,19 +292,9 @@ function ReviewForm({ product, onSubmitted }: { product: Product; onSubmitted: (
           ))}
         </div>
       </div>
-      <div className="grid gap-4 @3xl:grid-cols-2">
-        <div>
-          <label htmlFor="review-author" className="sf-label">Name</label>
-          <input id="review-author" name="author" required defaultValue={customer ? `${customer.firstName} ${customer.lastName.charAt(0)}.` : ""} className="sf-input" />
-        </div>
-        <div>
-          <label htmlFor="review-title" className="sf-label">Title</label>
-          <input id="review-title" name="title" required maxLength={120} placeholder="Sum it up" className="sf-input" />
-        </div>
-      </div>
       <div>
-        <label htmlFor="review-body" className="sf-label">Review</label>
-        <textarea id="review-body" name="body" required rows={4} maxLength={2000} placeholder="What did you like or dislike?" className="sf-input" />
+        <label htmlFor="review-comment" className="sf-label">Review</label>
+        <textarea id="review-comment" name="comment" rows={4} maxLength={2000} placeholder="What did you like or dislike?" className="sf-input" />
       </div>
       <button type="submit" disabled={pending} className="sf-btn sf-btn-primary">
         {pending && <Spinner />} Post review
@@ -319,7 +304,7 @@ function ReviewForm({ product, onSubmitted }: { product: Product; onSubmitted: (
 }
 
 function Reviews({ product, summary, initial }: { product: Product; summary: ReviewSummary; initial: Review[] }) {
-  const { store } = useStorefront();
+  const { store, customer } = useStorefront();
   const [added, setAdded] = useState<Review[]>([]);
   const [local, setLocal] = useState<Review[]>([]);
   const [shown, setShown] = useState(5);
@@ -327,10 +312,10 @@ function Reviews({ product, summary, initial }: { product: Product; summary: Rev
 
   // Mock mode: reviews posted earlier in this browser.
   useEffect(() => {
-    if (process.env.NEXT_PUBLIC_STOREFRONT_API_URL) return;
+    if (store.mode === "live") return;
     const stored = localReviews(store.storeKey, product.id);
     queueMicrotask(() => setLocal(stored));
-  }, [store.storeKey, product.id]);
+  }, [store.mode, store.storeKey, product.id]);
 
   const all = useMemo(() => {
     const ids = new Set<string>();
@@ -363,9 +348,15 @@ function Reviews({ product, summary, initial }: { product: Product; summary: Rev
               </li>
             ))}
           </ul>
-          <button type="button" onClick={() => setWriting(!writing)} className="sf-btn sf-btn-secondary sf-btn-block">
-            {writing ? "Cancel" : "Write a review"}
-          </button>
+          {customer ? (
+            <button type="button" onClick={() => setWriting(!writing)} className="sf-btn sf-btn-secondary sf-btn-block">
+              {writing ? "Cancel" : "Write a review"}
+            </button>
+          ) : (
+            <StoreLink href="/account/login" className="sf-btn sf-btn-secondary sf-btn-block">
+              Sign in to write a review
+            </StoreLink>
+          )}
         </div>
 
         <div className="space-y-8">

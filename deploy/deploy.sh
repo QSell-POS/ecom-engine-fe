@@ -42,7 +42,7 @@ set +a
 : "${API_URL:?API_URL is not set in .env}"
 : "${API_KEY:?API_KEY is not set in .env}"
 : "${ADMIN_DOMAIN:?ADMIN_DOMAIN is not set in .env}"
-: "${SHOP_DOMAIN:?SHOP_DOMAIN is not set in .env}"
+: "${ROOT_DOMAIN:?ROOT_DOMAIN is not set in .env}"
 
 if [[ "$PULL" == 1 ]]; then
   log "Pulling the latest code"
@@ -55,26 +55,30 @@ if [[ "$PULL" == 1 ]]; then
 fi
 
 if [[ "$TLS" == 1 ]]; then
-  log "Issuing or renewing certificates"
+  log "Issuing or renewing the wildcard certificate"
   : "${CERTBOT_EMAIL:?CERTBOT_EMAIL is not set in .env}"
-  mkdir -p deploy/certbot/conf deploy/certbot/www
+  : "${CLOUDFLARE_API_TOKEN:?CLOUDFLARE_API_TOKEN is not set in .env}"
+  mkdir -p deploy/certbot/conf
 
-  # Certbot needs something answering :80 for the HTTP-01 challenge. If the
-  # stack is not up yet, a throwaway Nginx serves the webroot.
-  if ! docker compose ps --status running --services 2>/dev/null | grep -qx nginx; then
-    docker run --rm -d --name certbot-helper -p 80:80 \
-      -v "$REPO_DIR/deploy/certbot/www:/usr/share/nginx/html:ro" nginx:1.27-alpine >/dev/null
-    trap 'docker rm -f certbot-helper >/dev/null 2>&1 || true' EXIT
-  fi
+  # A wildcard cert (*.ROOT_DOMAIN) cannot use the HTTP-01 challenge — there
+  # is no single host to answer it on. DNS-01 instead: certbot creates a
+  # TXT record itself via the Cloudflare API, so nothing needs to be
+  # listening on :80 for this. The token is written to a 600 file rather than
+  # passed as an argument, which would otherwise leak into `docker inspect`.
+  creds="$(mktemp)"
+  trap 'rm -f "$creds"' EXIT
+  printf 'dns_cloudflare_api_token = %s\n' "$CLOUDFLARE_API_TOKEN" > "$creds"
+  chmod 600 "$creds"
 
   docker run --rm \
     -v "$REPO_DIR/deploy/certbot/conf:/etc/letsencrypt" \
-    -v "$REPO_DIR/deploy/certbot/www:/var/www/certbot" \
-    certbot/certbot:latest certonly --webroot -w /var/www/certbot \
-    -d "$ADMIN_DOMAIN" -d "$SHOP_DOMAIN" \
+    -v "$creds:/creds.ini:ro" \
+    certbot/dns-cloudflare:latest certonly \
+    --dns-cloudflare --dns-cloudflare-credentials /creds.ini --dns-cloudflare-propagation-seconds 30 \
+    -d "$ROOT_DOMAIN" -d "*.${ROOT_DOMAIN}" \
     --email "$CERTBOT_EMAIL" --agree-tos --no-eff-email --keep-until-expiring -n
 
-  docker rm -f certbot-helper >/dev/null 2>&1 || true
+  rm -f "$creds"
   trap - EXIT
 fi
 
@@ -83,12 +87,12 @@ fi
 # symlink. Ask something that runs as root instead; nginx:alpine is already
 # pulled, so this costs nothing.
 cert_exists() {
-  [[ -e "deploy/certbot/conf/live/${ADMIN_DOMAIN}/fullchain.pem" ]] && return 0
-  docker run --rm -v "$REPO_DIR/deploy/certbot/conf:/etc/letsencrypt:ro"     nginx:1.27-alpine test -e "/etc/letsencrypt/live/${ADMIN_DOMAIN}/fullchain.pem" 2>/dev/null
+  [[ -e "deploy/certbot/conf/live/${ROOT_DOMAIN}/fullchain.pem" ]] && return 0
+  docker run --rm -v "$REPO_DIR/deploy/certbot/conf:/etc/letsencrypt:ro"     nginx:1.27-alpine test -e "/etc/letsencrypt/live/${ROOT_DOMAIN}/fullchain.pem" 2>/dev/null
 }
 
 if ! cert_exists; then
-  die "No certificate for ${ADMIN_DOMAIN}. Run: bash deploy/deploy.sh --tls"
+  die "No certificate for ${ROOT_DOMAIN}. Run: bash deploy/deploy.sh --tls"
 fi
 
 if [[ "$BUILD" == 1 ]]; then
@@ -133,4 +137,4 @@ docker image prune -f >/dev/null
 
 log "Deployed"
 docker compose ps
-printf '\nDashboard: https://%s\nStorefront: https://%s\n' "$ADMIN_DOMAIN" "$SHOP_DOMAIN"
+printf '\nDashboard: https://%s\nStorefronts: https://<subdomain>.%s\n' "$ADMIN_DOMAIN" "$ROOT_DOMAIN"
