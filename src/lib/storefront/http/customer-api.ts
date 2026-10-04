@@ -31,9 +31,21 @@ import { StorefrontError } from "../checkout";
  * difference between this and the mock (demo/preview/design) implementation.
  */
 
-function unwrap<T>(result: { data?: T; serverError?: string } | undefined, fallback: string): T {
-  if (!result?.data) throw new StorefrontError(result?.serverError ?? fallback);
+function unwrap<T>(result: { data?: T; serverError?: string; validationErrors?: unknown } | undefined, fallback: string): T {
+  if (!result?.data) throw new StorefrontError(result?.serverError ?? firstValidationError(result?.validationErrors) ?? fallback);
   return result.data;
+}
+
+// next-safe-action reports schema failures as { field: { _errors: [...] } }
+// rather than a serverError; without this the shopper only sees the fallback.
+function firstValidationError(errors: unknown): string | undefined {
+  if (!errors || typeof errors !== "object") return undefined;
+  for (const value of Object.values(errors as Record<string, unknown>)) {
+    if (Array.isArray(value) && typeof value[0] === "string") return value[0];
+    const nested = firstValidationError(value);
+    if (nested) return nested;
+  }
+  return undefined;
 }
 
 const FALLBACK_IMAGE: StoreImage = { url: "", alt: "" };
