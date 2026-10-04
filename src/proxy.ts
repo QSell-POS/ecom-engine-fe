@@ -7,12 +7,22 @@ import { resolveStoreHost, type HostResolution } from "@/lib/api/storefront/reso
 /**
  * Two jobs, decided by the request's host.
  *
- * **A merchant's storefront** (`bibash-toys.qsellpos.com`): resolve the host
- * with the API, redirect if the store was renamed, 404 if it is unknown, and
- * otherwise rewrite to that store's pages with the resolved host attached so
- * every API call downstream knows which store it is about. Nothing from the
- * dashboard is reachable here — including its login page, which is for
- * merchants, not shoppers.
+ * **A storefront**, which is either of two deployments:
+ *
+ * - **Single-tenant** (`NEXT_PUBLIC_STORE_SLUG` set): this deployment serves
+ *   exactly one tenant, at a fixed domain the merchant owns
+ *   (`shop.theirdomain.com`), using a `storefront` API key. That key already
+ *   scopes every request to the right tenant, so there is nothing to
+ *   resolve — the shop host rewrites straight to `/store/:slug`.
+ * - **Hosted multi-tenant** (`NEXT_PUBLIC_STORE_SLUG` unset): one deployment
+ *   behind `*.qsellpos.com` serving every tenant, using a `platform` key.
+ *   Here the host is the only way to know which tenant, so it is resolved
+ *   with the API first — redirect if the store was renamed, 404 if unknown,
+ *   otherwise rewrite with the resolved host attached so every API call
+ *   downstream knows which store it is about.
+ *
+ * Nothing from the dashboard is reachable on a storefront host, in either
+ * case — including its login page, which is for merchants, not shoppers.
  *
  * **The dashboard** (`ADMIN_DOMAIN`): the usual cookie check. Optimistic, not
  * a validation — the API is the authority and `apiClient` surfaces its 401s.
@@ -42,6 +52,8 @@ const AUTH_PAGES = ["/login", "/register"];
 
 const ADMIN_DOMAIN = process.env.NEXT_PUBLIC_ADMIN_DOMAIN ?? "";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
+/** Set only on a single-tenant deployment; see the module comment above. */
+const STORE_SLUG = process.env.NEXT_PUBLIC_STORE_SLUG ?? "";
 
 /**
  * One resolve per host rather than per request. Proxy instances are
@@ -61,10 +73,6 @@ async function resolveHost(host: string): Promise<HostResolution> {
   return value;
 }
 
-function isAdminPath(pathname: string): boolean {
-  return AUTH_PAGES.includes(pathname) || PROTECTED.some((route) => pathname === route || pathname.startsWith(`${route}/`));
-}
-
 function hostname(request: NextRequest): string {
   return (request.headers.get("host") ?? "").split(":")[0].toLowerCase();
 }
@@ -78,6 +86,21 @@ export async function proxy(request: NextRequest) {
   const isStorefront = Boolean(ADMIN_DOMAIN) && host !== ADMIN_DOMAIN.toLowerCase();
 
   if (isStorefront) {
+    // Every storefront page lives under /store/:slug — "/products" on a shop
+    // host and "/products" in the dashboard's own PROTECTED list are
+    // different routes entirely once this prefix is added, so there is
+    // nothing dashboard-shaped to guard against here: a shopper literally
+    // cannot reach /dashboard, /login or /themes once every path is rewritten
+    // under /store/:slug, and a path that happens to share a dashboard name
+    // (/products, /categories) is this store's own page at that name.
+    const suffix = pathname === "/" ? "" : pathname;
+
+    // Single-tenant: the storefront key already means this one store, so
+    // there is nothing to resolve and no x-store-host to attach.
+    if (STORE_SLUG) {
+      return NextResponse.rewrite(new URL(`/store/${STORE_SLUG}${suffix}`, request.url));
+    }
+
     if (!API_URL) return NextResponse.next();
 
     const resolution = await resolveHost(host);
@@ -93,16 +116,9 @@ export async function proxy(request: NextRequest) {
       return NextResponse.rewrite(new URL("/store-not-found", request.url));
     }
 
-    // Admin paths do not exist on a public shop.
-    if (isAdminPath(pathname)) {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
-
     const headers = new Headers(request.headers);
     headers.set(STORE_HOST_HEADER, resolution.store.host);
-
-    // The shop's root is the store, not a redirect to the dashboard.
-    const url = pathname === "/" ? new URL(`/store/${resolution.store.subdomain}`, request.url) : request.nextUrl;
+    const url = new URL(`/store/${resolution.store.subdomain}${suffix}`, request.url);
     return NextResponse.rewrite(url, { request: { headers } });
   }
 
