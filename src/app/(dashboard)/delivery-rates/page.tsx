@@ -3,12 +3,12 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { CreateDeliveryRateButton } from "@/components/delivery-rate/DeliveryRateFormDialog";
 import { DeliveryRatesGrid } from "@/components/delivery-rate/DeliveryRatesGrid";
 import { getDeliveryRates } from "@/lib/api/delivery-rate/service";
-import { loadAllPages } from "@/lib/api/shared/types";
 
 export const metadata: Metadata = { title: "Delivery rates" };
 
 export default async function DeliveryRatesPage() {
-  const rates = await loadAllPages(getDeliveryRates);
+  // This route is not paginated: it returns every rate in one array.
+  const rates = await getDeliveryRates();
 
   return (
     <>

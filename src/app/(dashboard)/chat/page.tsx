@@ -47,7 +47,7 @@ export default async function ChatPage({ searchParams }: { searchParams: Promise
             <ConversationList conversations={list} activeId={active?.id} />
           </div>
           {active ? (
-            <ChatThread conversation={active} messages={messages?.value?.data ?? []} assigneeId={tenant?.id} />
+            <ChatThread conversation={active} messages={messages?.value?.data ?? []} actor={tenant ? { id: tenant.id, name: tenant.name } : undefined} />
           ) : (
             <div className="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center">
               <MessagesSquare className="size-5 text-muted-foreground" />

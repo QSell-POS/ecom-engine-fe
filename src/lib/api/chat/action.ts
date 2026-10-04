@@ -33,46 +33,51 @@ function revalidateConversation(id: string) {
 }
 
 export const sendChatMessageAction = authActionClient.inputSchema(SendMessageSchema).action(async ({ parsedInput }) => {
-  const message = await sendChatMessage(parsedInput.id, { text: parsedInput.text });
-  revalidateConversation(parsedInput.id);
+  const { id, ...body } = parsedInput;
+  const message = await sendChatMessage(id, body);
+  revalidateConversation(id);
   return { message };
 });
 
 export const setConversationStatusAction = authActionClient.inputSchema(UpdateConversationStatusSchema).action(async ({ parsedInput }) => {
-  const conversation = await setConversationStatus(parsedInput.id, parsedInput.status);
-  revalidateConversation(parsedInput.id);
+  const { id, ...body } = parsedInput;
+  const conversation = await setConversationStatus(id, body);
+  revalidateConversation(id);
   return { conversation };
 });
 
 export const assignConversationAction = authActionClient.inputSchema(AssignConversationSchema).action(async ({ parsedInput }) => {
-  const conversation = await assignConversation(parsedInput.id, { assigneeId: parsedInput.assigneeId });
-  revalidateConversation(parsedInput.id);
+  const { id, ...body } = parsedInput;
+  const conversation = await assignConversation(id, body);
+  revalidateConversation(id);
   return { conversation };
 });
 
 export const unassignConversationAction = authActionClient.inputSchema(UnassignConversationSchema).action(async ({ parsedInput }) => {
-  const conversation = await unassignConversation(parsedInput.id);
-  revalidateConversation(parsedInput.id);
+  const { id, ...body } = parsedInput;
+  const conversation = await unassignConversation(id, body);
+  revalidateConversation(id);
   return { conversation };
 });
 
 export const linkChatCustomerAction = authActionClient.inputSchema(LinkCustomerSchema).action(async ({ parsedInput }) => {
-  const conversation = await linkChatCustomer(parsedInput.id, { customerId: parsedInput.customerId });
-  revalidateConversation(parsedInput.id);
+  const { id, ...body } = parsedInput;
+  const conversation = await linkChatCustomer(id, body);
+  revalidateConversation(id);
   return { conversation };
 });
 
 export const createChatCustomerAction = authActionClient.inputSchema(CreateCustomerFromChatSchema).action(async ({ parsedInput }) => {
-  const { id, ...data } = parsedInput;
-  const customer = await createChatCustomer(id, data);
+  const { id, ...body } = parsedInput;
+  const customer = await createChatCustomer(id, body);
   revalidateConversation(id);
   updateTag(CUSTOMERS_TAG);
   return { customer };
 });
 
 export const createChatOrderAction = authActionClient.inputSchema(CreateChatOrderSchema).action(async ({ parsedInput }) => {
-  const { id, ...data } = parsedInput;
-  const order = await createChatOrder(id, data);
+  const { id, ...body } = parsedInput;
+  const order = await createChatOrder(id, body);
   revalidateConversation(id);
   updateTag(ORDERS_TAG);
   return { order };

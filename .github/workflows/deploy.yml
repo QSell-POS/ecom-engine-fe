@@ -55,6 +55,9 @@ jobs:
           build-args: |
             NEXT_PUBLIC_DEFAULT_CURRENCY=${{ vars.NEXT_PUBLIC_DEFAULT_CURRENCY || 'NPR' }}
             NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_ADMIN_DOMAIN=${{ vars.ADMIN_DOMAIN }}
+            NEXT_PUBLIC_STORE_SLUG=${{ vars.STORE_SLUG }}
+            NEXT_PUBLIC_STORE_NAME=${{ vars.STORE_NAME }}
           # Layer cache in GitHub's cache service: npm ci and node_modules are
           # reused between runs, so a typical build is a couple of minutes.
           cache-from: type=gha

@@ -32,17 +32,24 @@ function PaymentDetail({ payment }: { payment: Payment }) {
       <DetailSection title="Reconciliation">
         <DetailFields
           items={[
-            ["Order", payment.orderNumber ?? payment.orderId],
-            ["Customer", payment.customerId],
+            ["Order", payment.order?.orderNumber ?? payment.orderId],
+            ["Gateway", payment.gateway],
             ["Transaction id", payment.transactionId && <span className="font-mono text-[13px]">{payment.transactionId}</span>],
-            ["Gateway reference", payment.gatewayReference && <span className="font-mono text-[13px]">{payment.gatewayReference}</span>],
-            ["Failure reason", payment.failureReason],
+            ["Gateway payment id", payment.gatewayPaymentId && <span className="font-mono text-[13px]">{payment.gatewayPaymentId}</span>],
+            ["Notes", payment.notes],
           ]}
         />
       </DetailSection>
       <DetailSection title="Activity">
         <DetailFields items={[["Created", when(payment.createdAt)], ["Updated", when(payment.updatedAt)]]} />
       </DetailSection>
+
+      {payment.rawResponse && (
+        <DetailSection title="Gateway response">
+          {/* Kept whole: it holds every pidx and correlation id a retry produced. */}
+          <pre className="max-h-72 overflow-auto rounded-md border bg-muted/40 p-3 text-xs">{JSON.stringify(payment.rawResponse, null, 2)}</pre>
+        </DetailSection>
+      )}
     </div>
   );
 }

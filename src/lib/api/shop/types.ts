@@ -17,8 +17,14 @@ export type ShopCustomer = {
   createdAt?: string;
 };
 
-/** Both /customers/register and /customers/login return this under `data`. */
 export type ShopCustomerSession = { customer: ShopCustomer; accessToken: string };
+
+/**
+ * Register nests its payload one level deeper than login does — the wrapper
+ * key is literally `res`. A controller slip, so guard against it vanishing in
+ * a later release rather than relying on it.
+ */
+export type ShopRegisterResponse = { res: ShopCustomerSession } | ShopCustomerSession;
 
 /**
  * Cart lines embed the trimmed storefront product: prices are decimal strings
@@ -51,20 +57,15 @@ export type ShopWishlistItem = {
 };
 
 /**
- * POST /payments/:orderId/initiate. For eSewa, post `formFields` to
- * `paymentUrl`; for Khalti, redirect straight to it.
+ * POST /payments/:orderId/initiate and /retry. Both gateways are a plain
+ * browser redirect — send the shopper to `redirectUrl`. There is no
+ * `paymentUrl`, `paymentId`, `method` or form to post.
  */
 export type PaymentInitiation = {
-  paymentId: string;
-  method: "esewa" | "khalti" | string;
-  paymentUrl: string;
-  formFields?: Record<string, string>;
+  redirectUrl: string;
+  /** Khalti only. */
+  details?: { pidx?: string; expiresAt?: string; expiresIn?: number };
 };
-
-/** eSewa needs a form POST, Khalti a plain redirect. */
-export function needsFormPost(initiation: PaymentInitiation): boolean {
-  return Boolean(initiation.formFields && Object.keys(initiation.formFields).length > 0);
-}
 
 /**
  * The API computes no cart totals, so this is the client's running subtotal.

@@ -1,61 +1,94 @@
-import type { OrderChannel } from "@/lib/api/order/types";
-
 /**
- * Facebook and Instagram DMs, with orders raised straight from a thread.
- * Messages are the API's only cursor-paginated route.
+ * Facebook and Instagram DMs. Two things to know before touching it:
+ *
+ * - **Every mutating route needs `actingUserId` + `actingUserName`** in the
+ *   body (send, which uses `userId`/`userName`, and select-page are the
+ *   exceptions). They are required and unknown fields are rejected, so a body
+ *   without them is a 400. They are what the event log records as the actor.
+ * - A conversation has `platform`, not `channel` — that name belongs to orders.
  */
-export type ConversationStatus = "open" | "pending" | "resolved" | "closed";
+export const CONVERSATION_STATUSES = ["open", "pending", "resolved"] as const;
+export type ConversationStatus = (typeof CONVERSATION_STATUSES)[number];
 
-export type ChatChannel = Extract<OrderChannel, "facebook" | "instagram" | "whatsapp">;
+export const CHAT_PLATFORMS = ["facebook", "instagram"] as const;
+export type ChatPlatform = (typeof CHAT_PLATFORMS)[number];
+
+export type AssignmentStatus = "unassigned" | "assigned" | "pending_reply";
 
 export type Conversation = {
   id: string;
-  channel: ChatChannel;
-  status: ConversationStatus;
-  contactName?: string | null;
-  contactAvatar?: string | null;
-  /** Meta's page-scoped id for the contact, not a customer id. */
-  externalId?: string | null;
-  customerId?: string | null;
-  customer?: { id: string; firstName?: string; lastName?: string; phone?: string | null } | null;
-  assigneeId?: string | null;
-  assigneeName?: string | null;
-  unreadCount?: number;
-  lastMessage?: string | null;
+  pageId: string;
+  platform: ChatPlatform;
+  pageName?: string | null;
+  participantId: string;
+  participantName?: string | null;
+  participantAvatarUrl?: string | null;
+  lastMessagePreview?: string | null;
   lastMessageAt?: string | null;
+  lastInboundAt?: string | null;
+  unreadCount?: number;
+  status: ConversationStatus;
+  assignedToUserId?: string | null;
+  assignedToUserName?: string | null;
+  assignmentStatus?: AssignmentStatus;
+  assignedByUserId?: string | null;
+  assignedAt?: string | null;
+  assignmentNote?: string | null;
+  customerId?: string | null;
   createdAt?: string;
   updatedAt?: string;
 };
 
 export type ChatMessageDirection = "inbound" | "outbound";
+export type ChatMessageType = "text" | "image" | "attachment" | "quick_reply" | "postback";
+export type ChatMessageStatus = "sent" | "delivered" | "read" | "failed";
 
 export type ChatMessage = {
   id: string;
   conversationId: string;
   direction: ChatMessageDirection;
+  messageType?: ChatMessageType;
+  status?: ChatMessageStatus;
   text?: string | null;
-  attachments?: { type: string; url: string; name?: string }[];
+  externalMessageId?: string | null;
+  senderUserId?: string | null;
+  createdAt?: string;
+};
+
+export const CONVERSATION_EVENT_TYPES = [
+  "assigned",
+  "reassigned",
+  "unassigned",
+  "status_changed",
+  "customer_linked",
+  "customer_created",
+  "order_created",
+] as const;
+export type ConversationEventType = (typeof CONVERSATION_EVENT_TYPES)[number];
+
+/** Oldest-first append-only log. Not paginated. */
+export type ConversationEvent = {
+  id: string;
+  conversationId: string;
+  type: ConversationEventType;
+  actorUserId?: string | null;
+  actorUserName?: string | null;
+  metadata?: Record<string, unknown>;
   createdAt?: string;
 };
 
 /** GET /admin/chat/connect-url → where to send the owner for Meta OAuth. */
 export type ChatConnectUrl = { url: string };
 
-/**
- * When the owner manages several pages, OAuth returns a `selectionId` instead
- * of connecting, and they pick one.
- */
+/** Fields are id / name / instagramUsername — not pageId / pageName. */
 export type ChatPage = {
-  pageId: string;
-  pageName: string;
-  channel: ChatChannel;
-  instagramBusinessAccountId?: string | null;
+  id: string;
+  name: string;
+  instagramUsername?: string | null;
 };
 
 export type PendingPageSelection = { pages: ChatPage[] };
 
 export function conversationTitle(conversation: Conversation): string {
-  const customer = conversation.customer;
-  const name = [customer?.firstName, customer?.lastName].filter(Boolean).join(" ");
-  return name || conversation.contactName || "Unknown contact";
+  return conversation.participantName || "Unknown contact";
 }

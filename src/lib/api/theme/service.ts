@@ -5,7 +5,7 @@ import { newId, sanitizeDocument } from "@/lib/theme-engine/document";
 import { StoreProfileSchema } from "@/lib/storefront/profile";
 import type { StoreProfile } from "@/lib/storefront/types";
 import { sanitizeSettings } from "@/lib/theme-engine/document";
-import { getPreset } from "@/lib/theme-engine/presets";
+import { getPreset, THEME_PRESETS } from "@/lib/theme-engine/presets";
 import { BRAND_SETTING_KEYS, THEME_SETTINGS_SCHEMA } from "@/lib/theme-engine/schema";
 import { mutateDb, readDb } from "./db";
 import { TENANT_COOKIE } from "./constants";
@@ -237,7 +237,13 @@ export async function resolveStorefront(slug: string, previewThemeId?: string | 
 
   const db = await readDb();
   const tenant = db.tenants.find((t) => t.slug === slug);
-  if (!tenant) return null;
+
+  // Themes still live in a local JSON file, so a fresh deployment has no
+  // tenant row and the public shop would 404 on every page. When the slug is
+  // the one this deployment serves (NEXT_PUBLIC_STORE_SLUG), fall back to a
+  // preset theme with the real catalog behind it: the shop works today, and
+  // the merchant's own theme takes over the moment they save one.
+  if (!tenant) return defaultStorefront(slug);
   const base = { slug, storeKey: tenant.apiKey, vertical: tenant.vertical, profile: tenant.profile };
 
   const preview = previewThemeId ? db.themes.find((t) => t.id === previewThemeId && t.tenantId === tenant.id) : undefined;
@@ -248,6 +254,30 @@ export async function resolveStorefront(slug: string, previewThemeId?: string | 
   const live = db.themes.find((t) => t.id === tenant.liveThemeId && t.tenantId === tenant.id);
   if (!live?.published) return null;
   return { ...base, document: live.published, mode: "live", theme: { id: live.id, name: live.name, presetId: live.presetId } };
+}
+
+/**
+ * The storefront for a deployment whose theme has never been customised. Uses
+ * the first preset, the store name from the environment, and the deployment's
+ * own API key, so the catalog is real even though the design is a default.
+ */
+function defaultStorefront(slug: string): ResolvedStorefront | null {
+  if (!slug || slug !== process.env.NEXT_PUBLIC_STORE_SLUG) return null;
+
+  const preset = getPreset(process.env.NEXT_PUBLIC_STORE_PRESET ?? "") ?? THEME_PRESETS[0];
+  if (!preset) return null;
+
+  const name = process.env.NEXT_PUBLIC_STORE_NAME || "Our store";
+  return {
+    slug,
+    // Not a demo key, so the catalog comes from the API rather than fixtures.
+    storeKey: slug,
+    vertical: preset.vertical,
+    profile: { ...demoStoreProfile(preset.vertical, name, ""), name },
+    document: preset.build(),
+    mode: "live",
+    theme: { id: null, name: preset.name, presetId: preset.id },
+  };
 }
 
 /** Headless: the live theme for a public API key (GET /api/storefront/theme). */

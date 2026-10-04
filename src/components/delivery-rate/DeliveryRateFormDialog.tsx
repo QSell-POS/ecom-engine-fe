@@ -34,7 +34,7 @@ export function DeliveryRateFormDialog({ rate, open, onOpenChange }: { rate?: De
     defaultValues: {
       region: rate?.region ?? "",
       city: rate?.city ?? "",
-      shippingCost: rate?.shippingCost ?? 0,
+      shippingCost: rate ? Number(rate.shippingCost) : 0,
       isActive: rate?.isActive ?? true,
     },
   });
@@ -51,7 +51,10 @@ export function DeliveryRateFormDialog({ rate, open, onOpenChange }: { rate?: De
   function onSubmit(values: Output) {
     setServerError(null);
     startTransition(async () => {
-      const result = rate ? await updateDeliveryRateAction({ id: rate.id, ...values }) : await createDeliveryRateAction(values);
+      // region and city are immutable: an edit sends cost and status only.
+      const result = rate
+        ? await updateDeliveryRateAction({ id: rate.id, shippingCost: values.shippingCost, isActive: values.isActive })
+        : await createDeliveryRateAction(values);
       if (!result?.data) {
         setServerError(result?.serverError ?? "Please check the highlighted fields.");
         return;
@@ -68,15 +71,31 @@ export function DeliveryRateFormDialog({ rate, open, onOpenChange }: { rate?: De
         <DialogHeader>
           <DialogTitle>{rate ? `Edit ${deliveryZone(rate)}` : "New delivery rate"}</DialogTitle>
           <DialogDescription>
-            Checkout quotes from these. An exact city match wins over the regional fallback, so set a region-wide rate as a safety net.
+            Checkout quotes from these. An exact city match wins over the regional fallback, so set a region-wide rate as a safety net — an address no rate covers cannot check out at all.
           </DialogDescription>
         </DialogHeader>
 
         <form id="delivery-rate-form" onSubmit={form.handleSubmit(onSubmit)} noValidate>
           <FieldGroup className="gap-4">
             <div className="grid gap-4 sm:grid-cols-2">
-              <TextField form={form} name="region" label="Region" autoFocus placeholder="Bagmati" />
-              <TextField form={form} name="city" label="City" optional placeholder="Kathmandu" description="Blank covers the whole region." />
+              <TextField
+                form={form}
+                name="region"
+                label="Region"
+                autoFocus
+                placeholder="Bagmati"
+                disabled={Boolean(rate)}
+                description={rate ? "Fixed once created." : undefined}
+              />
+              <TextField
+                form={form}
+                name="city"
+                label="City"
+                optional
+                placeholder="Kathmandu"
+                disabled={Boolean(rate)}
+                description={rate ? "Fixed once created." : "Blank covers the whole region."}
+              />
             </div>
             <TextField form={form} name="shippingCost" label="Shipping cost" type="number" min={0} step="1" />
             <SwitchField form={form} name="isActive" label="Active" description="Inactive rates are not offered at checkout." />
