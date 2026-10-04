@@ -32,7 +32,7 @@ export default async function ThemeDetailPage({ params }: Props) {
   const preset = getPreset((await params).presetId);
   if (!preset) notFound();
   const tenant = await getCurrentTenant();
-  const [themes, preview] = await Promise.all([listThemes(tenant.id), presetPreview(preset)]);
+  const [themes, preview] = await Promise.all([listThemes(), presetPreview(preset)]);
   const live = themes.find((t) => t.isLive) ?? null;
   const isLive = live?.presetId === preset.id;
   const settings = preview.document.settings;

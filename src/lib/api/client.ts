@@ -1,6 +1,7 @@
 import "server-only";
 import { getCustomerToken, getOwnerToken } from "./session";
 import type { ListResponse } from "./shared/types";
+import { STORE_HOST_HEADER } from "./store-host";
 
 /**
  * The one way this app talks to the ecom-engine API.
@@ -37,6 +38,11 @@ type RequestOptions = {
   token?: string;
   /** Return null instead of throwing on 404. */
   allow404?: boolean;
+  /**
+   * Which store this is about, for a platform key. Ignored by the API when a
+   * storefront key is used, so it is safe to send either way.
+   */
+  storeHost?: string;
 };
 
 /**
@@ -88,7 +94,7 @@ function inferAuth(endpoint: string): ApiAuth {
     : "key";
 }
 
-async function authHeaders(auth: ApiAuth, override?: string): Promise<Record<string, string>> {
+async function authHeaders(auth: ApiAuth, override?: string, storeHost?: string): Promise<Record<string, string>> {
   if (auth === "public") return {};
 
   // The owner token stands alone: admin routes and /api-keys authenticate the
@@ -104,6 +110,8 @@ async function authHeaders(auth: ApiAuth, override?: string): Promise<Record<str
 
   // Storefront reads need the key; a signed-in shopper needs both.
   const headers: Record<string, string> = { "x-api-key": apiKey() };
+  // A platform key can reach any store, so it has to be told which one.
+  if (storeHost) headers[STORE_HOST_HEADER] = storeHost;
   if (auth === "key") return headers;
 
   const token = override ?? (await getCustomerToken());
@@ -113,9 +121,9 @@ async function authHeaders(auth: ApiAuth, override?: string): Promise<Record<str
 }
 
 export async function apiClient<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-  const { method = "GET", headers = {}, body, tags, revalidate = false, auth = inferAuth(endpoint), token, allow404 = false } = options;
+  const { method = "GET", headers = {}, body, tags, revalidate = false, auth = inferAuth(endpoint), token, allow404 = false, storeHost } = options;
 
-  const credentials = await authHeaders(auth, token);
+  const credentials = await authHeaders(auth, token, storeHost);
 
   let res: Response;
   try {
@@ -151,9 +159,9 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
  * total/page (or the chat inbox's `nextCursor`) alongside the rows.
  */
 export async function apiList<T>(endpoint: string, options: RequestOptions = {}): Promise<ListResponse<T>> {
-  const { method = "GET", headers = {}, body, tags, revalidate = false, auth = inferAuth(endpoint), token } = options;
+  const { method = "GET", headers = {}, body, tags, revalidate = false, auth = inferAuth(endpoint), token, storeHost } = options;
 
-  const credentials = await authHeaders(auth, token);
+  const credentials = await authHeaders(auth, token, storeHost);
 
   let res: Response;
   try {
@@ -189,8 +197,8 @@ function messageFrom(data: unknown): string | undefined {
 }
 
 /** Multipart upload (media). Same credentials, no JSON content type. */
-export async function apiUpload<T>(endpoint: string, form: FormData, options: { auth?: ApiAuth; token?: string } = {}): Promise<T> {
-  const credentials = await authHeaders(options.auth ?? inferAuth(endpoint), options.token);
+export async function apiUpload<T>(endpoint: string, form: FormData, options: { auth?: ApiAuth; token?: string; storeHost?: string } = {}): Promise<T> {
+  const credentials = await authHeaders(options.auth ?? inferAuth(endpoint), options.token, options.storeHost);
 
   let res: Response;
   try {
