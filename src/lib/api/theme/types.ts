@@ -42,6 +42,8 @@ export type ResolvedStorefront = {
   slug: string;
   /** Public key for the storefront APIs (demo stores use a demo key). */
   storeKey: string;
+  /** The store's host, sent as `x-store-host` on catalog reads. Absent for demo stores. */
+  host?: string;
   vertical: Vertical;
   profile: StoreProfile;
   document: ThemeDocument;
