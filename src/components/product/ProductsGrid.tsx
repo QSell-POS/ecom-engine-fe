@@ -14,6 +14,7 @@ import { productColumns, stockLevel, stockStatuses } from "@/lib/api/product/gri
 import type { Product } from "@/lib/api/product/types";
 import { httpSource, type FilterOption, type GridResult } from "@/lib/data-grid";
 import { ProductDetail } from "./ProductDetail";
+import { availableStock } from "@/lib/api/product/types";
 
 type SafeResult = { data?: unknown; serverError?: string; validationErrors?: unknown } | undefined;
 
@@ -136,7 +137,7 @@ export function ProductsGrid({ initialResult, facets }: { initialResult?: GridRe
         sku: (p) => <span className="font-mono text-[13px] text-muted-foreground">{p.sku}</span>,
         stock: (p) => {
           const level = stockStatuses[stockLevel(p)];
-          const quantity = p.inventory?.available ?? 0;
+          const quantity = availableStock(p);
           return level.tone === "success" ? (
             <span className="tabular-nums">{quantity} in stock</span>
           ) : (

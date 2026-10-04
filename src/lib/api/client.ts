@@ -199,7 +199,9 @@ export async function apiUpload<T>(endpoint: string, form: FormData, options: { 
     throw new ApiError(503, "Can't reach the API server. Check that it's running and try again.", { cause });
   }
 
-  const data = await res.json().catch(() => null);
-  if (!res.ok) throw new ApiError(res.status, messageFrom(data) ?? "Upload failed", data);
-  return data as T;
+  const body = await res.json().catch(() => null);
+  if (!res.ok) throw new ApiError(res.status, messageFrom(body) ?? "Upload failed", body);
+  // Uploads are wrapped like every other response — /admin/media answers with
+  // { success, message, data: [asset] }.
+  return (isEnvelope(body) ? body.data : body) as T;
 }

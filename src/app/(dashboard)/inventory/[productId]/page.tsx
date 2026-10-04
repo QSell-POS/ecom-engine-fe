@@ -6,7 +6,7 @@ import { StatusLabel } from "@/components/common/StatusLabel";
 import { DetailStats } from "@/components/data-grid";
 import { InventoryTransactions } from "@/components/inventory/InventoryTransactions";
 import { getProductBatches, getProductInventory, getProductTransactions } from "@/lib/api/inventory/service";
-import { stockState } from "@/lib/api/inventory/types";
+import { availableStock, itemName, stockState } from "@/lib/api/inventory/types";
 import { stockStates } from "@/lib/api/inventory/grid";
 import { formatMoney } from "@/lib/constants/money";
 import { toAmount } from "@/lib/api/shared/types";
@@ -36,14 +36,14 @@ export default async function ProductInventoryPage({ params }: { params: Promise
 
   return (
     <>
-      <PageHeader title={item.productName ?? productId} description="Every stock movement for this product, newest first." />
+      <PageHeader title={itemName(item)} description="Every stock movement for this product, newest first." />
 
       <div className="space-y-12">
         <DetailStats
           items={[
-            { label: "Available", value: item.available },
-            { label: "Reserved", value: item.reserved },
-            { label: "On hand", value: item.quantity },
+            { label: "Available", value: availableStock(item) },
+            { label: "Reserved", value: item.quantityReserved },
+            { label: "On hand", value: item.quantityOnHand },
             { label: "Stock", value: <StatusLabel tone={state.tone}>{state.label}</StatusLabel> },
           ]}
         />

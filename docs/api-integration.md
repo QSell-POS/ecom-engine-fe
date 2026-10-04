@@ -62,6 +62,52 @@ Upload to `/admin/media` first — field name `files`, plural — then send the
 id. `components/common/MediaField.tsx` does both in one step. Never set a
 `Content-Type` on that upload: fetch must add its own multipart boundary.
 
+## Two views of a product
+
+`/products` and `/admin/products` return different shapes, and `Product` holds
+both with the view-specific fields optional:
+
+| | Storefront `/products` | Admin `/admin/products` |
+| --- | --- | --- |
+| Stock | `inStock: boolean` | `inventory: { quantityOnHand, quantityReserved }` |
+| Identity | — | `sku`, `barcode`, `hsCode`, `isActive`, `stockAlert` |
+| Media | `media[].media` (no `mediaId`) | same, plus `mediaId` |
+
+Read stock with `inStockNow()` and `availableStock()` rather than either field
+directly. The nested `inventory` has **no** `quantityAvailable` — that is
+computed, `max(0, onHand − reserved)`, and appears only on `/admin/inventory`.
+
+Cart lines, wishlist entries and a customer's cart all embed the trimmed
+storefront product, so none of them can show "3 left" — only "in stock".
+
+## Stock counts are never `quantity`/`reserved`/`available`
+
+They are `quantityOnHand`, `quantityReserved`, `quantityAvailable`. An
+inventory row also nests the whole product rather than flattening its name and
+SKU:
+
+```
+{ id, productId, product: { name, sku, sellingPrice, stockAlert, brand, category },
+  quantityOnHand, quantityReserved, quantityAvailable }
+```
+
+Every mutation returns this same object (bulk routes an array), so a table can
+update straight from the response.
+
+## Inventory movements
+
+- **receive** — `costPrice` is **required** (it prices the batch);
+  `sellingPrice` is optional and updates the product.
+- **adjust** — `quantity` is **unsigned**; the direction comes from `type`,
+  which must be one of `adjustment_in`, `adjustment_out`, `damage`,
+  `stock_count`. For `stock_count` the number is the new absolute on-hand
+  figure and may be 0. The others are written by the system.
+- **reserve / release / fulfill** — `{ quantity, referenceId, referenceType? }`.
+  It is `referenceId`, a UUID, not `orderId`.
+- **reserve-bulk** — `referenceId` sits at the top level, not per item.
+
+Checkout reserves and releases on its own; these routes are for corrections.
+
 ## Shapes worth knowing
 
 - **Orders keep snapshots.** Line items carry `productNameSnapshot`,

@@ -109,7 +109,7 @@ export function ProductForm({
       sellingPrice: product?.sellingPrice ?? "",
       compareAtPrice: product?.compareAtPrice ?? "",
       stockAlert: product?.stockAlert ?? undefined,
-      initialQuantity: product?.inventory?.quantity ?? undefined,
+      initialQuantity: product?.inventory?.quantityOnHand ?? undefined,
       attributes: product?.attributes?.length ? JSON.stringify(product.attributes) : "",
       badges: product?.badges?.join(", ") ?? "",
       brandId: product?.brandId ?? "",

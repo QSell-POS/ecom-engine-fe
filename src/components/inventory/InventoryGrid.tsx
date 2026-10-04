@@ -8,7 +8,7 @@ import { DataGrid, DetailFields, DetailSection, DetailStats, type RowAction } fr
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { StatusLabel } from "@/components/common/StatusLabel";
 import { inventoryColumns, stockStates } from "@/lib/api/inventory/grid";
-import { stockState, type InventoryItem } from "@/lib/api/inventory/types";
+import { alertLevel, availableStock, itemName, stockState, type InventoryItem } from "@/lib/api/inventory/types";
 import { clientSource } from "@/lib/data-grid";
 import { StockDialog, type StockMode } from "./StockDialog";
 
@@ -18,9 +18,9 @@ function InventoryDetail({ item }: { item: InventoryItem }) {
     <div className="max-w-2xl space-y-10">
       <DetailStats
         items={[
-          { label: "Available", value: item.available, hint: "Sellable right now" },
-          { label: "Reserved", value: item.reserved, hint: "Held by open orders" },
-          { label: "On hand", value: item.quantity, hint: "Physically in stock" },
+          { label: "Available", value: availableStock(item), hint: "Sellable right now" },
+          { label: "Reserved", value: item.quantityReserved, hint: "Held by open orders" },
+          { label: "On hand", value: item.quantityOnHand, hint: "Physically in stock" },
           { label: "Stock", value: <StatusLabel tone={state.tone}>{state.label}</StatusLabel> },
         ]}
       />
@@ -39,9 +39,9 @@ function InventoryDetail({ item }: { item: InventoryItem }) {
       >
         <DetailFields
           items={[
-            ["Name", item.productName],
-            ["SKU", item.sku && <span className="font-mono text-[13px]">{item.sku}</span>],
-            ["Low-stock alert at", item.stockAlert ?? null],
+            ["Name", itemName(item)],
+            ["SKU", item.product?.sku && <span className="font-mono text-[13px]">{item.product.sku}</span>],
+            ["Low-stock alert at", alertLevel(item)],
           ]}
         />
       </DetailSection>
@@ -72,7 +72,7 @@ export function InventoryGrid({ items }: { items: InventoryItem[] }) {
         onMutated={() => router.refresh()}
         defaultQuery={{ sort: [{ id: "available", desc: false }] }}
         cells={{
-          productName: (item) => <span className="font-medium">{item.productName}</span>,
+          productName: (item) => <span className="font-medium">{itemName(item)}</span>,
           state: (item) => {
             const state = stockStates[stockState(item)];
             return <StatusLabel tone={state.tone}>{state.label}</StatusLabel>;

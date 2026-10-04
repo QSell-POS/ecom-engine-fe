@@ -15,8 +15,8 @@ export function ProductDetail({ product }: { product: Product }) {
   const price = Number(product.sellingPrice);
   const compareAt = product.compareAtPrice ? Number(product.compareAtPrice) : null;
   const discount = compareAt && compareAt > price ? Math.round((1 - price / compareAt) * 100) : null;
-  const onHand = product.inventory?.quantity ?? 0;
-  const reserved = product.inventory?.reserved ?? 0;
+  const onHand = product.inventory?.quantityOnHand ?? 0;
+  const reserved = product.inventory?.quantityReserved ?? 0;
   const level = stockStatuses[stockLevel(product)];
 
   return (
