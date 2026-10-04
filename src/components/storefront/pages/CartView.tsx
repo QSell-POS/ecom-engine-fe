@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Heart, Lock, RotateCcw, ShoppingBag, Trash2, Truck } from "lucide-react";
-import { orderTotals, shippingMethods } from "@/lib/storefront/checkout";
+import { estimatedShipping } from "@/lib/storefront/checkout";
 import { formatMoney } from "@/lib/storefront/format";
 import { EASE } from "../motion";
 import { Breadcrumbs, EmptyState, Price, QuantityStepper, StoreImage, StoreLink } from "../primitives";
@@ -49,8 +49,8 @@ export function CartView() {
     );
   }
 
-  const shipping = shippingMethods(cart.subtotal, store.profile.checkout)[0].price;
-  const totals = orderTotals(cart.subtotal, shipping, store.profile.checkout);
+  const shipping = estimatedShipping(cart.subtotal, store.profile.checkout);
+  const total = cart.subtotal + shipping;
   const remaining = Math.max(0, store.profile.checkout.freeShippingThreshold - cart.subtotal);
 
   return (
@@ -71,7 +71,6 @@ export function CartView() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0 space-y-1">
                       <StoreLink href={`/products/${line.slug}`} className="font-medium hover:opacity-70">{line.name}</StoreLink>
-                      {line.variantTitle && <p className="text-sm text-(--sf-muted)">{line.variantTitle}</p>}
                       <Price price={line.price} compareAtPrice={line.compareAtPrice} size="sm" className="text-(--sf-muted)" />
                     </div>
                     <p className="font-medium tabular-nums">{formatMoney(line.price * line.quantity, currency)}</p>
@@ -97,10 +96,9 @@ export function CartView() {
         <aside className="space-y-5 rounded-(--sf-radius) bg-(--sf-surface) p-6 @4xl:sticky @4xl:top-[calc(var(--sf-sticky-top,0px)+6rem)]">
           <h2 className="text-lg font-medium">Order summary</h2>
           <dl className="space-y-3 text-sm">
-            <div className="flex justify-between"><dt>Subtotal</dt><dd className="tabular-nums">{formatMoney(totals.subtotal, currency)}</dd></div>
+            <div className="flex justify-between"><dt>Subtotal</dt><dd className="tabular-nums">{formatMoney(cart.subtotal, currency)}</dd></div>
             <div className="flex justify-between"><dt>Shipping</dt><dd className="tabular-nums">{shipping === 0 ? "Free" : formatMoney(shipping, currency)}</dd></div>
-            <div className="flex justify-between"><dt>Estimated tax</dt><dd className="tabular-nums">{formatMoney(totals.tax, currency)}</dd></div>
-            <div className="flex justify-between border-t border-(--sf-line) pt-3 text-base font-semibold"><dt>Total</dt><dd className="tabular-nums">{formatMoney(totals.total, currency)}</dd></div>
+            <div className="flex justify-between border-t border-(--sf-line) pt-3 text-base font-semibold"><dt>Total</dt><dd className="tabular-nums">{formatMoney(total, currency)}</dd></div>
           </dl>
           {remaining > 0 && (
             <p className="rounded-(--sf-radius) bg-(--sf-bg) px-3 py-2.5 text-[0.8125rem]">
@@ -168,11 +166,10 @@ export function WishlistView() {
                   <Heart className="size-4 fill-(--sf-sale) text-(--sf-sale)" />
                 </button>
                 <div className="mt-3.5 space-y-1">
-                  <p className="text-[0.6875rem] font-medium tracking-[0.12em] text-(--sf-muted) uppercase">{item.brand}</p>
                   <StoreLink href={`/products/${item.slug}`} className="block text-[0.9375rem] hover:opacity-70">{item.name}</StoreLink>
                   <Price price={item.price} compareAtPrice={item.compareAtPrice} />
                   <StoreLink href={`/products/${item.slug}`} className="sf-btn sf-btn-secondary sf-btn-sm sf-btn-block mt-3">
-                    Choose options
+                    View product
                   </StoreLink>
                 </div>
               </motion.li>

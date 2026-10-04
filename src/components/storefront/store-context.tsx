@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { toast } from "sonner";
 import { createCustomerApi } from "@/lib/storefront/client";
 import type { CustomerApi } from "@/lib/storefront/contracts";
-import type { Cart, Customer, Product, StoreProfile, Vertical, WishlistItem } from "@/lib/storefront/types";
+import type { Cart, Customer, Product, StoreMode, StoreProfile, Vertical, WishlistItem } from "@/lib/storefront/types";
 import type { SettingValues } from "@/lib/theme-engine/types";
 
 // Client-side storefront state: which store we're in, the shopper's cart,
@@ -15,7 +15,7 @@ export type StoreInfo = {
   slug: string;
   storeKey: string;
   vertical: Vertical;
-  mode: "live" | "preview" | "demo" | "design";
+  mode: StoreMode;
   /** URL prefix for every store link, e.g. "/store/acme". */
   basePath: string;
   profile: StoreProfile;
@@ -45,9 +45,9 @@ const StoreContext = createContext<StoreState | null>(null);
 const message = (error: unknown) => (error instanceof Error ? error.message : "Something went wrong. Please try again.");
 
 export function StoreProvider({ store, children }: { store: StoreInfo; children: ReactNode }) {
-  const { storeKey, vertical } = store;
+  const { storeKey, vertical, mode } = store;
   const checkout = store.profile.checkout;
-  const api = useMemo(() => createCustomerApi({ storeKey, vertical, checkout }), [storeKey, vertical, checkout]);
+  const api = useMemo(() => createCustomerApi({ storeKey, vertical, checkout, mode }), [storeKey, vertical, checkout, mode]);
   const [cart, setCart] = useState<Cart | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
@@ -71,9 +71,12 @@ export function StoreProvider({ store, children }: { store: StoreInfo; children:
   }, [api]);
 
   const addToCart = useCallback(
-    async (product: Product, variantId: string, quantity = 1) => {
+    // `variantId` is kept in the signature so callers that pass a variant
+    // (always equal to the product id — this catalog has no variants) don't
+    // need to change; the contract itself only ever takes a product id.
+    async (product: Product, _variantId: string, quantity = 1) => {
       try {
-        setCart(await api.addToCart({ productId: product.id, variantId, quantity }));
+        setCart(await api.addToCart({ productId: product.id, quantity }));
         setCartOpen(true);
         return true;
       } catch (error) {
@@ -112,7 +115,7 @@ export function StoreProvider({ store, children }: { store: StoreInfo; children:
     async (product: Pick<Product, "id" | "name">) => {
       const saved = wishlist.some((item) => item.productId === product.id);
       try {
-        const next = saved ? await api.removeFromWishlist(product.id) : await api.addToWishlist(product.id);
+        const next = await api.toggleWishlist(product.id);
         setWishlist(next);
         toast.success(saved ? `Removed ${product.name} from your wishlist` : `Saved ${product.name} to your wishlist`);
       } catch (error) {

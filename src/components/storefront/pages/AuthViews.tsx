@@ -3,14 +3,11 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, MailCheck, Sparkles } from "lucide-react";
-import { DEMO_CUSTOMER } from "@/lib/storefront/mock/customer-api";
+import { Eye, EyeOff } from "lucide-react";
 import { EASE } from "../motion";
 import { Spinner, StoreLink } from "../primitives";
 import { useStoreHref, useStorefront } from "../store-context";
 import { Field } from "./forms";
-
-const MOCK = !process.env.NEXT_PUBLIC_STOREFRONT_API_URL;
 
 function AuthCard({ title, text, children, footer }: { title: string; text: string; children: ReactNode; footer: ReactNode }) {
   return (
@@ -52,22 +49,28 @@ export function LoginView() {
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
 
-  async function signIn(email: string, password: string) {
-    setPending(true);
-    setError("");
-    try {
-      setCustomer(await api.login({ email, password }));
-      router.push(href(next));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't sign you in.");
-      setPending(false);
-    }
-  }
-
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    void signIn(String(form.get("email") ?? ""), String(form.get("password") ?? ""));
+    const identifier = String(form.get("identifier") ?? "");
+    const password = String(form.get("password") ?? "");
+    setPending(true);
+    setError("");
+    (async () => {
+      try {
+        const customer = await api.login({ identifier, password });
+        if (!customer) {
+          setError("That email/phone or password isn't right.");
+          setPending(false);
+          return;
+        }
+        setCustomer(customer);
+        router.push(href(next));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Couldn't sign you in.");
+        setPending(false);
+      }
+    })();
   }
 
   return (
@@ -80,27 +83,13 @@ export function LoginView() {
         </>
       }
     >
-      {MOCK && (
-        <button type="button" onClick={() => signIn(DEMO_CUSTOMER.email, DEMO_CUSTOMER.password)} disabled={pending} className="mb-6 flex w-full items-center gap-3 rounded-(--sf-radius) border border-dashed border-(--sf-line) p-3.5 text-left text-sm transition-colors hover:border-(--sf-text)">
-          <Sparkles className="size-4 shrink-0" />
-          <span>
-            <span className="block font-medium">Try the demo shopper account</span>
-            <span className="text-(--sf-muted)">{DEMO_CUSTOMER.email} · {DEMO_CUSTOMER.password}</span>
-          </span>
-        </button>
-      )}
       <form onSubmit={submit} className="space-y-5">
-        <Field label="Email" htmlFor="email">
-          <input id="email" name="email" type="email" autoComplete="email" required className="sf-input" />
+        <Field label="Email or phone" htmlFor="identifier">
+          <input id="identifier" name="identifier" autoComplete="username" required className="sf-input" />
         </Field>
         <Field label="Password" htmlFor="password">
           <PasswordInput id="password" name="password" autoComplete="current-password" invalid={Boolean(error)} />
         </Field>
-        <div className="flex justify-end">
-          <StoreLink href="/account/forgot-password" className="text-sm text-(--sf-muted) underline-offset-4 hover:text-(--sf-text) hover:underline">
-            Forgot your password?
-          </StoreLink>
-        </div>
         {error && <p role="alert" className="text-sm text-(--sf-sale)">{error}</p>}
         <button type="submit" disabled={pending} className="sf-btn sf-btn-primary sf-btn-block">
           {pending && <Spinner />} Sign in
@@ -133,9 +122,9 @@ export function RegisterView() {
         await api.register({
           firstName: String(form.get("firstName") ?? ""),
           lastName: String(form.get("lastName") ?? ""),
+          phone: String(form.get("phone") ?? "") || undefined,
           email: String(form.get("email") ?? ""),
           password,
-          marketingOptIn: form.get("marketing") === "on",
         }),
       );
       router.push(href(next));
@@ -161,69 +150,24 @@ export function RegisterView() {
             <input id="firstName" name="firstName" autoComplete="given-name" required className="sf-input" />
           </Field>
           <Field label="Last name" htmlFor="lastName">
-            <input id="lastName" name="lastName" autoComplete="family-name" required className="sf-input" />
+            <input id="lastName" name="lastName" autoComplete="family-name" className="sf-input" />
           </Field>
         </div>
         <Field label="Email" htmlFor="email">
           <input id="email" name="email" type="email" autoComplete="email" required className="sf-input" />
         </Field>
+        <Field label="Phone (optional)" htmlFor="phone">
+          <input id="phone" name="phone" type="tel" autoComplete="tel" className="sf-input" />
+        </Field>
         <Field label="Password" htmlFor="password" error={errors.password}>
           <PasswordInput id="password" name="password" autoComplete="new-password" invalid={Boolean(errors.password)} />
           {!errors.password && <p className="mt-1.5 text-xs text-(--sf-muted)">At least 8 characters.</p>}
         </Field>
-        <label className="flex items-start gap-2.5 text-sm text-(--sf-muted)">
-          <input type="checkbox" name="marketing" defaultChecked className="mt-0.5 size-4 accent-(--sf-primary)" />
-          Email me about new arrivals and exclusive offers. Unsubscribe anytime.
-        </label>
         {errors.form && <p role="alert" className="text-sm text-(--sf-sale)">{errors.form}</p>}
         <button type="submit" disabled={pending} className="sf-btn sf-btn-primary sf-btn-block">
           {pending && <Spinner />} Create account
         </button>
       </form>
-    </AuthCard>
-  );
-}
-
-export function ForgotPasswordView() {
-  const { api } = useStorefront();
-  const [sentTo, setSentTo] = useState("");
-  const [pending, setPending] = useState(false);
-
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const email = String(new FormData(event.currentTarget).get("email") ?? "");
-    setPending(true);
-    await api.requestPasswordReset(email).catch(() => undefined);
-    setPending(false);
-    setSentTo(email);
-  }
-
-  return (
-    <AuthCard
-      title={sentTo ? "Check your email" : "Reset your password"}
-      text={sentTo ? `If an account exists for ${sentTo}, you'll receive a link to reset your password in the next few minutes.` : "Enter your email and we'll send you a link to reset it."}
-      footer={
-        <StoreLink href="/account/login" className="sf-link font-medium text-(--sf-text)">
-          Back to sign in
-        </StoreLink>
-      }
-    >
-      {sentTo ? (
-        <div className="flex justify-center">
-          <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5, ease: EASE }} className="flex size-16 items-center justify-center rounded-full bg-(--sf-surface)">
-            <MailCheck className="size-7" />
-          </motion.div>
-        </div>
-      ) : (
-        <form onSubmit={submit} className="space-y-5">
-          <Field label="Email" htmlFor="email">
-            <input id="email" name="email" type="email" autoComplete="email" required className="sf-input" />
-          </Field>
-          <button type="submit" disabled={pending} className="sf-btn sf-btn-primary sf-btn-block">
-            {pending && <Spinner />} Send reset link
-          </button>
-        </form>
-      )}
     </AuthCard>
   );
 }

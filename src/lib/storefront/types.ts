@@ -6,6 +6,9 @@
 /** Demo catalog a store uses until it has real products (mock mode only). */
 export type Vertical = "fashion" | "electronics" | "beauty" | "home";
 
+/** `live` is a real tenant; the other three have no backend session behind them. */
+export type StoreMode = "live" | "preview" | "demo" | "design";
+
 export type StoreImage = { url: string; alt: string };
 
 export type Ref = { id: string; slug: string; name: string };
@@ -137,29 +140,37 @@ export type StoreProfile = {
 
 // ---------------------------------------------------------------------------
 // Customer session: cart, wishlist, account, orders.
+//
+// These mirror the real API's shapes (see `lib/api/shop/types.ts` and
+// `lib/api/order/types.ts`) rather than inventing a storefront-generic model:
+// there are no variants, no selectable shipping method and no tax line, and
+// an order's items are a frozen name/sku/price snapshot with no image or
+// slug to link back to the catalog. The mock customer API (demo/preview/
+// design modes only — see `lib/storefront/client.ts`) fills the same shapes.
 // ---------------------------------------------------------------------------
 
 export type CartLine = {
+  /** The product id — this backend has no separate cart-line id to key on. */
   id: string;
   productId: string;
-  variantId: string;
   slug: string;
   name: string;
-  variantTitle: string;
   image: StoreImage;
   price: number;
   compareAtPrice: number | null;
   quantity: number;
+  /** The API reports stock as a boolean, not a count; a soft cap, not a real one. */
   maxQuantity: number;
 };
 
 export type Cart = { id: string; lines: CartLine[]; itemCount: number; subtotal: number };
 
 export type WishlistItem = {
+  /** The wishlist entry id — distinct from `productId`, needed to remove one. */
+  id: string;
   productId: string;
   slug: string;
   name: string;
-  brand: string;
   image: StoreImage;
   price: number;
   compareAtPrice: number | null;
@@ -172,56 +183,44 @@ export type Customer = {
   firstName: string;
   lastName: string;
   phone: string;
-  marketingOptIn: boolean;
   createdAt: string;
 };
 
+/** `label` and the lat/lng pair are optional; everything else is required by the API. */
 export type AddressInput = {
-  firstName: string;
-  lastName: string;
-  company: string;
-  line1: string;
-  line2: string;
-  city: string;
   region: string;
+  city: string;
+  area: string;
+  buildingStreet: string;
+  address: string;
+  landmark: string;
   postalCode: string;
-  country: string;
   phone: string;
+  label: "HOME" | "OFFICE" | "OTHER";
 };
 
 export type Address = AddressInput & { id: string; isDefault: boolean };
 
-export type ShippingMethod = { id: "standard" | "express"; label: string; description: string; price: number };
+export type OrderStatus = "pending" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled" | "refunded";
 
-export type OrderStatus = "confirmed" | "processing" | "shipped" | "delivered" | "cancelled";
+/** A frozen snapshot: name, sku, attributes and price, nothing else — no image, no slug. */
+export type OrderLine = { id: string; productId: string; name: string; sku: string; quantity: number; price: number };
 
-export type OrderLine = Omit<CartLine, "maxQuantity">;
+export type CheckoutPaymentMethod = "cod" | "esewa" | "khalti";
 
 export type Order = {
   id: string;
   number: string;
   createdAt: string;
-  email: string;
   status: OrderStatus;
+  paymentMethod?: string;
   lines: OrderLine[];
   subtotal: number;
+  discount: number;
   shipping: number;
-  tax: number;
   total: number;
-  shippingMethod: ShippingMethod;
-  shippingAddress: AddressInput;
-  payment: { brand: string; last4: string };
-  timeline: { status: OrderStatus; label: string; at: string }[];
+  /** Flattened onto the order at checkout; there is no address relation to re-fetch. */
+  shippingAddress: string;
+  shippingCity: string;
+  shippingRegion: string;
 };
-
-export type CheckoutInput = {
-  email: string;
-  shippingAddress: AddressInput;
-  shippingMethodId: ShippingMethod["id"];
-  /** Real deployments send a payment-provider token here, never raw card data. */
-  payment: { token: string; brand: string; last4: string };
-  saveAddress: boolean;
-};
-
-export type RegisterInput = { firstName: string; lastName: string; email: string; password: string; marketingOptIn: boolean };
-export type ReviewInput = { productId: string; rating: number; title: string; body: string; author: string };

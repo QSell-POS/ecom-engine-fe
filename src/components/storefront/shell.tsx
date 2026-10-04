@@ -241,7 +241,6 @@ export function CartDrawer() {
                         <StoreLink href={`/products/${line.slug}`} onClick={close} className="line-clamp-2 text-sm font-medium hover:opacity-70">
                           {line.name}
                         </StoreLink>
-                        {line.variantTitle && <p className="mt-0.5 text-xs text-(--sf-muted)">{line.variantTitle}</p>}
                       </div>
                       <Price price={line.price * line.quantity} compareAtPrice={line.compareAtPrice ? line.compareAtPrice * line.quantity : null} size="sm" className="flex-col items-end gap-0" />
                     </div>

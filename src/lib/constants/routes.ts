@@ -17,6 +17,7 @@ export const ROUTES = {
   chat: "/chat",
   apiKeys: "/api-keys",
   storeAddress: "/settings/store-address",
+  demoData: "/settings/demo-data",
   themes: "/themes",
   themeStore: "/themes/store",
   customize: "/themes/customize",

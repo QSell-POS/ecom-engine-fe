@@ -2,6 +2,7 @@ import {
   Boxes,
   Images,
   CreditCard,
+  Database,
   Globe,
   KeyRound,
   LayoutDashboard,
@@ -77,6 +78,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Store address", href: ROUTES.storeAddress, icon: Globe },
       { label: "API keys", href: ROUTES.apiKeys, icon: KeyRound },
+      { label: "Demo data", href: ROUTES.demoData, icon: Database },
     ],
   },
 ];

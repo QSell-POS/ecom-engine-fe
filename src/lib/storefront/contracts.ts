@@ -6,15 +6,13 @@ import type {
   CatalogFacets,
   CatalogQuery,
   Category,
-  CheckoutInput,
+  CheckoutPaymentMethod,
   Customer,
   HomeData,
   Order,
   Paginated,
   Product,
-  RegisterInput,
   Review,
-  ReviewInput,
   ReviewSummary,
   WishlistItem,
 } from "./types";
@@ -25,10 +23,12 @@ import type {
 // API's /products, /categories, /brands and /reviews routes onto it (see that
 // file for what the API cannot supply and what is composed here instead).
 //
-// CustomerApi is still mock-only: the real shopper routes live in
-// lib/api/shop, and they differ from this shape in ways that need UI changes
-// rather than another adapter — see lib/storefront/client.ts. The paths in
-// the comments below describe this contract, not the API as it exists.
+// CustomerApi has two implementations, chosen by store mode (see
+// lib/storefront/client.ts): a "live" store calls the real shopper routes in
+// lib/api/shop directly through ./http/customer-api.ts; demo/preview/design
+// modes — a theme-store preview or the builder canvas, which have no real
+// tenant behind them — keep the localStorage-backed mock. Both speak exactly
+// this shape, which is why components never branch on mode themselves.
 
 /**
  * Public catalog reads. Server-side (React Server Components), authenticated
@@ -58,54 +58,40 @@ export interface CatalogApi {
 }
 
 /**
- * Customer session: runs in the browser. The real API keeps the session in an
- * httpOnly cookie (`credentials: "include"`); a guest cart is identified by a
- * cart cookie issued on first add.
+ * Customer session. For a live store this runs through server actions, which
+ * keep the customer JWT in an httpOnly cookie — nothing here carries a token.
+ * Login is the one call that can fail without throwing a generic error: it
+ * resolves to `null` on bad credentials so forms can show their own message.
  */
 export interface CustomerApi {
-  /** GET /storefront/cart */
   getCart(): Promise<Cart>;
-  /** POST /storefront/cart/lines { variantId, quantity } */
-  addToCart(input: { productId: string; variantId: string; quantity: number }): Promise<Cart>;
-  /** PATCH /storefront/cart/lines/:lineId { quantity } */
-  updateCartLine(lineId: string, quantity: number): Promise<Cart>;
-  /** DELETE /storefront/cart/lines/:lineId */
-  removeCartLine(lineId: string): Promise<Cart>;
+  /** `productId` only — the catalog has no variants. */
+  addToCart(input: { productId: string; quantity: number }): Promise<Cart>;
+  /** `quantity` is the new absolute amount; the API itself takes a signed delta. */
+  updateCartLine(productId: string, quantity: number): Promise<Cart>;
+  removeCartLine(productId: string): Promise<Cart>;
 
-  /** GET /storefront/wishlist */
   getWishlist(): Promise<WishlistItem[]>;
-  /** POST /storefront/wishlist { productId } */
-  addToWishlist(productId: string): Promise<WishlistItem[]>;
-  /** DELETE /storefront/wishlist/:productId */
-  removeFromWishlist(productId: string): Promise<WishlistItem[]>;
+  /** Toggling is idempotent, so add and remove are the same call. */
+  toggleWishlist(productId: string): Promise<WishlistItem[]>;
 
-  /** GET /storefront/auth/me (null when signed out) */
   getCustomer(): Promise<Customer | null>;
-  /** POST /storefront/auth/login */
-  login(input: { email: string; password: string }): Promise<Customer>;
-  /** POST /storefront/auth/register */
-  register(input: RegisterInput): Promise<Customer>;
-  /** POST /storefront/auth/logout */
+  login(input: { identifier: string; password: string }): Promise<Customer | null>;
+  register(input: { firstName?: string; lastName?: string; phone?: string; email: string; password: string }): Promise<Customer>;
   logout(): Promise<void>;
-  /** POST /storefront/auth/forgot-password (always succeeds: never reveals whether an email exists) */
-  requestPasswordReset(email: string): Promise<void>;
-  /** PATCH /storefront/account */
-  updateProfile(patch: Partial<Pick<Customer, "firstName" | "lastName" | "phone" | "marketingOptIn">>): Promise<Customer>;
 
-  /** GET /storefront/account/addresses */
   listAddresses(): Promise<Address[]>;
-  /** POST /storefront/account/addresses · PUT /storefront/account/addresses/:id */
   saveAddress(input: AddressInput & { id?: string; isDefault?: boolean }): Promise<Address[]>;
-  /** DELETE /storefront/account/addresses/:id */
   deleteAddress(id: string): Promise<Address[]>;
 
-  /** GET /storefront/account/orders */
   listOrders(): Promise<Order[]>;
-  /** GET /storefront/orders/:id (own orders, or a guest order just placed in this session) */
   getOrder(id: string): Promise<Order | null>;
-  /** POST /storefront/checkout → creates the order, charges the payment token, empties the cart */
-  placeOrder(input: CheckoutInput): Promise<Order>;
+  /** Creates the order. cod orders are placed outright; esewa/khalti need a follow-up redirect — see `initiatePayment`. */
+  placeOrder(input: { addressId: string; items: { productId: string; quantity: number }[]; paymentMethod: CheckoutPaymentMethod; discountCode?: string }): Promise<Order>;
+  /** Where to send the shopper for esewa/khalti. Never called for cod. */
+  initiatePayment(orderId: string): Promise<{ redirectUrl: string }>;
+  /** Only while `pending` or `confirmed`; later statuses reject it. */
+  cancelOrder(orderId: string): Promise<Order>;
 
-  /** POST /storefront/products/:productId/reviews */
-  submitReview(input: ReviewInput): Promise<Review>;
+  submitReview(input: { productId: string; rating: number; comment?: string }): Promise<Review>;
 }
