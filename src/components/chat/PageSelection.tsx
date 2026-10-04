@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
  */
 export function PageSelection({ selectionId, pages }: { selectionId: string; pages: ChatPage[] }) {
   const router = useRouter();
-  const [chosen, setChosen] = useState<string | null>(pages[0]?.pageId ?? null);
+  const [chosen, setChosen] = useState<string | null>(pages[0]?.id ?? null);
   const [isPending, startTransition] = useTransition();
 
   function connect() {
@@ -36,20 +36,19 @@ export function PageSelection({ selectionId, pages }: { selectionId: string; pag
     <div className="max-w-xl space-y-4">
       <ul className="divide-y overflow-hidden rounded-lg border">
         {pages.map((page) => (
-          <li key={page.pageId}>
+          <li key={page.id}>
             <button
               type="button"
-              onClick={() => setChosen(page.pageId)}
-              className={cn("flex w-full items-center justify-between gap-4 px-4 py-3 text-left text-sm hover:bg-muted/60", chosen === page.pageId && "bg-muted")}
+              onClick={() => setChosen(page.id)}
+              className={cn("flex w-full items-center justify-between gap-4 px-4 py-3 text-left text-sm hover:bg-muted/60", chosen === page.id && "bg-muted")}
             >
               <span className="min-w-0">
-                <span className="block truncate font-medium">{page.pageName}</span>
+                <span className="block truncate font-medium">{page.name}</span>
                 <span className="block text-xs text-muted-foreground">
-                  {page.channel}
-                  {page.instagramBusinessAccountId ? " · Instagram linked" : ""}
+                  {page.instagramUsername ? `Instagram: @${page.instagramUsername}` : "Facebook page"}
                 </span>
               </span>
-              {chosen === page.pageId && <Check className="size-4 shrink-0" />}
+              {chosen === page.id && <Check className="size-4 shrink-0" />}
             </button>
           </li>
         ))}

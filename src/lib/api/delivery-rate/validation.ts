@@ -13,8 +13,11 @@ export const DeliveryRateFieldsSchema = z.object({
 
 export const CreateDeliveryRateSchema = DeliveryRateFieldsSchema;
 
-export const UpdateDeliveryRateSchema = DeliveryRateFieldsSchema.partial().extend({
+/** The API accepts only these two on update. */
+export const UpdateDeliveryRateSchema = z.object({
   id: z.string().min(1, "Delivery rate id is required"),
+  shippingCost: z.coerce.number().min(0, "Must be zero or more").max(99999999).optional(),
+  isActive: z.boolean().optional(),
 });
 
 export const DeleteDeliveryRateSchema = DeliveryRateIdSchema;

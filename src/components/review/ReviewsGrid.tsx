@@ -7,7 +7,7 @@ import { DataGrid, DetailFields, DetailSection, type ActionOutcome, type BulkAct
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { deleteReviewAction, updateReviewVisibilityAction } from "@/lib/api/review/action";
 import { reviewColumns } from "@/lib/api/review/grid";
-import { reviewAuthor, reviewProductName, type Review } from "@/lib/api/review/types";
+import type { Review } from "@/lib/api/review/types";
 import { clientSource } from "@/lib/data-grid";
 
 type SafeResult = { data?: unknown; serverError?: string } | undefined;
@@ -36,10 +36,10 @@ function ReviewDetail({ review }: { review: Review }) {
       <DetailSection title="Details">
         <DetailFields
           items={[
-            ["Product", reviewProductName(review)],
-            ["Author", reviewAuthor(review)],
+            ["Product id", <span key="p" className="font-mono text-[13px]">{review.productId}</span>],
+            ["Customer id", review.customerId && <span className="font-mono text-[13px]">{review.customerId}</span>],
             ["Verified buyer", review.isVerifiedBuyer === undefined ? null : review.isVerifiedBuyer ? "Yes" : "No"],
-            ["Visibility", review.isVisible ? "Visible" : "Hidden from the storefront (still counts toward the rating)"],
+            ["Visibility", review.isVisible === false ? "Hidden from the storefront" : "Visible"],
             ["Posted", review.createdAt ? dateTime.format(new Date(review.createdAt)) : null],
           ]}
         />
@@ -58,7 +58,7 @@ export function ReviewsGrid({ reviews }: { reviews: Review[] }) {
       label: "Hide from storefront",
       icon: EyeOff,
       swipe: "leading",
-      hidden: (review) => !review.isVisible,
+      hidden: (review) => review.isVisible === false,
       optimistic: () => ({ isVisible: false }),
       run: (review) => settle([setVisible(review, false)], "Review hidden"),
     },
@@ -67,7 +67,7 @@ export function ReviewsGrid({ reviews }: { reviews: Review[] }) {
       label: "Show on storefront",
       icon: Eye,
       swipe: "leading",
-      hidden: (review) => review.isVisible,
+      hidden: (review) => review.isVisible !== false,
       optimistic: () => ({ isVisible: true }),
       run: (review) => settle([setVisible(review, true)], "Review published"),
     },

@@ -6,4 +6,8 @@ export type CreateDeliveryRatePayload = {
   isActive?: boolean;
 };
 
-export type UpdateDeliveryRatePayload = Partial<CreateDeliveryRatePayload>;
+/** region and city cannot be moved — delete the rate and add another. */
+export type UpdateDeliveryRatePayload = {
+  shippingCost?: number;
+  isActive?: boolean;
+};

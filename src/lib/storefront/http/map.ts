@@ -111,16 +111,18 @@ export function mapBrand(brand: ApiBrand): Brand {
   };
 }
 
+/** The storefront list carries no reviewer, so every review is anonymous. */
 export function mapReview(review: ApiReview): Review {
   return {
     id: review.id,
     productId: review.productId,
-    author: [review.customer?.firstName, review.customer?.lastName].filter(Boolean).join(" ") || "Anonymous",
+    author: "Verified buyer",
     rating: review.rating,
     title: "",
     body: review.comment ?? "",
     createdAt: review.createdAt ?? new Date(0).toISOString(),
-    verified: Boolean(review.isVerifiedBuyer),
+    // Only buyers can review, so this is always true on the storefront.
+    verified: review.isVerifiedBuyer ?? true,
   };
 }
 

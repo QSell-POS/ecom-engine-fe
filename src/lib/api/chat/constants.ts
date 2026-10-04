@@ -14,21 +14,25 @@ export const CHAT_ROUTES = {
   integrations: "/integrations",
 };
 
-/**
- * The admin chat socket: Socket.IO, namespace /admin/chat, websocket
- * transport. The owner token goes in the handshake auth payload (`auth.token`)
- * because a handshake has no headers for a guard to read; an invalid or
- * customer token is disconnected with no error frame, so treat an immediate
- * disconnect as an auth failure.
- */
+/** Socket.IO namespace. The owner token goes in the handshake's auth.token. */
 export function chatSocketUrl(apiUrl: string): string {
   return `${apiUrl.replace(/\/$/, "")}/admin/chat`;
 }
 
+/**
+ * Event names are kebab-case — a camelCase listener silently never fires.
+ * Every event also reaches a tenant-wide room, so an inbox needs no
+ * joinConversation; joining a thread as well delivers a second copy of
+ * message:new and message:status-updated, which has to be de-duplicated.
+ */
 export const CHAT_SOCKET_EVENTS = {
   messageNew: "message:new",
+  messageStatusUpdated: "message:status-updated",
   conversationUpdated: "conversation:updated",
-  conversationStatusChanged: "conversation:statusChanged",
+  conversationStatusChanged: "conversation:status-changed",
+  conversationAssigned: "conversation:assigned",
+  conversationUnassigned: "conversation:unassigned",
+  conversationOrderCreated: "conversation:order-created",
   joinConversation: "joinConversation",
   leaveConversation: "leaveConversation",
 } as const;

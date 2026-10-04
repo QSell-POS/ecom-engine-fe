@@ -1,4 +1,4 @@
-import type { Address } from "@/lib/api/shared/types";
+import type { Decimal } from "@/lib/api/shared/types";
 
 export const ORDER_STATUSES = ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled", "refunded"] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
@@ -17,18 +17,32 @@ export const PAYMENT_METHODS = [
 ] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
-/** What a shopper can pick at checkout — a subset of PAYMENT_METHODS. */
+/** What a shopper may pick at checkout. Chat orders accept the full enum. */
 export const CHECKOUT_PAYMENT_METHODS = ["cod", "esewa", "khalti"] as const;
 export type CheckoutPaymentMethod = (typeof CHECKOUT_PAYMENT_METHODS)[number];
 
-/** Where the order came from. Chat orders carry the conversation's channel. */
 export const ORDER_CHANNELS = ["facebook", "instagram", "whatsapp", "e_commerce", "pos", "manual"] as const;
 export type OrderChannel = (typeof ORDER_CHANNELS)[number];
 
 /**
- * A line item keeps a snapshot of the product as it was sold, so later
- * catalog edits never rewrite order history. Render from the snapshots.
+ * What each status may become. An illegal jump is a 400
+ * (INVALID_STATUS_TRANSITION), so the dashboard only offers these.
  */
+export const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  pending: ["confirmed", "cancelled"],
+  confirmed: ["processing", "shipped", "delivered", "cancelled"],
+  processing: ["shipped", "delivered", "cancelled"],
+  shipped: ["delivered"],
+  delivered: ["refunded"],
+  cancelled: [],
+  refunded: [],
+};
+
+export function canTransition(from: OrderStatus, to: OrderStatus): boolean {
+  return ORDER_TRANSITIONS[from]?.includes(to) ?? false;
+}
+
+/** Sold as it was: later catalog edits never rewrite these. */
 export type OrderItem = {
   id: string;
   productId: string;
@@ -36,18 +50,18 @@ export type OrderItem = {
   productNameSnapshot: string;
   productSkuSnapshot?: string | null;
   attributesSnapshot?: Record<string, string> | null;
-  priceSnapshot: number;
+  /** Number when freshly computed, decimal string when read back. */
+  priceSnapshot: Decimal | number;
 };
 
-export type OrderCustomer = {
-  id?: string;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  phone?: string;
-};
-
-/** Order money is numbers, unlike product prices, which are decimal strings. */
+/**
+ * Money here is a number in the checkout response and a decimal string on
+ * every later read of the same order, because the columns have no transformer.
+ * Always put it through `toAmount()`.
+ *
+ * Neither the list nor the detail route joins the customer — only
+ * `customerId`. Fetch `/admin/customers/:id` when you need their name.
+ */
 export type Order = {
   id: string;
   orderNumber: string;
@@ -55,29 +69,30 @@ export type Order = {
   paymentMethod?: PaymentMethod;
   channel?: OrderChannel;
   customerId?: string;
-  customer?: OrderCustomer;
-  items: OrderItem[];
-  subtotalAmount: number;
-  discountAmount?: number;
-  deliveryCharge?: number;
-  totalAmount: number;
-  address?: Address;
-  addressId?: string;
+  items?: OrderItem[];
+  subtotalAmount: Decimal | number;
+  discountAmount?: Decimal | number;
+  deliveryCharge?: Decimal | number;
+  totalAmount: Decimal | number;
+  /** The address as charged, flattened onto the order. */
+  shippingAddressSnapshot?: string | null;
+  shippingCitySnapshot?: string | null;
+  shippingRegionSnapshot?: string | null;
+  customerNotes?: string | null;
+  billingInfoId?: string | null;
+  /** Set when the order was raised from a chat thread. */
+  conversationId?: string | null;
+  idempotencyKey?: string | null;
   createdAt?: string;
   updatedAt?: string;
 };
 
-/** The happy path, in order. Transitions are validated server-side (409). */
-export const ORDER_STATUS_FLOW: OrderStatus[] = ["pending", "confirmed", "processing", "shipped", "delivered"];
-
-export function orderCustomerName(order: Order): string {
-  const customer = order.customer;
-  if (!customer) return "Guest";
-  return [customer.firstName, customer.lastName].filter(Boolean).join(" ") || customer.email || customer.phone || "Guest";
-}
-
 export function orderItemCount(order: Order): number {
   return (order.items ?? []).reduce((sum, item) => sum + item.quantity, 0);
+}
+
+export function orderShipsTo(order: Order): string {
+  return [order.shippingAddressSnapshot, order.shippingCitySnapshot, order.shippingRegionSnapshot].filter(Boolean).join(", ");
 }
 
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {
@@ -97,3 +112,12 @@ export function paymentMethodLabel(method?: string): string {
   if (!method) return "—";
   return PAYMENT_METHOD_LABELS[method] ?? method;
 }
+
+export const ORDER_CHANNEL_LABELS: Record<string, string> = {
+  facebook: "Facebook",
+  instagram: "Instagram",
+  whatsapp: "WhatsApp",
+  e_commerce: "Online store",
+  pos: "POS",
+  manual: "Manual",
+};
