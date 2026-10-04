@@ -32,6 +32,13 @@ export async function listTenants(): Promise<Tenant[]> {
  * `isLive` rather than carrying an id on the tenant. Getting this wrong makes
  * every theme screen behave as though no theme is installed.
  */
+// Sessions created before the API returned `storefrontHost` carry only the
+// subdomain; the store lives at <subdomain>.<admin domain minus its first label>.
+function storefrontHostFor(subdomain?: string | null): string | undefined {
+  const root = (process.env.NEXT_PUBLIC_ADMIN_DOMAIN ?? "").split(".").slice(1).join(".");
+  return subdomain && root ? `${subdomain}.${root}` : undefined;
+}
+
 export const getCurrentTenant = cache(async (): Promise<Tenant> => {
   const [tenant, profile, themes] = await Promise.all([getTenantFromApi(), getStoreProfile(), listThemes()]);
   const slug = tenant.subdomain ?? tenant.id;
@@ -42,7 +49,7 @@ export const getCurrentTenant = cache(async (): Promise<Tenant> => {
     slug,
     // The dashboard reads the catalog with its own credentials; this is the
     // host its storefront previews are about.
-    apiKey: tenant.storefrontHost ?? slug,
+    apiKey: tenant.storefrontHost ?? storefrontHostFor(tenant.subdomain) ?? slug,
     plan: "standard",
     themeLimit: THEME_LIMIT,
     liveThemeId: themes.find((theme) => theme.isLive)?.id ?? null,
@@ -175,6 +182,7 @@ export async function resolveStorefront(slug: string): Promise<ResolvedStorefron
   return {
     slug: resolved.store.slug || slug,
     storeKey: host ?? resolved.store.slug,
+    host,
     vertical: "fashion",
     profile: resolved.store.profile,
     document: resolved.theme.document,
