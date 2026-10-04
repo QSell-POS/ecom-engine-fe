@@ -22,7 +22,9 @@ export async function presetPreview(preset: ThemePreset) {
 }
 
 export async function tenantPreview(tenant: Tenant) {
-  const data = await getCatalogApi({ storeKey: tenant.apiKey, vertical: tenant.vertical }).home();
+  // `apiKey` carries the store's host: the catalog is host-routed, so a
+  // preview has to say which store it is previewing.
+  const data = await getCatalogApi({ storeKey: tenant.apiKey, vertical: tenant.vertical, host: tenant.apiKey }).home();
   const store: ThumbnailStore = {
     slug: tenant.slug,
     storeKey: tenant.apiKey,

@@ -1,9 +1,10 @@
 "use server";
 import { cookies } from "next/headers";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 import type { ThemeDocument } from "@/lib/theme-engine/types";
 import { authActionClient } from "@/lib/safe-action";
+import { storefrontThemeTag } from "@/lib/api/storefront/theme";
 import { TENANT_COOKIE, THEME_ROUTES } from "./constants";
 import {
   createThemeFromPreset,
@@ -25,10 +26,17 @@ const SaveSchema = ThemeIdSchema.extend({
   name: z.string().max(80).optional(),
 });
 
-function revalidateTenant(slug: string, themeId?: string) {
+/**
+ * `host` is the store's own address. Publishing, a brand patch or a profile
+ * save all change what `/storefront/theme` answers, and that response is
+ * cached per host — without dropping its tag the merchant keeps seeing the
+ * old shop until the cache expires.
+ */
+function revalidateTenant(slug: string, themeId?: string, host?: string) {
   revalidatePath(THEME_ROUTES.list);
   revalidatePath(THEME_ROUTES.customize);
   revalidatePath(THEME_ROUTES.storefront(slug), "layout");
+  if (host) updateTag(storefrontThemeTag(host));
   if (themeId) {
     revalidatePath(THEME_ROUTES.editor(themeId));
   }
@@ -53,7 +61,7 @@ export const createThemeFromPresetAction = authActionClient
   .action(async ({ parsedInput }) => {
     const tenant = await getCurrentTenant();
     const theme = await createThemeFromPreset(tenant.id, parsedInput.presetId, parsedInput.publish);
-    revalidateTenant(tenant.slug);
+    revalidateTenant(tenant.slug, undefined, tenant.apiKey);
     return { themeId: theme.id };
   });
 
@@ -62,7 +70,7 @@ export const duplicateThemeAction = authActionClient
   .action(async ({ parsedInput }) => {
     const tenant = await getCurrentTenant();
     const theme = await duplicateTheme(tenant.id, parsedInput.themeId);
-    revalidateTenant(tenant.slug);
+    revalidateTenant(tenant.slug, undefined, tenant.apiKey);
     return { themeId: theme.id };
   });
 
@@ -71,7 +79,7 @@ export const deleteThemeAction = authActionClient
   .action(async ({ parsedInput }) => {
     const tenant = await getCurrentTenant();
     await deleteTheme(tenant.id, parsedInput.themeId);
-    revalidateTenant(tenant.slug);
+    revalidateTenant(tenant.slug, undefined, tenant.apiKey);
     return { ok: true };
   });
 
@@ -82,7 +90,7 @@ export const saveThemeDraftAction = authActionClient
     const { themeId, document, ...rest } = parsedInput;
     // The API takes the document plus its optional name and expectedRevision.
     const theme = await saveThemeDraft(tenant.id, themeId, document as ThemeDocument, rest);
-    revalidateTenant(tenant.slug, theme.id);
+    revalidateTenant(tenant.slug, theme.id, tenant.apiKey);
     return { document: theme.draft, updatedAt: theme.updatedAt };
   });
 
@@ -93,7 +101,7 @@ export const publishThemeAction = authActionClient
     const tenant = await getCurrentTenant();
     const { themeId, document, name } = parsedInput;
     const theme = await publishTheme(tenant.id, themeId, document === undefined ? {} : { document: document as ThemeDocument, name });
-    revalidateTenant(tenant.slug, theme.id);
+    revalidateTenant(tenant.slug, theme.id, tenant.apiKey);
     return { document: theme.draft, publishedAt: theme.publishedAt };
   });
 
@@ -103,7 +111,7 @@ export const installThemeAction = authActionClient
   .action(async ({ parsedInput }) => {
     const tenant = await getCurrentTenant();
     const theme = await installTheme(tenant.id, parsedInput.presetId);
-    revalidateTenant(tenant.slug, theme.id);
+    revalidateTenant(tenant.slug, theme.id, tenant.apiKey);
     return { themeId: theme.id };
   });
 

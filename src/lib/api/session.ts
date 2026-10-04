@@ -26,7 +26,7 @@ function cookieOptions(maxAge = SESSION_MAX_AGE) {
   };
 }
 
-export type TenantSummary = { id: string; name: string; slug?: string; email?: string };
+export type TenantSummary = { id: string; name: string; slug?: string; email?: string; subdomain?: string | null; storefrontHost?: string | null };
 
 export async function getOwnerToken(): Promise<string | undefined> {
   return (await cookies()).get(OWNER_TOKEN_COOKIE)?.value;
@@ -52,10 +52,19 @@ export async function setOwnerSession(token: string, tenant?: TenantSummary) {
   const jar = await cookies();
   jar.set(OWNER_TOKEN_COOKIE, token, cookieOptions());
   if (tenant) {
-    jar.set(TENANT_COOKIE, JSON.stringify({ id: tenant.id, name: tenant.name, slug: tenant.slug, email: tenant.email }), {
-      ...cookieOptions(),
-      httpOnly: false,
-    });
+    jar.set(
+      TENANT_COOKIE,
+      JSON.stringify({
+        id: tenant.id,
+        name: tenant.name,
+        slug: tenant.slug,
+        email: tenant.email,
+        // Their storefront address, so the shell can link to it without a call.
+        subdomain: tenant.subdomain,
+        storefrontHost: tenant.storefrontHost,
+      }),
+      { ...cookieOptions(), httpOnly: false },
+    );
   }
 }
 

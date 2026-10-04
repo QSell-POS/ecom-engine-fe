@@ -45,6 +45,13 @@ export const PRODUCT_BADGES = [
   "exclusive",
   "clearance",
   "hot_deal",
+  "deal_of_the_day",
+  "free_shipping",
+  "express_delivery",
+  "limited_stock",
+  "eco_friendly",
+  "organic",
+  "handmade",
 ] as const;
 
 export type ProductBadge = (typeof PRODUCT_BADGES)[number];
