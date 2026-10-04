@@ -1,5 +1,6 @@
 import { defineColumns } from "@/lib/data-grid";
-import { stockState, TRANSACTION_TYPE_LABELS, type InventoryItem, type InventoryTransaction } from "./types";
+import { DEFAULT_CURRENCY } from "@/lib/constants/money";
+import { alertLevel, availableStock, itemName, stockState, TRANSACTION_TYPE_LABELS, type InventoryItem, type InventoryTransaction } from "./types";
 
 export const stockStates = {
   "in-stock": { label: "In stock", tone: "success" as const },
@@ -8,13 +9,14 @@ export const stockStates = {
 };
 
 export const inventoryColumns = defineColumns<InventoryItem>([
-  { id: "productName", header: "Product", accessor: "productName", width: 260, hideable: false, defaultPin: "left", mobile: { role: "title" } },
-  { id: "sku", header: "SKU", accessor: "sku", width: 140, mobile: { role: "subtitle" } },
+  { id: "productName", header: "Product", accessor: itemName, width: 260, hideable: false, defaultPin: "left", mobile: { role: "title" } },
+  { id: "sku", header: "SKU", accessor: (item) => item.product?.sku, width: 140, mobile: { role: "subtitle" } },
   { id: "state", header: "Stock", accessor: (item) => stockState(item), type: "status", statuses: stockStates, filter: { type: "multiselect" }, width: 130, mobile: { role: "status" } },
-  { id: "available", header: "Available", accessor: "available", type: "number", filter: { type: "range" }, width: 110, align: "right", mobile: { role: "trailing" } },
-  { id: "reserved", header: "Reserved", accessor: "reserved", type: "number", width: 110, align: "right" },
-  { id: "quantity", header: "On hand", accessor: "quantity", type: "number", width: 110, align: "right" },
-  { id: "stockAlert", header: "Alert at", accessor: "stockAlert", type: "number", width: 100, align: "right", defaultHidden: true },
+  { id: "available", header: "Available", accessor: availableStock, type: "number", filter: { type: "range" }, width: 110, align: "right", mobile: { role: "trailing" } },
+  { id: "reserved", header: "Reserved", accessor: "quantityReserved", type: "number", width: 110, align: "right" },
+  { id: "onHand", header: "On hand", accessor: "quantityOnHand", type: "number", width: 110, align: "right" },
+  { id: "stockAlert", header: "Alert at", accessor: alertLevel, type: "number", width: 100, align: "right", defaultHidden: true },
+  { id: "price", header: "Price", accessor: (item) => item.product?.sellingPrice, type: "currency", currency: DEFAULT_CURRENCY, width: 120, align: "right", defaultHidden: true },
 ]);
 
 const tone = {
@@ -39,8 +41,9 @@ export const inventoryTransactionColumns = defineColumns<InventoryTransaction>([
   { id: "createdAt", header: "When", accessor: "createdAt", type: "datetime", width: 170, hideable: false, mobile: { role: "subtitle" } },
   { id: "type", header: "Movement", accessor: "type", type: "status", statuses: transactionTypes, filter: { type: "multiselect" }, width: 160, mobile: { role: "title" } },
   { id: "quantity", header: "Qty", accessor: "quantity", type: "number", format: (value) => (Number(value) > 0 ? `+${value}` : String(value)), width: 90, align: "right", mobile: { role: "trailing" } },
-  { id: "balanceAfter", header: "Balance", accessor: "balanceAfter", type: "number", width: 100, align: "right" },
+  { id: "quantityAfter", header: "Balance", accessor: "quantityAfter", type: "number", width: 100, align: "right" },
   { id: "note", header: "Note", accessor: "note", width: 240 },
-  { id: "orderId", header: "Order", accessor: "orderId", width: 140, defaultHidden: true },
-  { id: "createdBy", header: "By", accessor: "createdBy", width: 140, defaultHidden: true },
+  { id: "unitCost", header: "Unit cost", accessor: "unitCost", type: "currency", currency: DEFAULT_CURRENCY, width: 120, align: "right", defaultHidden: true },
+  { id: "referenceId", header: "Reference", accessor: (t) => (t.referenceType ? `${t.referenceType} ${t.referenceId ?? ""}`.trim() : t.referenceId), width: 200, defaultHidden: true },
+  { id: "performedBy", header: "By", accessor: "performedBy", width: 140, defaultHidden: true },
 ]);

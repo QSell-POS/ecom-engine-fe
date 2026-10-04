@@ -7,6 +7,7 @@ export const ROUTES = {
   categories: "/categories",
   products: "/products",
   inventory: "/inventory",
+  media: "/media",
   orders: "/orders",
   customers: "/customers",
   payments: "/payments",

@@ -1,5 +1,6 @@
 import {
   Boxes,
+  Images,
   CreditCard,
   KeyRound,
   LayoutDashboard,
@@ -42,6 +43,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Categories", href: ROUTES.categories, icon: Shapes },
       { label: "Brands", href: ROUTES.brands, icon: Tag },
       { label: "Inventory", href: ROUTES.inventory, icon: Boxes },
+      { label: "Media", href: ROUTES.media, icon: Images },
     ],
   },
   {

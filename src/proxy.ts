@@ -8,7 +8,7 @@ import { OWNER_TOKEN_COOKIE } from "@/lib/api/session";
  * is a cheap check on the cookie's presence, not a validation of it — the API
  * is the authority, and `apiClient` surfaces its 401s.
  */
-const PROTECTED = ["/dashboard", "/products", "/categories", "/brand", "/orders", "/customers", "/payments", "/reviews", "/discounts", "/delivery-rates", "/inventory", "/chat", "/api-keys", "/integrations", "/themes", "/editor", "/settings"];
+const PROTECTED = ["/dashboard", "/products", "/categories", "/brand", "/orders", "/customers", "/payments", "/reviews", "/discounts", "/delivery-rates", "/inventory", "/media", "/chat", "/api-keys", "/integrations", "/themes", "/editor", "/settings"];
 
 const AUTH_PAGES = ["/login", "/register"];
 

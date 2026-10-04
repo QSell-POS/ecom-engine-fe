@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { SelectField, TextField } from "@/components/common/FormFields";
@@ -13,7 +13,7 @@ import { FieldGroup } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
 import { adjustStockAction, receiveStockAction } from "@/lib/api/inventory/action";
 import { AdjustStockSchema, ReceiveStockSchema } from "@/lib/api/inventory/validation";
-import { TRANSACTION_TYPE_LABELS, ADJUSTMENT_TYPES, type InventoryItem } from "@/lib/api/inventory/types";
+import { TRANSACTION_TYPE_LABELS, ADJUSTMENT_TYPES, itemName, type InventoryItem } from "@/lib/api/inventory/types";
 
 const ADJUSTMENT_OPTIONS = ADJUSTMENT_TYPES.map((type) => ({ value: type, label: TRANSACTION_TYPE_LABELS[type] }));
 
@@ -27,7 +27,7 @@ export function StockDialog({ item, mode, open, onOpenChange }: { item: Inventor
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [serverError, setServerError] = useState<string | null>(null);
-  const name = item.productName ?? item.productId;
+  const name = itemName(item);
 
   const receiveForm = useForm({
     resolver: zodResolver(ReceiveStockSchema),
@@ -36,8 +36,11 @@ export function StockDialog({ item, mode, open, onOpenChange }: { item: Inventor
 
   const adjustForm = useForm({
     resolver: zodResolver(AdjustStockSchema),
-    defaultValues: { productId: item.productId, quantity: -1, type: "adjustment_out", note: "" },
+    defaultValues: { productId: item.productId, type: "adjustment_out", quantity: 1, unitCost: "", note: "" },
   });
+
+  // stock_count means "the counted total", the others mean "this many units".
+  const adjustType = useWatch({ control: adjustForm.control, name: "type" });
 
   function handleOpenChange(next: boolean) {
     if (isPending) return;
@@ -71,7 +74,7 @@ export function StockDialog({ item, mode, open, onOpenChange }: { item: Inventor
           <DialogDescription>
             {mode === "receive"
               ? "Records a batch and raises what is on hand."
-              : `On hand is ${item.quantity}, of which ${item.reserved} is reserved. Enter the change, not the new total: -3 writes off three units.`}
+              : `On hand is ${item.quantityOnHand}, of which ${item.quantityReserved} is reserved. The reason decides the direction, so the quantity is always positive.`}
           </DialogDescription>
         </DialogHeader>
 
@@ -84,7 +87,7 @@ export function StockDialog({ item, mode, open, onOpenChange }: { item: Inventor
             <FieldGroup className="gap-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextField form={receiveForm} name="quantity" label="Quantity" type="number" min={1} step="1" autoFocus />
-                <TextField form={receiveForm} name="costPrice" label="Unit cost" optional type="number" min={0} step="0.01" />
+                <TextField form={receiveForm} name="costPrice" label="Unit cost" type="number" min={0} step="0.01" description="Prices this batch." />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextField form={receiveForm} name="batchNumber" label="Batch number" optional placeholder="B-2026-10" />
@@ -110,8 +113,20 @@ export function StockDialog({ item, mode, open, onOpenChange }: { item: Inventor
             noValidate
           >
             <FieldGroup className="gap-4">
-              <TextField form={adjustForm} name="quantity" label="Change" type="number" step="1" autoFocus description="Positive adds, negative removes." />
               <SelectField form={adjustForm} name="type" label="Reason" options={ADJUSTMENT_OPTIONS} />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <TextField
+                  form={adjustForm}
+                  name="quantity"
+                  label={adjustType === "stock_count" ? "Counted total" : "Units"}
+                  type="number"
+                  min={0}
+                  step="1"
+                  autoFocus
+                  description={adjustType === "stock_count" ? "The new on-hand figure." : undefined}
+                />
+                <TextField form={adjustForm} name="unitCost" label="Unit cost" optional type="number" min={0} step="0.01" description="Prices stock coming in." />
+              </div>
               <TextField form={adjustForm} name="note" label="Note" optional multiline />
             </FieldGroup>
           </form>

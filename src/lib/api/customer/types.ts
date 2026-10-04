@@ -24,7 +24,7 @@ export type CustomerCartItem = {
   id: string;
   productId: string;
   quantity: number;
-  product?: Pick<Product, "id" | "name" | "slug" | "sellingPrice" | "media" | "inventory">;
+  product?: Pick<Product, "id" | "name" | "slug" | "sellingPrice" | "media" | "inStock">;
 };
 
 export type CustomerCart = {

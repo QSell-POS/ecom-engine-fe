@@ -1,5 +1,6 @@
 import { defineColumns } from "@/lib/data-grid";
 import type { Product } from "./types";
+import { availableStock } from "./types";
 
 // Shared product grid definition: used by the /api/admin/products route
 // (server-side query), the server-rendered first page, the web DataGrid and
@@ -17,7 +18,7 @@ export const stockStatuses = {
 };
 
 export function stockLevel(product: Product): keyof typeof stockStatuses {
-  const quantity = product.inventory?.available ?? 0;
+  const quantity = availableStock(product);
   if (quantity <= 0) return "out";
   if ((product.stockAlert ?? 0) > 0 && quantity <= (product.stockAlert ?? 0))
     return "low";
@@ -56,7 +57,7 @@ export const productColumns = defineColumns<Product>([
     id: "stock",
     header: "Inventory",
     description: "Quantity on hand. Low stock uses each product's alert level.",
-    accessor: (p) => p.inventory?.available ?? 0,
+    accessor: (p) => availableStock(p),
     type: "number",
     format: (value) =>
       Number(value) > 0 ? `${value} in stock` : "Out of stock",
