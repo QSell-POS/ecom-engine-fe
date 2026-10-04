@@ -1,6 +1,16 @@
-# Theme backend: entities, API and example data
+# Theme backend: entities and example data
 
-Backend design for theme creation and customization (NestJS + TypeORM + PostgreSQL), matching the shapes used by this frontend (`src/lib/theme-engine/`, `src/lib/api/theme/`, `.data/theme-engine.json`, `docs/theme-engine.md`).
+The **data model** behind the theme API: tables, TypeORM entities, DTOs and
+example rows (NestJS + TypeORM + PostgreSQL).
+
+> **The endpoint table in the "API" section below is superseded by
+> [theme-api-request.md](theme-api-request.md)**, which is the contract to
+> implement. Where the two disagree, that file wins. Everything else here —
+> tables, entities, service core, sanitisation rules, example rows — still
+> stands and is why that file is short.
+>
+> One correction: `POST /admin/media` already exists and returns
+> `data: [{ id, url, … }]`, not `{ url }`. Nothing new is needed for images.
 
 > This is a design and code sketch. It has not been compiled or run.
 

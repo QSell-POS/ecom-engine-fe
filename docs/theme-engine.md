@@ -31,6 +31,10 @@ A merchant previewing an unpublished theme (`/preview/:themeId`) browses their o
 
 Mock data: tenants and themes in `.data/theme-engine.json` (delete to reset). Shopper sessions live in the browser's localStorage per store.
 
+> The storefront's catalog is the real API when `API_URL` and `API_KEY` are
+> set; its cart, checkout and accounts are still the mock. See
+> [Connecting the backend](#connecting-the-backend).
+
 ## Architecture
 
 ```
@@ -40,8 +44,8 @@ src/lib/storefront/            Commerce domain: backend-agnostic
   query.ts                     Catalog URL format (?q&category&brand&minPrice&…&sort&page)
   checkout.ts / format.ts      Price previews, money/date formatting
   profile.ts                   StoreProfile validation (zod), shared by UI and server
-  server.ts / client.ts        Pick the implementation: HTTP when env is set, mock otherwise
-  http/                        NestJS clients (fetch)
+  server.ts / client.ts        Pick the implementation: the API for the catalog, mock for the session
+  http/                        API clients: catalog-api.ts maps the real routes onto CatalogApi
   mock/                        Demo catalogs (4 verticals, real photography), mock APIs
 
 src/lib/theme-engine/          Theme documents: tokens + home sections, schemas, sanitisation, presets
@@ -64,56 +68,42 @@ src/components/themes/         Admin: theme store, previews, customizer, actions
 - **One renderer everywhere.** The live store, theme store thumbnails, customizer preview and builder canvas all render the same components with container queries, so each device preview is exact.
 - **Never blank.** Section images fall back to the store's media (a category tile uses that category's image), and broken images become a soft placeholder.
 
-## Connecting the NestJS / PostgreSQL backend
+## Connecting the backend
 
-Set environment variables; no component changes:
+The commerce API is already live and connected — see
+**[api-integration.md](api-integration.md)** for how this app talks to it: the
+three credentials, the response envelope, and the places the API's shape is
+surprising. Two environment variables drive it:
 
 ```bash
-STOREFRONT_API_URL=https://api.example.com                # server: CatalogApi
-NEXT_PUBLIC_STOREFRONT_API_URL=https://api.example.com    # browser: CustomerApi (cookies, credentials: include)
-NEXT_PUBLIC_MEDIA_UPLOAD_URL=https://api.example.com/admin/media   # logo/banner uploads → { url }
+API_URL=https://api.abhishekpun.com.np   # the API
+API_KEY=ek_live_...                      # this deployment's storefront key
 ```
 
-Requests carry `x-storefront-key: <store public key>` to resolve the tenant. Demo stores (`demo-*`) always use demo content.
+Without them the storefront falls back to its demo catalog, so the theme
+builder works with no backend at all.
 
-### Storefront API (public)
+**Catalog reads are real.** `src/lib/storefront/http/catalog-api.ts` maps the
+API's `/products`, `/categories`, `/brands` and `/reviews` onto the
+`CatalogApi` contract. Two things the API does not provide are composed there
+instead, and that file says so: filtering and sorting beyond
+`search`/`brandId`/`categoryId` happen in-process on a fetched page, and
+`home` and `facets` are assembled from the product, category and brand lists.
 
-| Method | Path | Returns |
-| --- | --- | --- |
-| GET | `/storefront/home` | `HomeData` (products, categories, brands, collections, media) |
-| GET | `/storefront/products?q&category&brand&minPrice&maxPrice&rating&inStock&onSale&collection&sort&page&pageSize` | `Paginated<Product>` |
-| GET | `/storefront/products/facets?(same)` | `CatalogFacets` (each facet counted without its own filter) |
-| GET | `/storefront/products/:slug` · `/related?limit` · `/reviews?page` | `Product` · `Product[]` · `{ summary, reviews }` |
-| GET | `/storefront/categories[/:slug]`, `/storefront/brands[/:slug]` | `Category`, `Brand` |
-| GET/POST/PATCH/DELETE | `/storefront/cart`, `/storefront/cart/lines[/:id]` | `Cart` (stock-checked; guest cart via cookie) |
-| GET/POST/DELETE | `/storefront/wishlist[/:productId]` | `WishlistItem[]` |
-| GET/POST | `/storefront/auth/me`, `/login`, `/register`, `/logout`, `/forgot-password` | `Customer` (httpOnly session cookie) |
-| PATCH | `/storefront/account` | `Customer` |
-| GET/POST/PUT/DELETE | `/storefront/account/addresses[/:id]` | `Address[]` |
-| GET | `/storefront/account/orders`, `/storefront/orders/:id` | `Order[]`, `Order` |
-| POST | `/storefront/checkout` | `Order`: recalculates totals, charges the **payment token** (never raw card data), empties the cart |
-| POST | `/storefront/products/:id/reviews` | `Review` |
-| GET | `/storefront/theme` (`x-api-key`) | `{ store, theme }`: published live theme (already served by `/api/storefront/theme`) |
+**The shopper session is not wired up.** `CustomerApi` is still the
+localStorage mock. The real shopper routes exist, typed, in `src/lib/api/shop`
+as server actions, but the contract here assumes card payments, shipping
+methods and line-id cart edits that the API does not have — switching the
+storefront over is a UI change against those actions, not another adapter.
+`src/lib/storefront/client.ts` says the same at the call site.
 
-Exact shapes: `src/lib/storefront/types.ts`. Reference behaviour (filtering, facets, stock, totals, order history): the mock implementations in `src/lib/storefront/mock/`.
-
-### Admin API (merchant session)
-
-Replace the bodies in `src/lib/api/theme/service.ts` (same signatures), delete `db.ts`, and resolve the tenant from the real session instead of the `ee_tenant` cookie.
-
-| Method | Path | Notes |
-| --- | --- | --- |
-| GET | `/admin/themes` · `/admin/themes/:id` | summaries · full theme (draft + published) |
-| POST | `/admin/themes` `{ presetId, publish }` | install; enforce `themeLimit` (403). "Use this theme" = `publish: true` |
-| POST | `/admin/themes/:id/duplicate` | enforce `themeLimit` |
-| PUT | `/admin/themes/:id/draft` | builder save; **sanitise server-side** |
-| POST | `/admin/themes/:id/publish` | snapshot draft → published, set live |
-| PATCH | `/admin/themes/:id/brand` `{ colorPrimary, colorPrimaryText, fontHeading, fontBody }` | simple customizer: applies to draft **and** published |
-| DELETE | `/admin/themes/:id` | 409 if live |
-| GET/PUT | `/admin/store/profile` | `StoreProfile`, validated like `StoreProfileSchema` |
-| POST | `/admin/media` (multipart) | `{ url }` for logos, favicons, banners |
-
-Suggested tables: `tenants`, `store_profiles (tenant_id, jsonb)`, `themes (tenant_id, preset_id, draft jsonb, published jsonb, published_at)`, and `tenants.live_theme_id`. Theme presets can stay in code, shared with the backend as a package.
+**Themes have no backend yet.** They still read and write
+`.data/theme-engine.json`, a JSON file on the frontend's disk that is not in
+the container image, so builder edits do not survive a redeploy. What needs
+building is in **[theme-api-request.md](theme-api-request.md)** (the contract)
+and **[theme-backend.md](theme-backend.md)** (the data model). Until it lands,
+a deployment serves a default preset with the real catalog behind it, so the
+public shop works and simply ignores the builder.
 
 ## Security
 
