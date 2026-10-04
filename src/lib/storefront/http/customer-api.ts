@@ -237,7 +237,8 @@ export function createLiveCustomerApi(): CustomerApi {
 
     async saveAddress(input) {
       unwrap(
-        await saveAddressAction({ ...toAddressPayload(input), id: input.id, isDefaultShipping: input.isDefault }),
+        // A new address arrives with id "" from checkout; the action wants a UUID or nothing.
+        await saveAddressAction({ ...toAddressPayload(input), id: input.id || undefined, isDefaultShipping: input.isDefault }),
         "Couldn't save that address.",
       );
       return fetchAddresses();
