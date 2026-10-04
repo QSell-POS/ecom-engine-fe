@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { optionalText } from "@/lib/api/shared/validation";
 import { CHECKOUT_PAYMENT_METHODS } from "@/lib/api/order/types";
 
 const ConversationIdSchema = z.object({ id: z.string().min(1, "Conversation is required") });
@@ -24,9 +23,9 @@ export const LinkCustomerSchema = ConversationIdSchema.extend({
   customerId: z.uuid("Pick a customer"),
 });
 
+// firstName, phone and email only — an extra property fails the request.
 export const CreateCustomerFromChatSchema = ConversationIdSchema.extend({
   firstName: z.string().min(1, "First name is required"),
-  lastName: optionalText,
   email: z.preprocess((value) => (value === "" ? undefined : value), z.email("Enter a valid email address").optional()),
   phone: z.preprocess(
     (value) => (value === "" ? undefined : value),
@@ -34,6 +33,7 @@ export const CreateCustomerFromChatSchema = ConversationIdSchema.extend({
   ),
 });
 
+/** The conversation must already be linked to a customer. */
 export const CreateChatOrderSchema = ConversationIdSchema.extend({
   items: z.array(z.object({ productId: z.uuid(), quantity: z.coerce.number().int().positive() })).min(1, "Add at least one product"),
   addressId: z.uuid("Choose a delivery address"),

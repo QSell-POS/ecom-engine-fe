@@ -4,6 +4,7 @@ import type { Product as ApiProduct } from "@/lib/api/product/types";
 import type { Review as ApiReview } from "@/lib/api/review/types";
 import { toAmount } from "@/lib/api/shared/types";
 import type { Brand, Category, Product, Ref, Review, ReviewSummary, StoreImage } from "../types";
+import { availableStock, inStockNow } from "@/lib/api/product/types";
 
 /**
  * Translates API resources into the storefront's own model.
@@ -11,9 +12,12 @@ import type { Brand, Category, Product, Ref, Review, ReviewSummary, StoreImage }
  * The two do not line up exactly, and the gaps are filled honestly rather than
  * invented:
  *
- * - **Variants and options.** The API has one price and one stock figure per
- *   product, so each product maps to a single variant carrying them. Themes
- *   that render a size or colour picker get one choice, which is the truth.
+ * - **Variants and options.** The API has one price per product, so each maps
+ *   to a single variant. Themes that render a size or colour picker get one
+ *   choice, which is the truth.
+ * - **Stock numbers.** The storefront view reports stock as a boolean, so the
+ *   variant's `inventory` is 1 or 0 — enough for "add to cart" or "sold out",
+ *   not for "only 3 left".
  * - **Ratings.** List payloads carry no aggregate, so `rating` is 0/0 until a
  *   product page loads its reviews and fills it in.
  * - **Collections and highlights.** No backend equivalent; left empty.
@@ -34,7 +38,7 @@ function ref(value: { id: string; name: string; slug?: string } | null | undefin
 export function mapProduct(product: ApiProduct): Product {
   const price = toAmount(product.sellingPrice);
   const compareAtPrice = product.compareAtPrice ? toAmount(product.compareAtPrice) : null;
-  const available = (product.inventory?.available ?? 0) > 0;
+  const available = inStockNow(product);
 
   return {
     id: product.id,
@@ -60,10 +64,12 @@ export function mapProduct(product: ApiProduct): Product {
         id: product.id,
         title: product.name,
         options: {},
-        sku: product.sku,
+        sku: product.sku ?? "",
         price,
         compareAtPrice,
-        inventory: product.inventory?.available ?? 0,
+        // The storefront view carries no counts, only a boolean, so a
+        // theme's "3 left" badge has nothing to show. 1 means "buyable".
+        inventory: product.inventory ? availableStock(product) : available ? 1 : 0,
       },
     ],
     rating: { average: 0, count: 0 },
