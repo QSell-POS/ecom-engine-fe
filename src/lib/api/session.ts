@@ -68,6 +68,12 @@ export async function setOwnerSession(token: string, tenant?: TenantSummary) {
   }
 }
 
+/** Patches the readable tenant cookie in place, e.g. after a store address rename. */
+export async function updateTenantCookie(patch: Partial<TenantSummary>) {
+  const current = (await getTenantSummary()) ?? ({} as TenantSummary);
+  (await cookies()).set(TENANT_COOKIE, JSON.stringify({ ...current, ...patch }), { ...cookieOptions(), httpOnly: false });
+}
+
 export async function clearOwnerSession() {
   const jar = await cookies();
   jar.delete(OWNER_TOKEN_COOKIE);

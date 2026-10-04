@@ -2,6 +2,7 @@ import {
   Boxes,
   Images,
   CreditCard,
+  Globe,
   KeyRound,
   LayoutDashboard,
   LayoutTemplate,
@@ -73,7 +74,10 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: "Settings",
-    items: [{ label: "API keys", href: ROUTES.apiKeys, icon: KeyRound }],
+    items: [
+      { label: "Store address", href: ROUTES.storeAddress, icon: Globe },
+      { label: "API keys", href: ROUTES.apiKeys, icon: KeyRound },
+    ],
   },
 ];
 
