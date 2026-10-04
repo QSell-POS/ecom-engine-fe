@@ -32,7 +32,9 @@ ENV NEXT_PUBLIC_STORE_SLUG=$NEXT_PUBLIC_STORE_SLUG
 ENV NEXT_PUBLIC_STORE_NAME=$NEXT_PUBLIC_STORE_NAME
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN npm run build
+# Turbopack's next/font/google resolver fails on Cormorant Garamond ("queries have
+# exactly one entry"); webpack handles it.
+RUN npx next build --webpack
 
 FROM node:22-alpine AS runner
 WORKDIR /app
