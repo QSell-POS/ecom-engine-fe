@@ -3,11 +3,12 @@ import { CreateBrandButton } from "@/components/brand/BrandFormDialog";
 import { BrandsGrid } from "@/components/brand/BrandsGrid";
 import { PageHeader } from "@/components/common/PageHeader";
 import { getBrandsAdmin } from "@/lib/api/brand";
+import { loadAllPages } from "@/lib/api/shared/types";
 
 export const metadata: Metadata = { title: "Brands" };
 
 export default async function BrandsPage() {
-  const { data: brands } = await getBrandsAdmin({ limit: 1000 });
+  const brands = await loadAllPages(getBrandsAdmin);
 
   return (
     <>

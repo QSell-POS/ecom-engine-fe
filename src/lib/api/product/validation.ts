@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { emptyToUndefined, makeIdSchema, optionalText } from "@/lib/api/shared/validation";
+import { PRODUCT_BADGES } from "./types";
 
 const attributesSchema = z.preprocess(
   (value) => {
@@ -17,7 +18,7 @@ const attributesSchema = z.preprocess(
     .array(
       z.object({
         name: z.string().min(1),
-        value: z.string().min(1),
+        values: z.array(z.string().min(1)).min(1),
       }),
     )
     .optional(),
@@ -43,7 +44,7 @@ const badgesSchema = z.preprocess(
     }
     return value;
   },
-  z.array(z.string().min(1)).optional(),
+  z.array(z.enum(PRODUCT_BADGES)).optional(),
 );
 
 const productFields = {
@@ -68,17 +69,22 @@ const productFields = {
   brandId: z.preprocess(emptyToUndefined, z.string().uuid().optional()),
   categoryId: z.preprocess(emptyToUndefined, z.string().uuid().optional()),
   tagIds: z.array(z.string().uuid()).optional(),
+  mediaIds: z.array(z.string().uuid()).max(20, "Up to 20 images").optional(),
   initialQuantity: z.coerce.number().int().min(0).optional(),
 };
 
 export const ProductIdSchema = makeIdSchema("Product");
 
 export const CreateProductSchema = z.object(productFields);
+// `sku` and `initialQuantity` are create-only: the API rejects them on update.
+const updatableFields = Object.fromEntries(
+  Object.entries(productFields).filter(([field]) => field !== "sku" && field !== "initialQuantity"),
+) as Omit<typeof productFields, "sku" | "initialQuantity">;
+
 export const UpdateProductSchema = ProductIdSchema.extend({
-  ...productFields,
+  ...updatableFields,
   name: productFields.name.optional(),
   slug: productFields.slug.optional(),
-  sku: productFields.sku.optional(),
   sellingPrice: productFields.sellingPrice.optional(),
   isActive: z.boolean().optional(),
 });

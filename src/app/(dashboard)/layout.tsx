@@ -3,18 +3,18 @@ import { AdminNavbar } from "@/components/common/AdminNavbar";
 import { AdminSidebar } from "@/components/common/AdminSidebar";
 import { AppScrollArea } from "@/components/common/AppScrollArea";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { getTenantSummary } from "@/lib/api/session";
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  // Read from the cookie, not /tenant/me: the shell should not wait on the API.
+  const tenant = await getTenantSummary();
+
   return (
     // Fixed-height shell: the window never scrolls, AppScrollArea does.
     // overflow-clip, not hidden: hidden boxes can still be scrolled by
     // scrollIntoView/focus, which would push the navbar out of view.
     <SidebarProvider className="h-dvh min-h-0 overflow-clip">
-      <AdminSidebar />
+      <AdminSidebar tenant={tenant} />
       <SidebarInset className="min-h-0 min-w-0 overflow-clip">
         <AdminNavbar />
         <AppScrollArea>

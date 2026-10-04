@@ -26,7 +26,6 @@ function setActive(category: Category, isActive: boolean) {
     id: category.id,
     name: category.name,
     slug: category.slug,
-    image: category.image ?? "",
     description: category.description ?? "",
     isActive,
   });

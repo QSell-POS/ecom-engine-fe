@@ -19,10 +19,16 @@ import type {
   WishlistItem,
 } from "./types";
 
-// The two data contracts the storefront depends on. Each method maps 1:1 onto
-// an endpoint of the NestJS storefront API (paths below, relative to
-// STOREFRONT_API_URL). The mock implementations in ./mock follow the same
-// contract, so switching to the real backend is configuration only.
+// The two data contracts the storefront's pages and themes depend on.
+//
+// CatalogApi is served for real by ./http/catalog-api.ts, which maps the
+// API's /products, /categories, /brands and /reviews routes onto it (see that
+// file for what the API cannot supply and what is composed here instead).
+//
+// CustomerApi is still mock-only: the real shopper routes live in
+// lib/api/shop, and they differ from this shape in ways that need UI changes
+// rather than another adapter — see lib/storefront/client.ts. The paths in
+// the comments below describe this contract, not the API as it exists.
 
 /**
  * Public catalog reads. Server-side (React Server Components), authenticated

@@ -1,0 +1,15 @@
+# Opt-in override for building the image on this machine instead of pulling
+# the one GitHub Actions published. Needs ~2 GB of free memory.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml build web
+#
+# `deploy/deploy.sh --build` does exactly this.
+
+services:
+  web:
+    build:
+      context: .
+      args:
+        # Inlined into the browser bundle, so a change needs a rebuild.
+        NEXT_PUBLIC_DEFAULT_CURRENCY: ${NEXT_PUBLIC_DEFAULT_CURRENCY:-NPR}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}

@@ -1,10 +1,27 @@
 # ecom-engine-fe
 
-Admin dashboard frontend for the ecom-engine platform. Today it manages brands,
-categories, and products against an existing REST API. The roadmap adds
-API-key issuance for storefront frontends, customizable storefront templates,
-and eventually a drag-and-drop theme builder — the `(storefront)` route group
-and the `api-key` module are already scaffolded for that work.
+Admin dashboard and storefront for the ecom-engine platform, as one Next.js
+app. The dashboard manages the catalog (products, categories, brands, media,
+inventory), selling (orders, customers, payments, discounts, delivery rates),
+engagement (Meta chat inbox, reviews) and storefront themes; the `(storefront)`
+route group renders the shop itself.
+
+- **[docs/api-integration.md](docs/api-integration.md)** — how this app talks
+  to the API: the three credentials, and the places its shape surprises you.
+- **[docs/deploy-ec2.md](docs/deploy-ec2.md)** — deploying to EC2. One command
+  per deploy: `bash deploy/deploy.sh`.
+
+## Running it locally
+
+```bash
+npm install
+cp deploy/.env.example .env   # set API_URL and API_KEY at least
+npm run dev
+```
+
+Without `API_URL`/`API_KEY` the storefront falls back to its demo catalog, so
+the theme builder works with no backend. The dashboard needs both: sign in at
+`/login`, or create a store at `/register`.
 
 ## Tech stack
 
@@ -20,9 +37,9 @@ and the `api-key` module are already scaffolded for that work.
 ```
 src/
   app/
-    (auth)/          route group: login
-    (dashboard)/     route group: admin screens (brand, categories, products, dashboard)
-    (storefront)/    route group: public storefront (placeholder today)
+    (auth)/          route group: login, register (tenant owner)
+    (dashboard)/     route group: the admin app
+    (storefront)/    route group: the shop, and theme previews
     layout.tsx, globals.css
   components/
     <feature>/       UI for a feature (forms, data tables) — brand, category, product
@@ -41,12 +58,16 @@ src/
 
 ### Route groups
 
-- `(auth)` — unauthenticated screens (`/login`).
-- `(dashboard)` — the admin app. `/dashboard` is the canonical dashboard
-  landing page; `/brand`, `/categories`, `/products` are the feature list
-  screens, each with create/edit/delete flows.
-- `(storefront)` — reserved for the customer-facing storefront. Currently a
-  placeholder page at `/`, ready for storefront-template work.
+- `(auth)` — unauthenticated screens: `/login`, `/register`. The owner JWT the
+  API returns goes straight into an httpOnly cookie.
+- `(dashboard)` — the admin app, guarded by `src/proxy.ts` (Next 16's renamed
+  middleware). `/dashboard` is the landing page; `/products`, `/categories`,
+  `/brand`, `/inventory`, `/orders`, `/customers`, `/payments`, `/discounts`,
+  `/delivery-rates`, `/chat`, `/reviews`, `/api-keys` and `/integrations` are
+  the feature screens, plus `/themes` for the theme builder.
+- `(storefront)` — the customer-facing shop at `/store/[slug]`, and theme
+  previews. Its catalog is the real API; its cart and checkout are still the
+  demo implementation (see docs/api-integration.md).
 
 ## Feature module contract
 
@@ -60,9 +81,9 @@ inventing a new one:
 | `constants.ts` | Cache/revalidation tag names, table page-size options, route paths — anything hardcoded that's specific to this feature. |
 | `dto.ts` | Create/Update payload shapes sent to the API, built from `./types`. |
 | `validation.ts` | zod schemas for forms and server actions, built on `lib/api/shared/validation.ts` helpers where useful. |
-| `service.ts` | `apiClient`-based fetch/mutation functions, tagged for cache invalidation. |
+| `service.ts` | `apiClient`/`apiList`-based fetch and mutation functions, tagged for cache invalidation, each declaring the credential its route needs. |
 | `action.ts` | `next-safe-action`-wrapped server actions that call `service.ts` and revalidate tags from `constants.ts`. |
-| `table-columns.tsx` | TanStack Table `ColumnDef` array + table feature config for this entity's list view (not present for `api-key`, which has no UI yet). |
+| `grid.ts` | Data-grid column definitions and status maps for this entity's list view. |
 | `index.ts` | Barrel re-exporting the above, so consumers can `import { Brand, getBrands } from "@/lib/api/brand"`. |
 
 Corresponding UI lives in `src/components/<feature>/`: a `*DataTable.tsx`

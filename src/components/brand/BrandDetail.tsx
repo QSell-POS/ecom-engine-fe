@@ -31,7 +31,13 @@ export function BrandDetail({ brand }: { brand: Brand }) {
               ),
             ],
             ["URL handle", `/${brand.slug}`],
-            ["Logo", brand.logo && <span className="truncate font-mono text-[13px]">{brand.logo}</span>],
+            [
+              "Logo",
+              brand.logo?.url && (
+                // eslint-disable-next-line @next/next/no-img-element -- the R2 host is not configured for next/image
+                <img src={brand.logo.url} alt="" className="size-12 rounded-md border object-contain" />
+              ),
+            ],
           ]}
         />
       </DetailSection>

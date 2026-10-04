@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# …but the deploy template has to ship.
+!deploy/.env.example
 
 # vercel
 .vercel
@@ -45,3 +47,7 @@ package-lock.json
 
 # local mock database (theme engine)
 # /.data/
+
+# TLS material and renewal output on the deploy host
+/deploy/certbot/
+/deploy/renew.log
