@@ -18,7 +18,7 @@ const ago = (iso: string | null) => (iso ? formatDistanceToNow(new Date(iso), { 
 
 export default async function ThemesPage() {
   const tenant = await getCurrentTenant();
-  const [tenants, themes, preview] = await Promise.all([listTenants(), listThemes(tenant.id), tenantPreview(tenant)]);
+  const [tenants, themes, preview] = await Promise.all([listTenants(), listThemes(), tenantPreview(tenant)]);
   const live = themes.find((theme) => theme.isLive) ?? null;
   const liveTheme = live ? await getTheme(tenant.id, live.id) : null;
   const library = themes.filter((theme) => !theme.isLive);

@@ -1,5 +1,12 @@
 export const TENANT_COOKIE = "ee_tenant";
-/** Set while a merchant previews one of their unpublished themes on their store. */
+/**
+ * Set while a merchant previews one of their unpublished themes.
+ *
+ * The public storefront no longer reads it: `/storefront/theme` serves the
+ * published document only, so a draft is previewed in the builder's canvas
+ * rather than on the live store. Kept because the preview routes still clear
+ * it for anyone holding one from before.
+ */
 export const PREVIEW_COOKIE = "ee_preview_theme";
 
 export const THEME_ROUTES = {

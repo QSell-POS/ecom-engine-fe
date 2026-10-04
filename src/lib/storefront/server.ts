@@ -5,13 +5,15 @@ import { createMockCatalogApi } from "./mock/catalog-api";
 import type { Vertical } from "./types";
 
 /**
- * The catalog for a store. With API_URL and API_KEY set, this is the real
- * catalog for the tenant that owns the key; otherwise it is the demo catalog
- * for the store's vertical. Pages only ever see the CatalogApi contract.
+ * The catalog for a store. Pages only ever see the CatalogApi contract.
+ *
+ * `storeHost` is what makes one deployment serve every tenant: it travels on
+ * each request as `x-store-host`, so the same code reads a different store's
+ * catalog depending on which domain the shopper arrived on. Theme previews
+ * and demo stores have no host and keep using demo content, so a merchant can
+ * try a theme before they have products.
  */
-export function getCatalogApi(store: { storeKey: string; vertical: Vertical }): CatalogApi {
-  // Demo stores (theme previews) always use demo content, so a merchant can
-  // try a theme before they have products.
+export function getCatalogApi(store: { storeKey: string; vertical: Vertical; host?: string }): CatalogApi {
   const live = Boolean(process.env.API_URL && process.env.API_KEY) && !store.storeKey.startsWith("demo");
-  return live ? createApiCatalogApi() : createMockCatalogApi(store.vertical);
+  return live ? createApiCatalogApi(store.host) : createMockCatalogApi(store.vertical);
 }

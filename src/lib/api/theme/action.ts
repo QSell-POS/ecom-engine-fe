@@ -2,6 +2,7 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import type { ThemeDocument } from "@/lib/theme-engine/types";
 import { authActionClient } from "@/lib/safe-action";
 import { TENANT_COOKIE, THEME_ROUTES } from "./constants";
 import {
@@ -51,9 +52,7 @@ export const createThemeFromPresetAction = authActionClient
   .inputSchema(z.object({ presetId: z.string().min(1), publish: z.boolean() }))
   .action(async ({ parsedInput }) => {
     const tenant = await getCurrentTenant();
-    const theme = await createThemeFromPreset(tenant.id, parsedInput.presetId, {
-      publish: parsedInput.publish,
-    });
+    const theme = await createThemeFromPreset(tenant.id, parsedInput.presetId, parsedInput.publish);
     revalidateTenant(tenant.slug);
     return { themeId: theme.id };
   });
@@ -80,7 +79,9 @@ export const saveThemeDraftAction = authActionClient
   .inputSchema(SaveSchema)
   .action(async ({ parsedInput }) => {
     const tenant = await getCurrentTenant();
-    const theme = await saveThemeDraft(tenant.id, parsedInput.themeId, parsedInput);
+    const { themeId, document, ...rest } = parsedInput;
+    // The API takes the document plus its optional name and expectedRevision.
+    const theme = await saveThemeDraft(tenant.id, themeId, document as ThemeDocument, rest);
     revalidateTenant(tenant.slug, theme.id);
     return { document: theme.draft, updatedAt: theme.updatedAt };
   });
@@ -91,11 +92,7 @@ export const publishThemeAction = authActionClient
   .action(async ({ parsedInput }) => {
     const tenant = await getCurrentTenant();
     const { themeId, document, name } = parsedInput;
-    const theme = await publishTheme(
-      tenant.id,
-      themeId,
-      document === undefined ? undefined : { document, name },
-    );
+    const theme = await publishTheme(tenant.id, themeId, document === undefined ? {} : { document: document as ThemeDocument, name });
     revalidateTenant(tenant.slug, theme.id);
     return { document: theme.draft, publishedAt: theme.publishedAt };
   });

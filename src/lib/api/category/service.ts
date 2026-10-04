@@ -6,12 +6,12 @@ import type { CreateCategoryPayload, UpdateCategoryPayload } from "./dto";
 import { CATEGORIES_TAG, categoryTag } from "./constants";
 
 /** Filters: search, isActive, parentId, rootsOnly, sortBy, sortOrder. */
-export async function getCategories(params?: ListParams): Promise<ListResponse<Category>> {
-  return apiList<Category>(`/categories${buildQuery(params)}`, { auth: "key", tags: [CATEGORIES_TAG], revalidate: 60 });
+export async function getCategories(params?: ListParams, storeHost?: string): Promise<ListResponse<Category>> {
+  return apiList<Category>(`/categories${buildQuery(params)}`, { auth: "key", storeHost, tags: [CATEGORIES_TAG], revalidate: 60 });
 }
 
-export async function getCategoriesBySlug(slug: string) {
-  return apiClient<Category>(`/categories/slug/${slug}`, { auth: "key", tags: [categoryTag(slug)], revalidate: 60, allow404: true });
+export async function getCategoriesBySlug(slug: string, storeHost?: string) {
+  return apiClient<Category>(`/categories/slug/${slug}`, { auth: "key", storeHost, tags: [categoryTag(slug)], revalidate: 60, allow404: true });
 }
 
 export async function getCategoriesById(id: string) {

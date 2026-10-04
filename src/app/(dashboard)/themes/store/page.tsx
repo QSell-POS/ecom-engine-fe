@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import { ThemeStoreGrid } from "@/components/themes/ThemeStoreGrid";
-import { getCurrentTenant, listThemes } from "@/lib/api/theme";
+import { listThemes } from "@/lib/api/theme";
 import { THEME_PRESETS } from "@/lib/theme-engine/presets";
 import { presetPreview } from "../previews";
 
 export const metadata: Metadata = { title: "Theme store" };
 
 export default async function ThemeStorePage() {
-  const tenant = await getCurrentTenant();
-  const [themes, previews] = await Promise.all([listThemes(tenant.id), Promise.all(THEME_PRESETS.map(presetPreview))]);
+  // The API resolves the tenant from the session, so none is needed here.
+  const [themes, previews] = await Promise.all([listThemes(), Promise.all(THEME_PRESETS.map(presetPreview))]);
   const status = (presetId: string) => {
     const owned = themes.filter((t) => t.presetId === presetId);
     return owned.some((t) => t.isLive) ? ("live" as const) : owned.length ? ("installed" as const) : null;

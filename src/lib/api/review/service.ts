@@ -29,9 +29,10 @@ export async function updateReviewVisibility(id: string, data: UpdateReviewVisib
 }
 
 /** Storefront read: visible reviews for a product. API key only. */
-export async function getProductReviews(productId: string, params?: ListParams): Promise<ListResponse<Review>> {
+export async function getProductReviews(productId: string, params?: ListParams, storeHost?: string): Promise<ListResponse<Review>> {
   return apiList<Review>(`/reviews/product/${productId}${buildQuery(params)}`, {
     auth: "key",
+    storeHost,
     tags: [productReviewsTag(productId)],
     revalidate: 300,
   });

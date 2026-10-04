@@ -1,226 +1,138 @@
 import "server-only";
-import { cookies } from "next/headers";
-import { ApiError } from "@/lib/api/client";
-import { newId, sanitizeDocument } from "@/lib/theme-engine/document";
-import { StoreProfileSchema } from "@/lib/storefront/profile";
-import type { StoreProfile } from "@/lib/storefront/types";
-import { sanitizeSettings } from "@/lib/theme-engine/document";
-import { getPreset, THEME_PRESETS } from "@/lib/theme-engine/presets";
-import { BRAND_SETTING_KEYS, THEME_SETTINGS_SCHEMA } from "@/lib/theme-engine/schema";
-import { mutateDb, readDb } from "./db";
-import { TENANT_COOKIE } from "./constants";
+import { apiClient, apiList } from "@/lib/api/client";
+import { getStorefrontTheme } from "@/lib/api/storefront/theme";
+import { getStoreHost } from "@/lib/api/store-host";
+import { getCurrentTenant as getTenantFromApi } from "@/lib/api/auth/service";
 import { demoStoreProfile } from "@/lib/storefront/mock/catalog-data";
-import { DEMO_STORE_PREFIX } from "@/lib/theme-engine/presets";
+import type { StoreProfile } from "@/lib/storefront/types";
+import { DEMO_STORE_PREFIX, getPreset } from "@/lib/theme-engine/presets";
+import type { ThemeDocument } from "@/lib/theme-engine/types";
 import type { ResolvedStorefront, Tenant, Theme, ThemeSummary } from "./types";
 
-// ---------------------------------------------------------------------------
-// Theme service. Currently backed by the mock JSON db (./db.ts); every
-// function maps 1:1 onto an endpoint of the backend contract documented in
-// docs/theme-engine.md, so it can be swapped to `apiClient` calls without
-// touching pages, actions or components. All mutating functions take the
-// tenant id and verify ownership: a tenant can never read or modify another
-// tenant's themes.
-// ---------------------------------------------------------------------------
-
-function notFound(what: string): never {
-  throw new ApiError(404, `${what} not found`);
-}
+/**
+ * Themes, against the real API. Every admin route resolves the tenant from the
+ * owner JWT, so the `tenantId` arguments these functions still take are
+ * ignored — they are kept so the ten call sites did not have to change, and
+ * can go when something else touches them.
+ *
+ * The local JSON store this used to read is gone.
+ */
 
 export async function listTenants(): Promise<Tenant[]> {
-  return (await readDb()).tenants;
+  // Multi-tenant switching was a mock-mode affordance: a session is one tenant.
+  return [await getCurrentTenant()];
 }
 
-/** The tenant the admin is currently managing (mock auth: a cookie). */
 export async function getCurrentTenant(): Promise<Tenant> {
-  const tenantId = (await cookies()).get(TENANT_COOKIE)?.value;
-  const { tenants } = await readDb();
-  return tenants.find((t) => t.id === tenantId) ?? tenants[0];
-}
-
-function toSummary(theme: Theme, tenant: Tenant): ThemeSummary {
-  const { published, ...rest } = theme;
+  const [tenant, profile] = await Promise.all([getTenantFromApi(), getStoreProfile()]);
   return {
-    ...rest,
-    isLive: tenant.liveThemeId === theme.id,
-    hasUnpublishedChanges: JSON.stringify(theme.draft) !== JSON.stringify(published),
+    id: tenant.id,
+    name: tenant.name,
+    // The storefront label, which is also the subdomain.
+    slug: tenant.subdomain ?? tenant.id,
+    apiKey: "",
+    plan: "standard",
+    themeLimit: 5,
+    liveThemeId: null,
+    vertical: "fashion",
+    profile,
   };
 }
 
-export async function listThemes(tenantId: string): Promise<ThemeSummary[]> {
-  const db = await readDb();
-  const tenant = db.tenants.find((t) => t.id === tenantId) ?? notFound("Tenant");
-  return db.themes
-    .filter((theme) => theme.tenantId === tenantId)
-    .map((theme) => toSummary(theme, tenant))
-    .sort((a, b) => Number(b.isLive) - Number(a.isLive) || b.updatedAt.localeCompare(a.updatedAt));
+export async function listThemes(): Promise<ThemeSummary[]> {
+  const response = await apiList<ThemeSummary>("/admin/themes", { auth: "owner", tags: [THEMES_TAG], revalidate: 30 });
+  return response.data;
 }
 
-export async function getTheme(tenantId: string, themeId: string): Promise<Theme | null> {
-  const { themes } = await readDb();
-  return themes.find((t) => t.id === themeId && t.tenantId === tenantId) ?? null;
+export async function getTheme(_tenantId: string, themeId: string): Promise<Theme | null> {
+  return apiClient<Theme>(`/admin/themes/${themeId}`, { auth: "owner", tags: [themeTag(themeId)], revalidate: 30, allow404: true });
 }
 
-export async function createThemeFromPreset(
-  tenantId: string,
-  presetId: string,
-  { publish }: { publish: boolean },
-): Promise<Theme> {
-  const preset = getPreset(presetId) ?? notFound("Theme preset");
-
-  return mutateDb((db) => {
-    const tenant = db.tenants.find((t) => t.id === tenantId) ?? notFound("Tenant");
-    const owned = db.themes.filter((t) => t.tenantId === tenantId).length;
-    if (owned >= tenant.themeLimit) {
-      throw new ApiError(
-        403,
-        `Theme limit reached: the ${tenant.plan} plan allows ${tenant.themeLimit} themes. Delete a theme to add another.`,
-      );
-    }
-
-    const now = new Date().toISOString();
-    const draft = preset.build();
-    const theme: Theme = {
-      id: newId("thm"),
-      tenantId,
-      name: preset.name,
-      presetId: preset.id,
-      draft,
-      published: publish ? structuredClone(draft) : null,
-      createdAt: now,
-      updatedAt: now,
-      publishedAt: publish ? now : null,
-    };
-    db.themes.push(theme);
-    if (publish) tenant.liveThemeId = theme.id;
-    return theme;
-  });
+/** 403 at the theme limit. `publish: true` makes the store live in one go. */
+export async function createThemeFromPreset(_tenantId: string, presetId: string, publish = false): Promise<Theme> {
+  return apiClient<Theme>("/admin/themes", { method: "POST", body: { presetId, publish }, auth: "owner" });
 }
 
-export async function duplicateTheme(tenantId: string, themeId: string): Promise<Theme> {
-  return mutateDb((db) => {
-    const tenant = db.tenants.find((t) => t.id === tenantId) ?? notFound("Tenant");
-    const source = db.themes.find((t) => t.id === themeId && t.tenantId === tenantId) ?? notFound("Theme");
-    if (db.themes.filter((t) => t.tenantId === tenantId).length >= tenant.themeLimit) {
-      throw new ApiError(403, `Theme limit reached (${tenant.themeLimit}). Delete a theme to duplicate this one.`);
-    }
-    const now = new Date().toISOString();
-    const copy: Theme = {
-      ...structuredClone(source),
-      id: newId("thm"),
-      name: `Copy of ${source.name}`,
-      published: null,
-      createdAt: now,
-      updatedAt: now,
-      publishedAt: null,
-    };
-    db.themes.push(copy);
-    return copy;
-  });
+export async function duplicateTheme(_tenantId: string, themeId: string): Promise<Theme> {
+  return apiClient<Theme>(`/admin/themes/${themeId}/duplicate`, { method: "POST", auth: "owner" });
 }
 
-export async function deleteTheme(tenantId: string, themeId: string): Promise<void> {
-  await mutateDb((db) => {
-    const tenant = db.tenants.find((t) => t.id === tenantId) ?? notFound("Tenant");
-    const index = db.themes.findIndex((t) => t.id === themeId && t.tenantId === tenantId);
-    if (index === -1) notFound("Theme");
-    if (tenant.liveThemeId === themeId) {
-      throw new ApiError(409, "You can't delete your live theme. Publish another theme first.");
-    }
-    db.themes.splice(index, 1);
-  });
+export async function deleteTheme(_tenantId: string, themeId: string): Promise<void> {
+  // 409 if it is the live theme.
+  await apiClient<null>(`/admin/themes/${themeId}`, { method: "DELETE", auth: "owner" });
 }
 
+/**
+ * The builder's save. `expectedRevision` is how two open tabs avoid clobbering
+ * each other: pass the revision the editor loaded and a mismatch is a 409.
+ */
 export async function saveThemeDraft(
-  tenantId: string,
+  _tenantId: string,
   themeId: string,
-  input: { document: unknown; name?: string },
+  document: ThemeDocument,
+  options: { name?: string; expectedRevision?: number } = {},
 ): Promise<Theme> {
-  const document = sanitizeDocument(input.document);
-  return mutateDb((db) => {
-    const theme = db.themes.find((t) => t.id === themeId && t.tenantId === tenantId) ?? notFound("Theme");
-    theme.draft = document;
-    if (input.name?.trim()) theme.name = input.name.trim().slice(0, 80);
-    theme.updatedAt = new Date().toISOString();
-    return theme;
+  return apiClient<Theme>(`/admin/themes/${themeId}/draft`, {
+    method: "PUT",
+    body: { document, ...options },
+    auth: "owner",
   });
 }
 
-/** Snapshots the draft as the published version and makes this the live theme. */
-export async function publishTheme(
-  tenantId: string,
-  themeId: string,
-  input?: { document: unknown; name?: string },
-): Promise<Theme> {
-  const document = input ? sanitizeDocument(input.document) : null;
-  return mutateDb((db) => {
-    const tenant = db.tenants.find((t) => t.id === tenantId) ?? notFound("Tenant");
-    const theme = db.themes.find((t) => t.id === themeId && t.tenantId === tenantId) ?? notFound("Theme");
-    const now = new Date().toISOString();
-    if (document) theme.draft = document;
-    if (input?.name?.trim()) theme.name = input.name.trim().slice(0, 80);
-    theme.published = structuredClone(theme.draft);
-    theme.updatedAt = now;
-    theme.publishedAt = now;
-    tenant.liveThemeId = theme.id;
-    return theme;
-  });
+export async function publishTheme(_tenantId: string, themeId: string, body: { document?: ThemeDocument; name?: string } = {}): Promise<Theme> {
+  return apiClient<Theme>(`/admin/themes/${themeId}/publish`, { method: "POST", body, auth: "owner" });
 }
 
-/**
- * "Use this theme": installs a ready-made theme and makes it live in one
- * step, so the store is immediately ready. The previous live theme stays in
- * the library.
- */
+/** "Use this theme": install and publish in one transaction. */
 export async function installTheme(tenantId: string, presetId: string): Promise<Theme> {
-  return createThemeFromPreset(tenantId, presetId, { publish: true });
+  return createThemeFromPreset(tenantId, presetId, true);
 }
 
-// ---- Store profile (simple customizer)
-
-export async function getStoreProfile(tenantId: string): Promise<StoreProfile> {
-  const { tenants } = await readDb();
-  return (tenants.find((t) => t.id === tenantId) ?? notFound("Tenant")).profile;
-}
-
-export async function updateStoreProfile(tenantId: string, input: unknown): Promise<StoreProfile> {
-  const parsed = StoreProfileSchema.safeParse(input);
-  if (!parsed.success) throw new ApiError(422, parsed.error.issues[0]?.message ?? "Check the highlighted fields.");
-  const profile = parsed.data;
-  return mutateDb((db) => {
-    const tenant = db.tenants.find((t) => t.id === tenantId) ?? notFound("Tenant");
-    tenant.profile = profile;
-    tenant.name = profile.name;
-    return profile;
+export async function listThemeVersions(themeId: string) {
+  const response = await apiList<{ id: string; publishedAt: string; name?: string }>(`/admin/themes/${themeId}/versions`, {
+    auth: "owner",
+    revalidate: false,
   });
+  return response.data;
+}
+
+/** Restores into the draft — never straight onto the live store. */
+export async function restoreThemeVersion(themeId: string, versionId: string): Promise<Theme> {
+  return apiClient<Theme>(`/admin/themes/${themeId}/versions/${versionId}/restore`, { method: "POST", auth: "owner" });
+}
+
+export async function getStoreProfile(): Promise<StoreProfile> {
+  return apiClient<StoreProfile>("/admin/store/profile", { auth: "owner", tags: [PROFILE_TAG], revalidate: 60 });
+}
+
+export async function updateStoreProfile(_tenantId: string, input: unknown): Promise<StoreProfile> {
+  return apiClient<StoreProfile>("/admin/store/profile", { method: "PUT", body: input, auth: "owner" });
 }
 
 /**
- * Brand color and fonts from the simple customizer. Applied to both the
- * draft and the published version of the live theme, so the change is live
- * immediately without disturbing other unpublished builder edits.
+ * The simple customizer. Writes to draft **and** published, so a colour change
+ * is live at once — its users are merchants who never open the builder.
  */
-export async function updateBrandStyle(tenantId: string, themeId: string, patch: Record<string, unknown>): Promise<Theme> {
-  return mutateDb((db) => {
-    const theme = db.themes.find((t) => t.id === themeId && t.tenantId === tenantId) ?? notFound("Theme");
-    const allowed = Object.fromEntries(BRAND_SETTING_KEYS.filter((key) => key in patch).map((key) => [key, patch[key]]));
-    const fields = THEME_SETTINGS_SCHEMA.filter((field) => field.id in allowed);
-    const clean = sanitizeSettings(fields, allowed);
-    theme.draft.settings = { ...theme.draft.settings, ...clean };
-    if (theme.published) theme.published.settings = { ...theme.published.settings, ...clean };
-    theme.updatedAt = new Date().toISOString();
-    return theme;
-  });
+export async function updateBrandStyle(_tenantId: string, themeId: string, patch: Record<string, unknown>): Promise<Theme> {
+  return apiClient<Theme>(`/admin/themes/${themeId}/brand`, { method: "PATCH", body: patch, auth: "owner" });
 }
 
-// ---- Public storefront resolution (no admin session; by slug)
+export async function listThemePresets() {
+  const response = await apiList<{ id: string; name: string }>("/admin/theme-presets", { auth: "owner", revalidate: 300 });
+  return response.data;
+}
+
+// ---- Public storefront resolution
 
 /**
- * What /store/:slug renders:
- *  - `demo-<presetId>`: a theme-store demo with demo content,
- *  - a merchant previewing one of their own themes (draft, via cookie),
- *  - otherwise the tenant's published live theme.
+ * What `/store/:slug` renders. A `demo-<presetId>` slug is a theme-store demo
+ * and stays local; everything else is the real store for this request's host.
+ *
+ * `/storefront/theme` answers with the default preset rather than a 404 when a
+ * merchant has published nothing, so a new store is a page rather than an
+ * error — `theme.id === null` is how to tell.
  */
-export async function resolveStorefront(slug: string, previewThemeId?: string | null): Promise<ResolvedStorefront | null> {
+export async function resolveStorefront(slug: string): Promise<ResolvedStorefront | null> {
   if (slug.startsWith(DEMO_STORE_PREFIX)) {
     const preset = getPreset(slug.slice(DEMO_STORE_PREFIX.length));
     if (!preset) return null;
@@ -235,54 +147,21 @@ export async function resolveStorefront(slug: string, previewThemeId?: string | 
     };
   }
 
-  const db = await readDb();
-  const tenant = db.tenants.find((t) => t.slug === slug);
+  const host = await getStoreHost();
+  const resolved = await getStorefrontTheme(host);
+  if (!resolved) return null;
 
-  // Themes still live in a local JSON file, so a fresh deployment has no
-  // tenant row and the public shop would 404 on every page. When the slug is
-  // the one this deployment serves (NEXT_PUBLIC_STORE_SLUG), fall back to a
-  // preset theme with the real catalog behind it: the shop works today, and
-  // the merchant's own theme takes over the moment they save one.
-  if (!tenant) return defaultStorefront(slug);
-  const base = { slug, storeKey: tenant.apiKey, vertical: tenant.vertical, profile: tenant.profile };
-
-  const preview = previewThemeId ? db.themes.find((t) => t.id === previewThemeId && t.tenantId === tenant.id) : undefined;
-  if (preview) {
-    return { ...base, document: preview.draft, mode: "preview", theme: { id: preview.id, name: preview.name, presetId: preview.presetId } };
-  }
-
-  const live = db.themes.find((t) => t.id === tenant.liveThemeId && t.tenantId === tenant.id);
-  if (!live?.published) return null;
-  return { ...base, document: live.published, mode: "live", theme: { id: live.id, name: live.name, presetId: live.presetId } };
-}
-
-/**
- * The storefront for a deployment whose theme has never been customised. Uses
- * the first preset, the store name from the environment, and the deployment's
- * own API key, so the catalog is real even though the design is a default.
- */
-function defaultStorefront(slug: string): ResolvedStorefront | null {
-  if (!slug || slug !== process.env.NEXT_PUBLIC_STORE_SLUG) return null;
-
-  const preset = getPreset(process.env.NEXT_PUBLIC_STORE_PRESET ?? "") ?? THEME_PRESETS[0];
-  if (!preset) return null;
-
-  const name = process.env.NEXT_PUBLIC_STORE_NAME || "Our store";
   return {
-    slug,
-    // Not a demo key, so the catalog comes from the API rather than fixtures.
-    storeKey: slug,
-    vertical: preset.vertical,
-    profile: { ...demoStoreProfile(preset.vertical, name, ""), name },
-    document: preset.build(),
+    slug: resolved.store.slug || slug,
+    storeKey: host ?? resolved.store.slug,
+    vertical: "fashion",
+    profile: resolved.store.profile,
+    document: resolved.theme.document,
     mode: "live",
-    theme: { id: null, name: preset.name, presetId: preset.id },
+    theme: { id: resolved.theme.id, name: resolved.theme.name, presetId: resolved.theme.presetId },
   };
 }
 
-/** Headless: the live theme for a public API key (GET /api/storefront/theme). */
-export async function getLiveThemeByApiKey(apiKey: string) {
-  const db = await readDb();
-  const tenant = db.tenants.find((t) => t.apiKey === apiKey);
-  return tenant ? resolveStorefront(tenant.slug) : null;
-}
+export const THEMES_TAG = "themes";
+export const PROFILE_TAG = "store-profile";
+export const themeTag = (id: string) => `theme-${id}`;
