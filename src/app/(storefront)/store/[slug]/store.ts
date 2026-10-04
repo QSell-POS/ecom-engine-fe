@@ -13,7 +13,14 @@ export async function loadStore(params: StoreParams["params"]) {
   const { slug } = await params;
   const store = await getStorefront(slug);
   if (!store) notFound();
-  return { store, catalog: getCatalogApi(store), basePath: `/store/${slug}` };
+  return { store, catalog: getCatalogApi(store), basePath: storeBasePath(store) };
+}
+
+// On the store's own host proxy.ts already rewrites "/products" to
+// "/store/<slug>/products", so links there must not carry the prefix too.
+// Demo stores, reached under /store/demo-… on the admin host, keep it.
+function storeBasePath(store: { slug: string; host?: string }) {
+  return store.host ? "" : `/store/${store.slug}`;
 }
 
 export function toStoreInfo(store: NonNullable<Awaited<ReturnType<typeof getStorefront>>>): StoreInfo {
@@ -22,7 +29,7 @@ export function toStoreInfo(store: NonNullable<Awaited<ReturnType<typeof getStor
     storeKey: store.storeKey,
     vertical: store.vertical,
     mode: store.mode,
-    basePath: `/store/${store.slug}`,
+    basePath: storeBasePath(store),
     profile: store.profile,
     settings: store.document.settings,
   };

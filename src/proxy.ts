@@ -116,6 +116,15 @@ export async function proxy(request: NextRequest) {
       return NextResponse.rewrite(new URL("/store-not-found", request.url));
     }
 
+    // Links that already carry the internal prefix (old bookmarks, or the
+    // admin's "/store/<slug>" links) would be prefixed twice and 404.
+    const prefix = `/store/${resolution.store.subdomain}`;
+    if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
+      const target = new URL(request.nextUrl);
+      target.pathname = pathname.slice(prefix.length) || "/";
+      return NextResponse.redirect(target, 308);
+    }
+
     const headers = new Headers(request.headers);
     headers.set(STORE_HOST_HEADER, resolution.store.host);
     const url = new URL(`/store/${resolution.store.subdomain}${suffix}`, request.url);
