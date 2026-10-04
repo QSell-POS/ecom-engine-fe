@@ -24,6 +24,7 @@ export function StoreAddressForm({ domain }: { domain: StoreDomain }) {
 
   useEffect(() => () => clearTimeout(timer.current), []);
 
+  const previousAddresses = domain.previousAddresses ?? [];
   const dirty = value !== domain.subdomain;
 
   function onChange(next: string) {
@@ -111,12 +112,12 @@ export function StoreAddressForm({ domain }: { domain: StoreDomain }) {
         )}
       </div>
 
-      {domain.previousAddresses.length > 0 && (
+      {previousAddresses.length > 0 && (
         <div className="space-y-2 border-t pt-5">
           <p className="text-sm font-medium">Previous addresses</p>
           <p className="text-sm text-muted-foreground">These still redirect to your store, so nothing that links to them breaks.</p>
           <ul className="space-y-1">
-            {domain.previousAddresses.map((previous) => (
+            {previousAddresses.map((previous) => (
               <li key={previous.host} className="font-mono text-sm text-muted-foreground">
                 {previous.host}
               </li>

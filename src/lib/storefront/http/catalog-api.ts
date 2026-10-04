@@ -1,6 +1,7 @@
 import "server-only";
 import { getBrandBySlug, getBrands } from "@/lib/api/brand/service";
 import { getCategories, getCategoriesBySlug } from "@/lib/api/category/service";
+import type { Category } from "@/lib/api/category/types";
 import { getProductBySlug, getProducts, type CatalogQueryParams, type CatalogSort } from "@/lib/api/product/service";
 import { getProductReviews } from "@/lib/api/review/service";
 import type { CatalogApi } from "../contracts";
@@ -33,6 +34,14 @@ const SORTS: Record<ProductSort, CatalogSort | undefined> = {
   "best-selling": undefined,
 };
 
+// The public /categories endpoint rejects isActive/sortBy/sortOrder (400), so
+// the active filter and position order are applied here instead.
+function publicCategories(categories: Category[]): Category[] {
+  return categories
+    .filter((category) => category.isActive !== false)
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+}
+
 function toParams(query: CatalogQuery): CatalogQueryParams {
   return {
     page: query.page,
@@ -53,12 +62,12 @@ export function createApiCatalogApi(storeHost?: string): CatalogApi {
     home: async () => {
       const [products, categories, brands] = await Promise.all([
         getProducts({ limit: COMPOSE_LIMIT, sort: "newest" }, storeHost),
-        getCategories({ limit: COMPOSE_LIMIT, isActive: true, sortBy: "position", sortOrder: "ASC" }, storeHost),
+        getCategories({ limit: COMPOSE_LIMIT }, storeHost),
         getBrands({ limit: COMPOSE_LIMIT }, storeHost),
       ]);
       return {
         products: products.data.map(mapProduct),
-        categories: categories.data.map(mapCategory),
+        categories: publicCategories(categories.data).map(mapCategory),
         brands: brands.data.map(mapBrand),
         // No backend equivalent; the demo set keeps theme sections renderable.
         collections: [],
@@ -80,14 +89,14 @@ export function createApiCatalogApi(storeHost?: string): CatalogApi {
 
     facets: async (query) => {
       const [categories, brands, products] = await Promise.all([
-        getCategories({ limit: COMPOSE_LIMIT, isActive: true }, storeHost),
+        getCategories({ limit: COMPOSE_LIMIT }, storeHost),
         getBrands({ limit: COMPOSE_LIMIT }, storeHost),
         // Only for the price range, so one page is enough to bound it.
         getProducts({ limit: COMPOSE_LIMIT, search: query.q || undefined }, storeHost),
       ]);
       const prices = products.data.map((product) => Number.parseFloat(product.sellingPrice));
       return {
-        categories: categories.data.map((category) => ({ ...mapCategory(category), count: 0 })),
+        categories: publicCategories(categories.data).map((category) => ({ ...mapCategory(category), count: 0 })),
         brands: brands.data.map((brand) => ({ ...mapBrand(brand), count: 0 })),
         price: { min: prices.length ? Math.floor(Math.min(...prices)) : 0, max: prices.length ? Math.ceil(Math.max(...prices)) : 0 },
       };
@@ -114,8 +123,8 @@ export function createApiCatalogApi(storeHost?: string): CatalogApi {
     },
 
     listCategories: async () => {
-      const response = await getCategories({ limit: COMPOSE_LIMIT, isActive: true, sortBy: "position", sortOrder: "ASC" }, storeHost);
-      return response.data.map(mapCategory);
+      const response = await getCategories({ limit: COMPOSE_LIMIT }, storeHost);
+      return publicCategories(response.data).map(mapCategory);
     },
 
     getCategory: async (slug) => {
