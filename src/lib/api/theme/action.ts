@@ -35,7 +35,8 @@ const SaveSchema = ThemeIdSchema.extend({
 function revalidateTenant(slug: string, themeId?: string, host?: string) {
   revalidatePath(THEME_ROUTES.list);
   revalidatePath(THEME_ROUTES.customize);
-  revalidatePath(THEME_ROUTES.storefront(slug), "layout");
+  // The internal route, not THEME_ROUTES.storefront (an absolute URL in production).
+  revalidatePath(`/store/${slug}`, "layout");
   if (host) updateTag(storefrontThemeTag(host));
   if (themeId) {
     revalidatePath(THEME_ROUTES.editor(themeId));
