@@ -24,7 +24,14 @@ export async function presetPreview(preset: ThemePreset) {
 export async function tenantPreview(tenant: Tenant) {
   // `apiKey` carries the store's host: the catalog is host-routed, so a
   // preview has to say which store it is previewing.
-  const data = await getCatalogApi({ storeKey: tenant.apiKey, vertical: tenant.vertical, host: tenant.apiKey }).home();
+  // A thumbnail is not worth failing the page over: if the catalog can't be
+  // read, preview with demo content and leave the reason in the server log.
+  const data = await getCatalogApi({ storeKey: tenant.apiKey, vertical: tenant.vertical, host: tenant.apiKey })
+    .home()
+    .catch(async (error: unknown) => {
+      console.error(`Theme preview: catalog for ${tenant.apiKey} failed, using demo content.`, error);
+      return getCatalogApi({ storeKey: "demo", vertical: tenant.vertical }).home();
+    });
   const store: ThumbnailStore = {
     slug: tenant.slug,
     storeKey: tenant.apiKey,
