@@ -32,7 +32,8 @@ export type Theme = {
   publishedAt: string | null;
 };
 
-export type ThemeSummary = Omit<Theme, "published"> & {
+/** `GET /admin/themes` rows: no documents — fetch the theme itself for `draft`. */
+export type ThemeSummary = Omit<Theme, "published" | "draft" | "tenantId"> & {
   isLive: boolean;
   hasUnpublishedChanges: boolean;
 };
