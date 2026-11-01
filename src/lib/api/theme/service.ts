@@ -35,7 +35,9 @@ export async function listTenants(): Promise<Tenant[]> {
 // Sessions created before the API returned `storefrontHost` carry only the
 // subdomain; the store lives at <subdomain>.<admin domain minus its first label>.
 function storefrontHostFor(subdomain?: string | null): string | undefined {
-  const root = (process.env.NEXT_PUBLIC_ADMIN_DOMAIN ?? "").split(".").slice(1).join(".");
+  const root =
+    process.env.NEXT_PUBLIC_ROOT_DOMAIN ??
+    (process.env.NEXT_PUBLIC_ADMIN_DOMAIN ?? "").split(".").slice(1).join(".");
   return subdomain && root ? `${subdomain}.${root}` : undefined;
 }
 
