@@ -51,7 +51,7 @@ const PROTECTED = [
 const AUTH_PAGES = ["/login", "/register"];
 
 const ADMIN_DOMAIN = process.env.NEXT_PUBLIC_ADMIN_DOMAIN ?? "";
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
+const API_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "";
 /** Set only on a single-tenant deployment; see the module comment above. */
 const STORE_SLUG = process.env.NEXT_PUBLIC_STORE_SLUG ?? "";
 

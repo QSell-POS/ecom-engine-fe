@@ -5,13 +5,9 @@
 
 name: Build and publish image
 
+# Production now deploys on Vercel, so this runs only on demand (for the
+# Docker/EC2 path).
 on:
-  push:
-    branches: [production]
-    # Docs and CI config do not change the image.
-    paths-ignore:
-      - "docs/**"
-      - "**/*.md"
   workflow_dispatch:
 
 env:
