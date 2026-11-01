@@ -46,6 +46,11 @@ export const AddressSchema = z.object({
   isDefaultShipping: z.boolean().optional(),
 });
 
+/**
+ * `paymentMethod` decides what happens next: cod creates the order already
+ * `confirmed`, while esewa/khalti create it `pending` and need
+ * `initiatePayment` to get a redirect.
+ */
 export const PlaceOrderSchema = z.object({
   items: z
     .array(z.object({ productId: z.uuid(), quantity: z.coerce.number().int().positive() }))

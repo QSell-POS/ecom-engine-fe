@@ -4,16 +4,21 @@ import type { Product } from "@/lib/api/product/types";
 export const CUSTOMER_STATUSES = ["active", "inactive", "banned"] as const;
 export type CustomerStatus = (typeof CUSTOMER_STATUSES)[number];
 
+/**
+ * No relations are loaded on any customer route — orders, addresses and carts
+ * each have their own — so there is no order count or lifetime spend here.
+ * The password hash is stripped from every payload.
+ */
 export type Customer = {
   id: string;
-  firstName?: string;
-  lastName?: string;
+  firstName?: string | null;
+  lastName?: string | null;
   email: string;
   phone?: string | null;
   status: CustomerStatus;
-  ordersCount?: number;
-  totalSpent?: number;
-  lastOrderAt?: string | null;
+  isEmailVerified?: boolean;
+  lastLoginAt?: string | null;
+  metadata?: Record<string, unknown>;
   createdAt?: string;
   updatedAt?: string;
 };

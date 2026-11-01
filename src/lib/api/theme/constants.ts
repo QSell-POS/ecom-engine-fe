@@ -1,5 +1,12 @@
 export const TENANT_COOKIE = "ee_tenant";
-/** Set while a merchant previews one of their unpublished themes on their store. */
+/**
+ * Set while a merchant previews one of their unpublished themes.
+ *
+ * The public storefront no longer reads it: `/storefront/theme` serves the
+ * published document only, so a draft is previewed in the builder's canvas
+ * rather than on the live store. Kept because the preview routes still clear
+ * it for anyone holding one from before.
+ */
 export const PREVIEW_COOKIE = "ee_preview_theme";
 
 export const THEME_ROUTES = {
@@ -13,5 +20,13 @@ export const THEME_ROUTES = {
   exitPreview: "/preview/exit",
   /** Full demo store for a theme-store preset. */
   demo: (presetId: string) => `/store/demo-${presetId}`,
-  storefront: (tenantSlug: string) => `/store/${tenantSlug}`,
+  /**
+   * The merchant's live store. A store only resolves on its own subdomain, so
+   * on a deployment with an admin domain this is `https://<slug>.<root>`;
+   * local development (no admin domain) keeps the in-app path.
+   */
+  storefront: (tenantSlug: string) => {
+    const root = (process.env.NEXT_PUBLIC_ADMIN_DOMAIN ?? "").split(".").slice(1).join(".");
+    return root ? `https://${tenantSlug}.${root}` : `/store/${tenantSlug}`;
+  },
 };

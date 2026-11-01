@@ -1,89 +1,73 @@
 import "server-only";
 import { getBrandBySlug, getBrands } from "@/lib/api/brand/service";
 import { getCategories, getCategoriesBySlug } from "@/lib/api/category/service";
-import { getProductBySlug, getProducts } from "@/lib/api/product/service";
+import type { Category } from "@/lib/api/category/types";
+import { getProductBySlug, getProducts, type CatalogQueryParams, type CatalogSort } from "@/lib/api/product/service";
 import { getProductReviews } from "@/lib/api/review/service";
 import type { CatalogApi } from "../contracts";
-import type { CatalogQuery, Paginated, Product } from "../types";
+import type { CatalogQuery, Paginated, Product, ProductSort } from "../types";
 import { demoCatalog } from "../mock/catalog-data";
 import { mapBrand, mapCategory, mapProduct, mapReview, summarise } from "./map";
 
 /**
- * The storefront's catalog, served by the real API.
+ * The storefront's catalog, served by the API.
  *
- * Two things the API does not do, done here instead:
+ * Filtering, sorting and paging all happen in SQL across the whole catalog —
+ * nothing is narrowed in this process. `home` and `facets` are still composed
+ * here, because neither exists as an endpoint and both are presentation: a
+ * facet count that is a page stale is not the correctness problem a filtered
+ * list is.
  *
- * - **Filtering and sorting.** `/products` takes `search`, `brandId` and
- *   `categoryId` only, so price, rating, in-stock, on-sale and every sort
- *   order are applied to the fetched page in this process. Pages are
- *   therefore requested large and narrowed locally; a catalog past a few
- *   hundred products wants these pushed into the API.
- * - **`home` and `facets`.** Neither exists as an endpoint. They are composed
- *   from the product, category and brand lists.
- *
- * Runs server-side only: it reaches the API through `apiClient`, whose key
- * never leaves the server.
+ * Runs server-side only. `storeHost` says which tenant's catalog to read,
+ * which is what makes one deployment serve every store.
  */
-const FETCH_LIMIT = 100;
+const COMPOSE_LIMIT = 100;
 
-export function createApiCatalogApi(): CatalogApi {
-  async function allProducts(query?: { search?: string }): Promise<Product[]> {
-    const response = await getProducts({ limit: FETCH_LIMIT, isActive: true, ...query });
-    return response.data.map(mapProduct);
-  }
+/** The contract's sort names onto the API's. */
+const SORTS: Record<ProductSort, CatalogSort | undefined> = {
+  newest: "newest",
+  "price-asc": "price-asc",
+  "price-desc": "price-desc",
+  // No ranking signal exists for these three; the API's default order stands.
+  featured: undefined,
+  rating: undefined,
+  "best-selling": undefined,
+};
 
-  function narrow(products: Product[], query: CatalogQuery): Product[] {
-    let rows = products;
-    if (query.category) rows = rows.filter((product) => product.category.slug === query.category);
-    if (query.brands.length > 0) rows = rows.filter((product) => query.brands.includes(product.brand.slug));
-    if (query.minPrice !== null) rows = rows.filter((product) => product.price >= query.minPrice!);
-    if (query.maxPrice !== null) rows = rows.filter((product) => product.price <= query.maxPrice!);
-    if (query.inStock) rows = rows.filter((product) => product.available);
-    if (query.onSale) rows = rows.filter((product) => product.compareAtPrice !== null);
-    // `rating` and `collection` are not filtered: the API carries neither, so
-    // filtering on them would silently drop everything.
-    return sort(rows, query.sort);
-  }
+// The public /categories endpoint rejects isActive/sortBy/sortOrder (400), so
+// the active filter and position order are applied here instead.
+function publicCategories(categories: Category[]): Category[] {
+  return categories
+    .filter((category) => category.isActive !== false)
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+}
 
-  function sort(products: Product[], order: CatalogQuery["sort"]): Product[] {
-    const rows = [...products];
-    switch (order) {
-      case "price-asc":
-        return rows.sort((a, b) => a.price - b.price);
-      case "price-desc":
-        return rows.sort((a, b) => b.price - a.price);
-      case "newest":
-        return rows.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
-      case "rating":
-      case "best-selling":
-      case "featured":
-      default:
-        // No ranking signal from the API; keep its order.
-        return rows;
-    }
-  }
+function toParams(query: CatalogQuery): CatalogQueryParams {
+  return {
+    page: query.page,
+    limit: query.pageSize,
+    search: query.q || undefined,
+    categorySlug: query.category ?? undefined,
+    // The API takes one brand; the contract allows several.
+    brandSlug: query.brands[0],
+    minPrice: query.minPrice ?? undefined,
+    maxPrice: query.maxPrice ?? undefined,
+    inStock: query.inStock ? true : undefined,
+    sort: SORTS[query.sort],
+  };
+}
 
-  function paginate(rows: Product[], query: CatalogQuery): Paginated<Product> {
-    const start = (query.page - 1) * query.pageSize;
-    return {
-      items: rows.slice(start, start + query.pageSize),
-      total: rows.length,
-      page: query.page,
-      pageSize: query.pageSize,
-      pageCount: Math.max(1, Math.ceil(rows.length / query.pageSize)),
-    };
-  }
-
+export function createApiCatalogApi(storeHost?: string): CatalogApi {
   return {
     home: async () => {
       const [products, categories, brands] = await Promise.all([
-        allProducts(),
-        getCategories({ limit: FETCH_LIMIT, isActive: true, sortBy: "position", sortOrder: "ASC" }),
-        getBrands({ limit: FETCH_LIMIT }),
+        getProducts({ limit: COMPOSE_LIMIT, sort: "newest" }, storeHost),
+        getCategories({ limit: COMPOSE_LIMIT }, storeHost),
+        getBrands({ limit: COMPOSE_LIMIT }, storeHost),
       ]);
       return {
-        products,
-        categories: categories.data.map(mapCategory),
+        products: products.data.map(mapProduct),
+        categories: publicCategories(categories.data).map(mapCategory),
         brands: brands.data.map(mapBrand),
         // No backend equivalent; the demo set keeps theme sections renderable.
         collections: [],
@@ -91,36 +75,47 @@ export function createApiCatalogApi(): CatalogApi {
       };
     },
 
-    listProducts: async (query) => paginate(narrow(await allProducts({ search: query.q || undefined }), query), query),
+    listProducts: async (query): Promise<Paginated<Product>> => {
+      const response = await getProducts(toParams(query), storeHost);
+      const total = response.meta?.total ?? response.data.length;
+      return {
+        items: response.data.map(mapProduct),
+        total,
+        page: query.page,
+        pageSize: query.pageSize,
+        pageCount: response.meta?.totalPages ?? Math.max(1, Math.ceil(total / query.pageSize)),
+      };
+    },
 
     facets: async (query) => {
       const [categories, brands, products] = await Promise.all([
-        getCategories({ limit: FETCH_LIMIT, isActive: true }),
-        getBrands({ limit: FETCH_LIMIT }),
-        allProducts({ search: query.q || undefined }),
+        getCategories({ limit: COMPOSE_LIMIT }, storeHost),
+        getBrands({ limit: COMPOSE_LIMIT }, storeHost),
+        // Only for the price range, so one page is enough to bound it.
+        getProducts({ limit: COMPOSE_LIMIT, search: query.q || undefined }, storeHost),
       ]);
-      const prices = products.map((product) => product.price);
+      const prices = products.data.map((product) => Number.parseFloat(product.sellingPrice));
       return {
-        categories: categories.data.map((category) => ({ ...mapCategory(category), count: 0 })),
+        categories: publicCategories(categories.data).map((category) => ({ ...mapCategory(category), count: 0 })),
         brands: brands.data.map((brand) => ({ ...mapBrand(brand), count: 0 })),
         price: { min: prices.length ? Math.floor(Math.min(...prices)) : 0, max: prices.length ? Math.ceil(Math.max(...prices)) : 0 },
       };
     },
 
     getProduct: async (slug) => {
-      const product = await getProductBySlug(slug);
+      const product = await getProductBySlug(slug, storeHost);
       if (!product) return null;
       const mapped = mapProduct(product);
-      // Fill in the rating the list payload cannot carry.
-      const reviews = await getProductReviews(product.id, { limit: FETCH_LIMIT }).catch(() => ({ data: [] }));
+      // The API has no rating aggregate, so stars come from the review list.
+      const reviews = await getProductReviews(product.id, { limit: COMPOSE_LIMIT }, storeHost).catch(() => ({ data: [] }));
       const summary = summarise(reviews.data.map(mapReview));
       return { ...mapped, rating: { average: summary.average, count: summary.count } };
     },
 
     relatedProducts: async (slug, limit) => {
-      const product = await getProductBySlug(slug);
-      if (!product?.categoryId) return [];
-      const response = await getProducts({ limit: limit + 1, categoryId: product.categoryId, isActive: true });
+      const product = await getProductBySlug(slug, storeHost);
+      if (!product?.category?.slug) return [];
+      const response = await getProducts({ limit: limit + 1, categorySlug: product.category.slug }, storeHost);
       return response.data
         .filter((candidate) => candidate.id !== product.id)
         .slice(0, limit)
@@ -128,36 +123,40 @@ export function createApiCatalogApi(): CatalogApi {
     },
 
     listCategories: async () => {
-      const response = await getCategories({ limit: FETCH_LIMIT, isActive: true, sortBy: "position", sortOrder: "ASC" });
-      return response.data.map(mapCategory);
+      const response = await getCategories({ limit: COMPOSE_LIMIT }, storeHost);
+      return publicCategories(response.data).map(mapCategory);
     },
 
     getCategory: async (slug) => {
-      const category = await getCategoriesBySlug(slug);
+      const category = await getCategoriesBySlug(slug, storeHost);
       return category ? mapCategory(category) : null;
     },
 
     listBrands: async () => {
-      const response = await getBrands({ limit: FETCH_LIMIT });
+      const response = await getBrands({ limit: COMPOSE_LIMIT }, storeHost);
       return response.data.map(mapBrand);
     },
 
     getBrand: async (slug) => {
-      const brand = await getBrandBySlug(slug);
+      const brand = await getBrandBySlug(slug, storeHost);
       return brand ? mapBrand(brand) : null;
     },
 
     listReviews: async (slug, page) => {
-      const product = await getProductBySlug(slug);
+      const product = await getProductBySlug(slug, storeHost);
       if (!product) return { summary: summarise([]), reviews: { items: [], total: 0, page, pageSize: 10, pageCount: 1 } };
 
-      const response = await getProductReviews(product.id, { page, limit: 10 });
+      const response = await getProductReviews(product.id, { page, limit: 10 }, storeHost);
       const reviews = response.data.map(mapReview);
-      const total = response.meta?.total ?? reviews.length;
       return {
-        // Summarised from this page when the API sends no aggregate.
         summary: summarise(reviews),
-        reviews: { items: reviews, total, page, pageSize: 10, pageCount: response.meta?.totalPages ?? 1 },
+        reviews: {
+          items: reviews,
+          total: response.meta?.total ?? reviews.length,
+          page,
+          pageSize: 10,
+          pageCount: response.meta?.totalPages ?? 1,
+        },
       };
     },
   };

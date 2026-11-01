@@ -6,15 +6,13 @@ upstream nextjs {
     keepalive 32;
 }
 
-# ACME challenges and the redirect to HTTPS.
+# No ACME-challenge location needed on :80 — the wildcard certificate below
+# is issued over DNS-01 (deploy/deploy.sh --tls), not HTTP-01 — but :80 still
+# redirects, since a bookmarked http:// link should still work.
 server {
     listen 80;
     listen [::]:80;
-    server_name ${ADMIN_DOMAIN} ${SHOP_DOMAIN};
-
-    location /.well-known/acme-challenge/ {
-        root /var/www/certbot;
-    }
+    server_name ${ADMIN_DOMAIN} ${ROOT_DOMAIN} *.${ROOT_DOMAIN};
 
     location / {
         return 301 https://$host$request_uri;
@@ -26,10 +24,15 @@ server {
     listen 443 ssl;
     listen [::]:443 ssl;
     http2 on;
-    server_name ${ADMIN_DOMAIN} ${SHOP_DOMAIN};
+    # ADMIN_DOMAIN is covered by the wildcard below when it is a direct
+    # subdomain of ROOT_DOMAIN; listed explicitly anyway in case it one day
+    # isn't.
+    server_name ${ADMIN_DOMAIN} ${ROOT_DOMAIN} *.${ROOT_DOMAIN};
 
-    ssl_certificate     /etc/letsencrypt/live/${ADMIN_DOMAIN}/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/${ADMIN_DOMAIN}/privkey.pem;
+    # Requested as one cert for ROOT_DOMAIN + *.ROOT_DOMAIN, so it lives under
+    # ROOT_DOMAIN's own directory regardless of which host is being served.
+    ssl_certificate     /etc/letsencrypt/live/${ROOT_DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${ROOT_DOMAIN}/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers off;
     ssl_session_cache shared:SSL:10m;

@@ -18,7 +18,7 @@ const ago = (iso: string | null) => (iso ? formatDistanceToNow(new Date(iso), { 
 
 export default async function ThemesPage() {
   const tenant = await getCurrentTenant();
-  const [tenants, themes, preview] = await Promise.all([listTenants(), listThemes(tenant.id), tenantPreview(tenant)]);
+  const [tenants, themes, preview] = await Promise.all([listTenants(), listThemes(), tenantPreview(tenant)]);
   const live = themes.find((theme) => theme.isLive) ?? null;
   const liveTheme = live ? await getTheme(tenant.id, live.id) : null;
   const library = themes.filter((theme) => !theme.isLive);
@@ -171,9 +171,12 @@ export default async function ThemesPage() {
             />
             <div className="grid gap-6 md:grid-cols-2">
               {await Promise.all(
-                library.map(async (theme) => (
+                library.map(async (theme) => {
+                  // The list rows carry no documents; the thumbnail needs the draft.
+                  const draft = (await getTheme(tenant.id, theme.id))?.draft ?? (theme.presetId ? getPreset(theme.presetId)?.build() : undefined);
+                  return (
                   <article key={theme.id} className="overflow-hidden rounded-md border bg-card">
-                    <ThemeThumbnail document={theme.draft} data={preview.data} store={preview.store} href={THEME_ROUTES.preview(theme.id)} label={`Preview ${theme.name}`} className="border-b" />
+                    {draft && <ThemeThumbnail document={draft} data={preview.data} store={preview.store} href={THEME_ROUTES.preview(theme.id)} label={`Preview ${theme.name}`} className="border-b" />}
                     <div className="flex flex-wrap items-center justify-between gap-4 p-5">
                       <div className="min-w-0">
                         <h3 className="truncate font-semibold">{theme.name}</h3>
@@ -189,7 +192,8 @@ export default async function ThemesPage() {
                       />
                     </div>
                   </article>
-                )),
+                  );
+                }),
               )}
             </div>
           </section>

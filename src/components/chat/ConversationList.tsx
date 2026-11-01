@@ -43,7 +43,7 @@ export function ConversationList({ conversations, activeId }: { conversations: C
               <span className="shrink-0 text-xs text-muted-foreground">{ago(conversation.lastMessageAt)}</span>
             </span>
             <span className="flex items-baseline justify-between gap-3">
-              <span className="truncate text-xs text-muted-foreground">{conversation.lastMessage ?? "—"}</span>
+              <span className="truncate text-xs text-muted-foreground">{conversation.lastMessagePreview ?? "—"}</span>
               {Boolean(conversation.unreadCount) && (
                 <span className="shrink-0 rounded-full bg-primary px-1.5 text-[11px] font-medium text-primary-foreground">{conversation.unreadCount}</span>
               )}

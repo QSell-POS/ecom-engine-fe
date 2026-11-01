@@ -1,5 +1,5 @@
 import { defineColumns } from "@/lib/data-grid";
-import { reviewAuthor, reviewProductName, type Review } from "./types";
+import type { Review } from "./types";
 
 export const visibilityStatuses = {
   visible: { label: "Visible", tone: "success" as const },
@@ -7,7 +7,8 @@ export const visibilityStatuses = {
 };
 
 export const reviewColumns = defineColumns<Review>([
-  { id: "product", header: "Product", accessor: reviewProductName, width: 220, hideable: false, defaultPin: "left", mobile: { role: "title" } },
+  // No product is joined, so the id is all there is until it is resolved.
+  { id: "productId", header: "Product", accessor: "productId", width: 300, hideable: false, defaultPin: "left", mobile: { role: "title" } },
   {
     id: "rating",
     header: "Rating",
@@ -18,9 +19,9 @@ export const reviewColumns = defineColumns<Review>([
     width: 110,
     mobile: { role: "status" },
   },
-  { id: "author", header: "Author", accessor: reviewAuthor, width: 160, mobile: { role: "subtitle" } },
-  { id: "comment", header: "Review", accessor: "comment", width: 360 },
-  { id: "visibility", header: "Visibility", accessor: (review) => (review.isVisible ? "visible" : "hidden"), type: "status", statuses: visibilityStatuses, filter: { type: "multiselect" }, width: 120 },
+  { id: "customerId", header: "Customer", accessor: "customerId", width: 300, defaultHidden: true },
+  { id: "comment", header: "Review", accessor: "comment", width: 360, mobile: { role: "subtitle" } },
+  { id: "visibility", header: "Visibility", accessor: (review) => (review.isVisible === false ? "hidden" : "visible"), type: "status", statuses: visibilityStatuses, filter: { type: "multiselect" }, width: 120 },
   { id: "isVerifiedBuyer", header: "Verified buyer", accessor: "isVerifiedBuyer", type: "boolean", filter: { type: "boolean" }, width: 130 },
   { id: "createdAt", header: "Posted", accessor: "createdAt", type: "datetime", filter: { type: "date-range" }, width: 160, mobile: { role: "meta", label: "" } },
 ]);

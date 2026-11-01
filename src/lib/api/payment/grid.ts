@@ -1,5 +1,6 @@
 import { defineColumns } from "@/lib/data-grid";
 import { DEFAULT_CURRENCY } from "@/lib/constants/money";
+import { toAmount } from "@/lib/api/shared/types";
 import { paymentMethodLabel } from "@/lib/api/order/types";
 import type { Payment } from "./types";
 
@@ -13,13 +14,14 @@ export const paymentStatuses = {
   cancelled: { label: "Cancelled", tone: "neutral" as const },
 };
 
+// List rows join no order, so the order id is all there is to show.
 export const paymentColumns = defineColumns<Payment>([
-  { id: "orderNumber", header: "Order", accessor: (payment) => payment.orderNumber ?? payment.orderId, width: 180, hideable: false, defaultPin: "left", mobile: { role: "title" } },
+  { id: "orderId", header: "Order", accessor: (payment) => payment.order?.orderNumber ?? payment.orderId, width: 200, hideable: false, defaultPin: "left", mobile: { role: "title" } },
   { id: "method", header: "Method", accessor: (payment) => paymentMethodLabel(payment.method), filter: { type: "multiselect" }, width: 150, mobile: { role: "subtitle" } },
   { id: "status", header: "Status", accessor: "status", type: "status", statuses: paymentStatuses, filter: { type: "multiselect" }, width: 140, mobile: { role: "status" } },
-  { id: "amount", header: "Amount", accessor: "amount", type: "currency", currency: DEFAULT_CURRENCY, filter: { type: "range" }, width: 130, align: "right", mobile: { role: "trailing" } },
-  { id: "transactionId", header: "Transaction", accessor: (payment) => payment.transactionId ?? payment.gatewayReference, width: 220, defaultHidden: true },
-  { id: "failureReason", header: "Failure", accessor: "failureReason", width: 220, defaultHidden: true },
+  { id: "amount", header: "Amount", accessor: (payment) => toAmount(payment.amount), type: "currency", currency: DEFAULT_CURRENCY, filter: { type: "range" }, width: 130, align: "right", mobile: { role: "trailing" } },
+  { id: "gateway", header: "Gateway", accessor: "gateway", width: 120, defaultHidden: true },
+  { id: "transactionId", header: "Transaction", accessor: (payment) => payment.transactionId ?? payment.gatewayPaymentId, width: 220, defaultHidden: true },
   { id: "paidAt", header: "Paid", accessor: "paidAt", type: "datetime", filter: { type: "date-range" }, width: 160 },
   { id: "createdAt", header: "Created", accessor: "createdAt", type: "datetime", filter: { type: "date-range" }, width: 160, mobile: { role: "meta", label: "" } },
 ]);

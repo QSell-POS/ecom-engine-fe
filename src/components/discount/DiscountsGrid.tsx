@@ -8,7 +8,7 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTi
 import { StatusLabel } from "@/components/common/StatusLabel";
 import { updateDiscountAction } from "@/lib/api/discount/action";
 import { discountColumns, discountStates } from "@/lib/api/discount/grid";
-import { DISCOUNT_SCOPE_LABELS, DISCOUNT_TYPE_LABELS, discountState, type Discount } from "@/lib/api/discount/types";
+import { DISCOUNT_TYPE_LABELS, discountState, type Discount } from "@/lib/api/discount/types";
 import { clientSource } from "@/lib/data-grid";
 import { formatMoney } from "@/lib/constants/money";
 import { CreateDiscountButton, DiscountFormDialog } from "./DiscountFormDialog";
@@ -44,8 +44,8 @@ function DiscountDetail({ discount }: { discount: Discount }) {
       <DetailSection title="Conditions">
         <DetailFields
           items={[
-            ["Applies to", DISCOUNT_SCOPE_LABELS[discount.scope] ?? discount.scope],
-            ["Total uses", discount.maxTotalUses ? `${discount.totalUses ?? 0} of ${discount.maxTotalUses}` : `${discount.totalUses ?? 0} (unlimited)`],
+            ["Applies to", "Whole order"],
+            ["Total uses", discount.maxTotalUses ? `${discount.timesUsed ?? 0} of ${discount.maxTotalUses}` : `${discount.timesUsed ?? 0} (unlimited)`],
             ["Per customer", discount.maxUsesPerCustomer ?? null],
             ["Starts", on(discount.startsAt)],
             ["Ends", on(discount.endsAt)],

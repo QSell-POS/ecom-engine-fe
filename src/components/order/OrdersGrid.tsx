@@ -8,7 +8,7 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/
 import { StatusLabel } from "@/components/common/StatusLabel";
 import { updateOrderStatusAction } from "@/lib/api/order/action";
 import { orderColumns, orderStatuses } from "@/lib/api/order/grid";
-import type { Order, OrderStatus } from "@/lib/api/order/types";
+import { canTransition, type Order, type OrderStatus } from "@/lib/api/order/types";
 import { clientSource } from "@/lib/data-grid";
 import { OrderDetail } from "./OrderDetail";
 
@@ -31,14 +31,16 @@ export function OrdersGrid({ orders }: { orders: Order[] }) {
   const router = useRouter();
   const source = useMemo(() => clientSource(orders), [orders]);
 
-  // One forward step per row, so the common case is a single click.
+  // One forward step per row, so the common case is a single click. What is
+  // offered comes from the API's own transition table — an illegal jump is a
+  // 400, not something to discover by clicking.
   const rowActions: RowAction<Order>[] = [
     {
       id: "confirm",
       label: "Mark confirmed",
       icon: CheckCircle2,
       swipe: "leading",
-      hidden: (order) => order.status !== "pending",
+      hidden: (order) => !canTransition(order.status, "confirmed"),
       optimistic: () => ({ status: "confirmed" as OrderStatus }),
       run: (order) => settle([setStatus(order, "confirmed")], `${label(order)} confirmed`),
     },
@@ -47,7 +49,7 @@ export function OrdersGrid({ orders }: { orders: Order[] }) {
       label: "Mark shipped",
       icon: Truck,
       swipe: "leading",
-      hidden: (order) => order.status !== "confirmed" && order.status !== "processing",
+      hidden: (order) => !canTransition(order.status, "shipped"),
       optimistic: () => ({ status: "shipped" as OrderStatus }),
       run: (order) => settle([setStatus(order, "shipped")], `${label(order)} marked shipped`),
     },
@@ -55,7 +57,7 @@ export function OrdersGrid({ orders }: { orders: Order[] }) {
       id: "deliver",
       label: "Mark delivered",
       icon: PackageCheck,
-      hidden: (order) => order.status !== "shipped",
+      hidden: (order) => !canTransition(order.status, "delivered"),
       optimistic: () => ({ status: "delivered" as OrderStatus }),
       run: (order) => settle([setStatus(order, "delivered")], `${label(order)} delivered`),
     },
@@ -65,7 +67,7 @@ export function OrdersGrid({ orders }: { orders: Order[] }) {
       icon: Ban,
       tone: "destructive",
       swipe: "trailing",
-      hidden: (order) => order.status === "delivered" || order.status === "cancelled" || order.status === "refunded",
+      hidden: (order) => !canTransition(order.status, "cancelled"),
       confirm: (order) => ({
         title: `Cancel ${label(order)}?`,
         description: "Reserved stock is released. Refunds are handled with the payment provider.",

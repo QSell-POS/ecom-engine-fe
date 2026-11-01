@@ -277,7 +277,7 @@ export const SECTION_SCHEMAS: SectionSchema[] = [
     name: "Collection tiles",
     description: "Two or three large image links to collections.",
     category: "hero",
-    maxBlocks: 3,
+    maxBlocks: 4,
     defaultBlocks: ["tile", "tile"],
     settings: withLayout([{ type: "text", id: "heading", label: "Heading", default: "" }]),
     blocks: [

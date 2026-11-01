@@ -32,7 +32,8 @@ export type Theme = {
   publishedAt: string | null;
 };
 
-export type ThemeSummary = Omit<Theme, "published"> & {
+/** `GET /admin/themes` rows: no documents — fetch the theme itself for `draft`. */
+export type ThemeSummary = Omit<Theme, "published" | "draft" | "tenantId"> & {
   isLive: boolean;
   hasUnpublishedChanges: boolean;
 };
@@ -42,6 +43,8 @@ export type ResolvedStorefront = {
   slug: string;
   /** Public key for the storefront APIs (demo stores use a demo key). */
   storeKey: string;
+  /** The store's host, sent as `x-store-host` on catalog reads. Absent for demo stores. */
+  host?: string;
   vertical: Vertical;
   profile: StoreProfile;
   document: ThemeDocument;

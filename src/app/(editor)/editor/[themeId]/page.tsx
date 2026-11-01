@@ -19,7 +19,13 @@ export default async function ThemeEditorPage({ params }: Props) {
   // Scoped to the current tenant: another tenant's theme id 404s.
   const theme = await getTheme(tenant.id, themeId);
   if (!theme) notFound();
-  const data = await getCatalogApi({ storeKey: tenant.apiKey, vertical: tenant.vertical }).home();
+  // Design with demo content rather than lose the builder if the catalog can't be read.
+  const data = await getCatalogApi({ storeKey: tenant.apiKey, vertical: tenant.vertical, host: tenant.apiKey })
+    .home()
+    .catch(async (error: unknown) => {
+      console.error(`Theme editor: catalog for ${tenant.apiKey} failed, using demo content.`, error);
+      return getCatalogApi({ storeKey: "demo", vertical: tenant.vertical }).home();
+    });
 
   return (
     <ThemeEditor

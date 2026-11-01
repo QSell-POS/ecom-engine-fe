@@ -4,12 +4,15 @@ import { apiClient, apiList } from "@/lib/api/client";
 import { buildQuery, type Address, type ListParams, type ListResponse } from "@/lib/api/shared/types";
 import type { Order } from "@/lib/api/order/types";
 import type { AddressPayload, CartItemPayload, PlaceOrderPayload, ShopLoginPayload, ShopRegisterPayload } from "./dto";
-import type { PaymentInitiation, ShopCart, ShopCustomerSession, ShopWishlistItem } from "./types";
+import type { PaymentInitiation, ShopCart, ShopCustomerSession, ShopRegisterResponse, ShopWishlistItem } from "./types";
 import { CART_TAG, SHOP_ADDRESSES_TAG, SHOP_ORDERS_TAG, WISHLIST_TAG, shopOrderTag } from "./constants";
 
 // Account: API key only, because the shopper has no token yet.
-export async function registerShopCustomer(data: ShopRegisterPayload) {
-  return apiClient<ShopCustomerSession>("/customers/register", { method: "POST", body: data, auth: "key" });
+export async function registerShopCustomer(data: ShopRegisterPayload): Promise<ShopCustomerSession> {
+  const response = await apiClient<ShopRegisterResponse>("/customers/register", { method: "POST", body: data, auth: "key" });
+  // Register wraps its payload in `res`; login does not. Accept either, so a
+  // backend fix does not break signup.
+  return "res" in response ? response.res : response;
 }
 
 export async function loginShopCustomer(data: ShopLoginPayload) {
@@ -58,13 +61,17 @@ export async function placeShopOrder(data: PlaceOrderPayload, idempotencyKey?: s
   });
 }
 
-/** No body. 409 once the order is past the cancellable window. */
+/**
+ * No body. Cancellable only while pending or confirmed — later is a 409
+ * (NOT_CANCELLABLE), and an order with a captured payment is ORDER_PAID.
+ */
 export async function cancelShopOrder(id: string) {
   return apiClient<Order>(`/orders/${id}/cancel`, { method: "POST", auth: "customer" });
 }
 
-// Payments: start, or retry a failed attempt. Neither takes a body, and
-// neither is used for cash on delivery.
+// Payments: start, or retry a failed attempt. Neither takes a body. The order
+// must still be pending — a COD order is created `confirmed`, so it has no
+// payment step at all.
 export async function initiatePayment(orderId: string) {
   return apiClient<PaymentInitiation>(`/payments/${orderId}/initiate`, { method: "POST", auth: "customer" });
 }

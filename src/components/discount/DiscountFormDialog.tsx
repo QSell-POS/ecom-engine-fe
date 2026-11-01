@@ -14,14 +14,13 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { FieldGroup } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
 import { createDiscountAction, updateDiscountAction } from "@/lib/api/discount/action";
-import { DISCOUNT_SCOPE_LABELS, DISCOUNT_TYPE_LABELS, type Discount } from "@/lib/api/discount/types";
+import { DISCOUNT_TYPE_LABELS, type Discount } from "@/lib/api/discount/types";
 import { CreateDiscountSchema } from "@/lib/api/discount/validation";
 
 type Input = z.input<typeof CreateDiscountSchema>;
 type Output = z.output<typeof CreateDiscountSchema>;
 
 const TYPE_OPTIONS = Object.entries(DISCOUNT_TYPE_LABELS).map(([value, label]) => ({ value, label }));
-const SCOPE_OPTIONS = Object.entries(DISCOUNT_SCOPE_LABELS).map(([value, label]) => ({ value, label }));
 
 // The API stores ISO timestamps; <input type="date"> wants YYYY-MM-DD.
 const toDateInput = (value?: string | null) => (value ? value.slice(0, 10) : "");
@@ -39,7 +38,6 @@ export function DiscountFormDialog({ discount, open, onOpenChange }: { discount?
       description: discount?.description ?? "",
       type: discount?.type ?? "percentage",
       discountValue: discount?.discountValue ?? 10,
-      scope: discount?.scope ?? "all_products",
       maxTotalUses: discount?.maxTotalUses ?? "",
       maxUsesPerCustomer: discount?.maxUsesPerCustomer ?? "",
       startsAt: toDateInput(discount?.startsAt),
@@ -62,7 +60,20 @@ export function DiscountFormDialog({ discount, open, onOpenChange }: { discount?
   function onSubmit(values: Output) {
     setServerError(null);
     startTransition(async () => {
-      const result = discount ? await updateDiscountAction({ id: discount.id, ...values }) : await createDiscountAction(values);
+      // code, type and discountValue are immutable on the API, so an edit
+      // sends only what may change.
+      const result = discount
+        ? await updateDiscountAction({
+            id: discount.id,
+            name: values.name,
+            description: values.description,
+            startsAt: values.startsAt,
+            endsAt: values.endsAt,
+            isActive: values.isActive,
+            maxTotalUses: values.maxTotalUses,
+            maxUsesPerCustomer: values.maxUsesPerCustomer,
+          })
+        : await createDiscountAction(values);
       if (!result?.data) {
         setServerError(result?.serverError ?? "Please check the highlighted fields.");
         return;
@@ -85,12 +96,19 @@ export function DiscountFormDialog({ discount, open, onOpenChange }: { discount?
           <FieldGroup className="gap-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <TextField form={form} name="name" label="Offer name" autoFocus placeholder="Dashain 10%" />
-              <TextField form={form} name="code" label="Code" placeholder="DASHAIN10" className="font-mono uppercase" />
+              <TextField
+                form={form}
+                name="code"
+                label="Code"
+                placeholder="DASHAIN10"
+                className="font-mono uppercase"
+                disabled={Boolean(discount)}
+                description={discount ? "Codes cannot be changed." : undefined}
+              />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <SelectField form={form} name="type" label="Type" options={TYPE_OPTIONS} />
-              <SelectField form={form} name="scope" label="Applies to" options={SCOPE_OPTIONS} />
-            </div>
+            {/* Scope is omitted: the API accepts only all_products, so a
+                picker would offer choices every one of which 400s. */}
+            <SelectField form={form} name="type" label="Type" options={TYPE_OPTIONS} />
             <div className="grid gap-4 sm:grid-cols-2">
               <TextField
                 form={form}
@@ -108,8 +126,8 @@ export function DiscountFormDialog({ discount, open, onOpenChange }: { discount?
               <div />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <TextField form={form} name="startsAt" label="Starts" optional type="date" />
-              <TextField form={form} name="endsAt" label="Ends" optional type="date" />
+              <TextField form={form} name="startsAt" label="Starts" type="date" />
+              <TextField form={form} name="endsAt" label="Ends" type="date" />
             </div>
             <TextField form={form} name="description" label="Internal note" optional multiline />
             <SwitchField form={form} name="isActive" label="Active" description="Turn off to retire the code without deleting it." />

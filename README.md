@@ -8,6 +8,10 @@ route group renders the shop itself.
 
 - **[docs/api-integration.md](docs/api-integration.md)** — how this app talks
   to the API: the three credentials, and the places its shape surprises you.
+  **This is the API as it actually is.**
+- **[docs/theme-api-request.md](docs/theme-api-request.md)** — the one part
+  still to be built, written for the backend team, with its data model in
+  [docs/theme-backend.md](docs/theme-backend.md).
 - **[docs/deploy-ec2.md](docs/deploy-ec2.md)** — deploying to EC2. One command
   per deploy: `bash deploy/deploy.sh`.
 

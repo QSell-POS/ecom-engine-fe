@@ -18,7 +18,6 @@ const STATUS_TONES = {
   open: "info",
   pending: "warning",
   resolved: "success",
-  closed: "neutral",
 } as const;
 
 /**
@@ -28,12 +27,17 @@ const STATUS_TONES = {
 export function ChatThread({
   conversation,
   messages,
-  assigneeId,
+  actor,
 }: {
   conversation: Conversation;
   messages: ChatMessage[];
-  /** The signed-in tenant: the API wants an explicit assignee id. */
-  assigneeId?: string;
+  /**
+   * Who is acting. Every mutating chat route records an actor and refuses a
+   * body without one, and nothing is looked up server-side — the id and the
+   * display name are both sent. Until there are staff accounts this is the
+   * tenant owner.
+   */
+  actor?: { id: string; name: string };
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState("");
@@ -48,7 +52,7 @@ export function ChatThread({
     const text = draft.trim();
     if (!text) return;
     startTransition(async () => {
-      const result = await sendChatMessageAction({ id: conversation.id, text });
+      const result = await sendChatMessageAction({ id: conversation.id, text, userId: actor?.id, userName: actor?.name });
       if (!result?.data) {
         toast.error(result?.serverError ?? "That message did not send.");
         return;
@@ -76,22 +80,40 @@ export function ChatThread({
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">{conversationTitle(conversation)}</p>
           <p className="text-xs text-muted-foreground">
-            {conversation.channel}
-            {conversation.assigneeName ? ` · ${conversation.assigneeName}` : " · unassigned"}
+            {conversation.platform}
+            {conversation.assignedToUserName ? ` · ${conversation.assignedToUserName}` : " · unassigned"}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <StatusLabel tone={STATUS_TONES[conversation.status] ?? "neutral"}>{conversation.status}</StatusLabel>
-          {conversation.assigneeId ? (
-            <Button variant="outline" size="sm" disabled={isPending} onClick={() => act(() => unassignConversationAction({ id: conversation.id }), "Unassigned")}>
+          {conversation.assignedToUserId ? (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isPending || !actor}
+              onClick={() => actor && act(() => unassignConversationAction({ id: conversation.id, actingUserId: actor.id, actingUserName: actor.name }), "Unassigned")}
+            >
               <UserX /> Unassign
             </Button>
           ) : (
             <Button
               variant="outline"
               size="sm"
-              disabled={isPending || !assigneeId}
-              onClick={() => assigneeId && act(() => assignConversationAction({ id: conversation.id, assigneeId }), "Assigned to you")}
+              disabled={isPending || !actor}
+              onClick={() =>
+                actor &&
+                act(
+                  () =>
+                    assignConversationAction({
+                      id: conversation.id,
+                      assigneeUserId: actor.id,
+                      assigneeUserName: actor.name,
+                      actingUserId: actor.id,
+                      actingUserName: actor.name,
+                    }),
+                  "Assigned to you",
+                )
+              }
             >
               <UserPlus /> Assign to me
             </Button>
@@ -100,8 +122,14 @@ export function ChatThread({
             <Button
               variant="outline"
               size="sm"
-              disabled={isPending}
-              onClick={() => act(() => setConversationStatusAction({ id: conversation.id, status: "resolved" }), "Marked resolved")}
+              disabled={isPending || !actor}
+              onClick={() =>
+                actor &&
+                act(
+                  () => setConversationStatusAction({ id: conversation.id, status: "resolved", actingUserId: actor.id, actingUserName: actor.name }),
+                  "Marked resolved",
+                )
+              }
             >
               <Check /> Resolve
             </Button>

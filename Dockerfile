@@ -21,11 +21,20 @@ COPY . .
 # they arrive as build args rather than runtime env.
 ARG NEXT_PUBLIC_DEFAULT_CURRENCY=NPR
 ARG NEXT_PUBLIC_API_URL
+# Host routing: which domain is the dashboard, and which store the shop serves.
+ARG NEXT_PUBLIC_ADMIN_DOMAIN
+ARG NEXT_PUBLIC_STORE_SLUG
+ARG NEXT_PUBLIC_STORE_NAME
 ENV NEXT_PUBLIC_DEFAULT_CURRENCY=$NEXT_PUBLIC_DEFAULT_CURRENCY
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_ADMIN_DOMAIN=$NEXT_PUBLIC_ADMIN_DOMAIN
+ENV NEXT_PUBLIC_STORE_SLUG=$NEXT_PUBLIC_STORE_SLUG
+ENV NEXT_PUBLIC_STORE_NAME=$NEXT_PUBLIC_STORE_NAME
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN npm run build
+# Turbopack's next/font/google resolver fails on Cormorant Garamond ("queries have
+# exactly one entry"); webpack handles it.
+RUN npx next build --webpack
 
 FROM node:22-alpine AS runner
 WORKDIR /app

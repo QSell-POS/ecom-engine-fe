@@ -7,8 +7,13 @@ export const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY || "NPR
 
 const formatters = new Map<string, Intl.NumberFormat>();
 
-export function formatMoney(amount: number | null | undefined, currency = DEFAULT_CURRENCY): string {
-  if (amount === null || amount === undefined || !Number.isFinite(Number(amount))) return "—";
+/**
+ * Accepts both shapes the API uses for money: a number when a value was just
+ * computed, a decimal string ("2458.00") when the same field is read back out
+ * of Postgres.
+ */
+export function formatMoney(amount: number | string | null | undefined, currency = DEFAULT_CURRENCY): string {
+  if (amount === null || amount === undefined || amount === "" || !Number.isFinite(Number(amount))) return "—";
   let formatter = formatters.get(currency);
   if (!formatter) {
     formatter = new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 });

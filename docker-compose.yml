@@ -32,23 +32,22 @@ services:
       - "443:443"
     environment:
       ADMIN_DOMAIN: ${ADMIN_DOMAIN:?set ADMIN_DOMAIN in .env}
-      SHOP_DOMAIN: ${SHOP_DOMAIN:?set SHOP_DOMAIN in .env}
+      ROOT_DOMAIN: ${ROOT_DOMAIN:?set ROOT_DOMAIN in .env}
     volumes:
-      # envsubst-templated: Nginx expands ${ADMIN_DOMAIN}/${SHOP_DOMAIN} on start.
+      # envsubst-templated: Nginx expands ${ADMIN_DOMAIN}/${ROOT_DOMAIN} on start.
       - ./deploy/nginx/app.conf.template:/etc/nginx/templates/app.conf.template:ro
       - ./deploy/certbot/conf:/etc/letsencrypt:ro
-      - ./deploy/certbot/www:/var/www/certbot:ro
     networks:
       - edge
 
-  # One-shot: issues or renews the certificates, then exits. `deploy.sh --tls`
-  # runs it; a cron entry renews.
+  # One-shot: issues or renews the wildcard certificate over DNS-01, then
+  # exits. `deploy.sh --tls` runs it (with the Cloudflare credentials file it
+  # needs); a cron entry renews.
   certbot:
-    image: certbot/certbot:latest
+    image: certbot/dns-cloudflare:latest
     profiles: ["tls"]
     volumes:
       - ./deploy/certbot/conf:/etc/letsencrypt
-      - ./deploy/certbot/www:/var/www/certbot
     entrypoint: /bin/sh
     command: -c "echo 'Run deploy/deploy.sh --tls instead of this service directly.'"
 

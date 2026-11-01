@@ -13,3 +13,6 @@ services:
         # Inlined into the browser bundle, so a change needs a rebuild.
         NEXT_PUBLIC_DEFAULT_CURRENCY: ${NEXT_PUBLIC_DEFAULT_CURRENCY:-NPR}
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
+        NEXT_PUBLIC_ADMIN_DOMAIN: ${ADMIN_DOMAIN:-}
+        NEXT_PUBLIC_STORE_SLUG: ${STORE_SLUG:-}
+        NEXT_PUBLIC_STORE_NAME: ${STORE_NAME:-}
