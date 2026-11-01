@@ -3,7 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // The Docker image runs .next/standalone/server.js, which carries only the
   // traced files it needs — no node_modules install in the final stage.
-  output: "standalone",
+  // Vercel packages its own output, so skip it there.
+  output: process.env.VERCEL ? undefined : "standalone",
 
   images: {
     // Product, brand and category images are served from Cloudflare R2. Set
