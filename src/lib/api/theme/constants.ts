@@ -26,7 +26,9 @@ export const THEME_ROUTES = {
    * local development (no admin domain) keeps the in-app path.
    */
   storefront: (tenantSlug: string) => {
-    const root = (process.env.NEXT_PUBLIC_ADMIN_DOMAIN ?? "").split(".").slice(1).join(".");
+    const root =
+      process.env.NEXT_PUBLIC_ROOT_DOMAIN ??
+      (process.env.NEXT_PUBLIC_ADMIN_DOMAIN ?? "").split(".").slice(1).join(".");
     return root ? `https://${tenantSlug}.${root}` : `/store/${tenantSlug}`;
   },
 };
