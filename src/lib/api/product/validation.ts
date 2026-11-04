@@ -2,50 +2,19 @@ import { z } from "zod";
 import { emptyToUndefined, makeIdSchema, optionalText } from "@/lib/api/shared/validation";
 import { PRODUCT_BADGES } from "./types";
 
-const attributesSchema = z.preprocess(
-  (value) => {
-    if (value === "" || value === undefined) return undefined;
-    if (typeof value === "string") {
-      try {
-        return JSON.parse(value);
-      } catch {
-        return value;
-      }
-    }
-    return value;
-  },
-  z
-    .array(
-      z.object({
-        name: z.string().min(1),
-        values: z.array(z.string().min(1)).min(1),
-      }),
-    )
-    .optional(),
-);
+// The form edits these as real arrays (chips and a repeater), so no string
+// parsing here. Left optional, not defaulted: a partial update such as the
+// grid's activate/deactivate must not wipe them.
+const attributesSchema = z
+  .array(
+    z.object({
+      name: z.string().trim().min(1, "Name this attribute"),
+      values: z.array(z.string().trim().min(1)).min(1, "Add at least one value"),
+    }),
+  )
+  .optional();
 
-const badgesSchema = z.preprocess(
-  (value) => {
-    if (value === "" || value === undefined) return undefined;
-    if (typeof value === "string") {
-      return value
-        .split(",")
-        .map((badge) =>
-          badge.trim().toLowerCase().replace(/\s+/g, "_")
-        )
-        .filter(Boolean);
-    }
-    if (Array.isArray(value)) {
-      return value.map((badge) =>
-        typeof badge === "string"
-          ? badge.trim().toLowerCase().replace(/\s+/g, "_")
-          : badge,
-      );
-    }
-    return value;
-  },
-  z.array(z.enum(PRODUCT_BADGES)).optional(),
-);
+const badgesSchema = z.array(z.enum(PRODUCT_BADGES)).optional();
 
 const productFields = {
   name: z.string().min(1, "Name is required"),

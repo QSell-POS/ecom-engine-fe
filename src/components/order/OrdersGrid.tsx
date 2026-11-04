@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Ban, CheckCircle2, PackageCheck, ReceiptText, Truck } from "lucide-react";
 import { DataGrid, type ActionOutcome, type BulkAction, type RowAction } from "@/components/data-grid";
@@ -8,7 +9,7 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/
 import { StatusLabel } from "@/components/common/StatusLabel";
 import { updateOrderStatusAction } from "@/lib/api/order/action";
 import { orderColumns, orderStatuses } from "@/lib/api/order/grid";
-import { canTransition, type Order, type OrderStatus } from "@/lib/api/order/types";
+import { canTransition, orderCustomerName, type Order, type OrderStatus } from "@/lib/api/order/types";
 import { clientSource } from "@/lib/data-grid";
 import { OrderDetail } from "./OrderDetail";
 
@@ -109,6 +110,21 @@ export function OrdersGrid({ orders }: { orders: Order[] }) {
       defaultQuery={{ sort: [{ id: "createdAt", desc: true }] }}
       cells={{
         orderNumber: (order) => <span className="font-medium">{label(order)}</span>,
+        customer: (order) =>
+          order.customer ? (
+            <span className="flex min-w-0 flex-col leading-tight">
+              <Link
+                href={`/customers?open=${order.customer.id}`}
+                onClick={(event) => event.stopPropagation()}
+                className="truncate underline-offset-4 hover:underline"
+              >
+                {orderCustomerName(order)}
+              </Link>
+              {order.customer.phone && <span className="truncate text-xs text-muted-foreground">{order.customer.phone}</span>}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
         status: (order) => {
           const status = orderStatuses[order.status];
           return status ? <StatusLabel tone={status.tone}>{status.label}</StatusLabel> : <span>{order.status}</span>;

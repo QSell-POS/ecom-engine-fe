@@ -19,3 +19,28 @@ export type Category = {
   createdAt?: string;
   updatedAt?: string;
 };
+
+/**
+ * Categories `excludeId` may be placed under, labelled with their full path
+ * ("Kids › T-Shirts"). The category itself and everything below it are left
+ * out — the API rejects a move that would create a cycle.
+ */
+export function parentCategoryOptions(categories: Category[], excludeId?: string): { id: string; name: string }[] {
+  const byId = new Map(categories.map((category) => [category.id, category]));
+
+  function path(category: Category): Category[] {
+    const chain: Category[] = [];
+    const seen = new Set<string>();
+    for (let node: Category | undefined = category; node && !seen.has(node.id); node = node.parentId ? byId.get(node.parentId) : undefined) {
+      seen.add(node.id);
+      chain.unshift(node);
+    }
+    return chain;
+  }
+
+  return categories
+    .map((category) => ({ category, chain: path(category) }))
+    .filter(({ chain }) => !excludeId || !chain.some((node) => node.id === excludeId))
+    .map(({ category, chain }) => ({ id: category.id, name: chain.map((node) => node.name).join(" › ") }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}

@@ -56,6 +56,12 @@ export const PRODUCT_BADGES = [
 
 export type ProductBadge = (typeof PRODUCT_BADGES)[number];
 
+/** "deal_of_the_day" → "Deal of the day". */
+export function productBadgeLabel(badge: string): string {
+  const words = badge.replace(/_/g, " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 /**
  * The product as the API returns it. Two views share this type:
  *

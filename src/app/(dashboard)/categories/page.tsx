@@ -16,7 +16,7 @@ export default async function CategoriesPage() {
       <PageHeader
         title="Categories"
         description="How products are grouped in your store's navigation."
-        actions={<CreateCategoryButton />}
+        actions={<CreateCategoryButton categories={data as Category[]} />}
       />
       <CategoriesGrid categories={data as Category[]} />
     </>
