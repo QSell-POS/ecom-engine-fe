@@ -112,7 +112,7 @@ export function BrandFormDialog({
             </div>
             <TextField form={form} name="description" label="Description" optional multiline />
             <TextField form={form} name="website" label="Website" optional type="url" placeholder="https://" />
-            <MediaField form={form} name="logoId" label="Logo" optional folder="brand" currentUrl={brand?.logo?.url} description="Uploaded to your media library." />
+            <MediaField form={form} name="logoId" label="Logo" optional folder="brand" currentUrl={brand?.logo?.url} description="Choose from your media library, or upload a new image." />
             <SwitchField
               form={form}
               name="isActive"

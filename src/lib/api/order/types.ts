@@ -54,13 +54,26 @@ export type OrderItem = {
   priceSnapshot: Decimal | number;
 };
 
+/** Derived by the API from the order's payment attempts (and, for COD, its delivery). */
+export const ORDER_PAYMENT_STATUSES = ["paid", "unpaid", "pending", "failed", "refunded", "partially_refunded"] as const;
+export type OrderPaymentStatus = (typeof ORDER_PAYMENT_STATUSES)[number];
+
+/** The customer fields the admin order routes embed. */
+export type OrderCustomer = {
+  id: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  email: string;
+  phone?: string | null;
+};
+
 /**
  * Money here is a number in the checkout response and a decimal string on
  * every later read of the same order, because the columns have no transformer.
  * Always put it through `toAmount()`.
  *
- * Neither the list nor the detail route joins the customer — only
- * `customerId`. Fetch `/admin/customers/:id` when you need their name.
+ * The admin routes embed `customer` and `paymentStatus`; the shopper's own
+ * order routes carry neither.
  */
 export type Order = {
   id: string;
@@ -69,6 +82,8 @@ export type Order = {
   paymentMethod?: PaymentMethod;
   channel?: OrderChannel;
   customerId?: string;
+  customer?: OrderCustomer | null;
+  paymentStatus?: OrderPaymentStatus;
   items?: OrderItem[];
   subtotalAmount: Decimal | number;
   discountAmount?: Decimal | number;
@@ -89,6 +104,12 @@ export type Order = {
 
 export function orderItemCount(order: Order): number {
   return (order.items ?? []).reduce((sum, item) => sum + item.quantity, 0);
+}
+
+export function orderCustomerName(order: Order): string {
+  const customer = order.customer;
+  if (!customer) return "";
+  return [customer.firstName, customer.lastName].filter(Boolean).join(" ") || customer.email;
 }
 
 export function orderShipsTo(order: Order): string {

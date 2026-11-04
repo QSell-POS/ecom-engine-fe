@@ -13,7 +13,7 @@ import { SwitchField, TextField } from "@/components/common/FormFields";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { createProductAction, updateProductAction } from "@/lib/api/product/action";
@@ -23,12 +23,23 @@ import type { Brand } from "@/lib/api/brand/types";
 import type { Category } from "@/lib/api/category/types";
 import type { Product } from "@/lib/api/product/types";
 import { slugify } from "@/lib/slugify";
+import type { PickedMedia } from "@/components/media/MediaPickerDialog";
+import { ProductAttributesField, ProductBadgesField } from "./ProductOptionFields";
+import { ProductMediaField } from "./ProductMediaField";
 
 type Input = z.input<typeof CreateProductSchema>;
 type Output = z.output<typeof CreateProductSchema>;
 
 const NONE = "__none";
 const ADVANCED_FIELDS = ["slug", "hsCode", "badges", "attributes"];
+
+/** The saved gallery in position order; position 0 is the primary image. */
+function initialMedia(product?: Product): PickedMedia[] {
+  return [...(product?.media ?? [])]
+    .sort((a, b) => a.position - b.position)
+    .map((item) => ({ id: item.mediaId ?? item.media.id ?? "", url: item.media.url, alt: item.media.alt }))
+    .filter((item) => item.id);
+}
 
 function FormSection({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
@@ -110,8 +121,8 @@ export function ProductForm({
       compareAtPrice: product?.compareAtPrice ?? "",
       stockAlert: product?.stockAlert ?? undefined,
       initialQuantity: product?.inventory?.quantityOnHand ?? undefined,
-      attributes: product?.attributes?.length ? JSON.stringify(product.attributes) : "",
-      badges: product?.badges?.join(", ") ?? "",
+      attributes: product?.attributes ?? [],
+      badges: product?.badges ?? [],
       brandId: product?.brandId ?? "",
       categoryId: product?.categoryId ?? "",
       isActive: product?.isActive ?? true,
@@ -119,9 +130,14 @@ export function ProductForm({
   });
 
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  // Kept beside the form rather than in it: the field needs URLs for previews,
+  // the API only the ordered ids.
+  const [media, setMedia] = useState<PickedMedia[]>(() => initialMedia(product));
 
-  function onSubmit(values: Output) {
+  function onSubmit(formValues: Output) {
     setSubmitError(null);
+    // Always sent, so removing every image clears the gallery.
+    const values = { ...formValues, mediaIds: media.map((item) => item.id) };
     startTransition(async () => {
       const result = product
         ? await updateProductAction({ id: product.id, ...values })
@@ -186,6 +202,10 @@ export function ProductForm({
             <TextField form={form} name="description" label="Description" optional multiline />
           </FormSection>
 
+          <FormSection title="Images" description="The first image is the main one, shown on product cards and at the top of the product page.">
+            <ProductMediaField value={media} onChange={setMedia} />
+          </FormSection>
+
           <FormSection title="Pricing">
             <div className="grid gap-5 sm:grid-cols-2">
               <TextField form={form} name="sellingPrice" label="Price" inputMode="decimal" placeholder="0.00" />
@@ -245,23 +265,37 @@ export function ProductForm({
                   />
                   <TextField form={form} name="hsCode" label="HS code" optional placeholder="4202.92" />
                 </div>
-                <TextField
-                  form={form}
-                  name="badges"
-                  label="Badges"
-                  optional
-                  placeholder="New, Bestseller"
-                  description="Comma-separated labels shown on product cards."
-                />
-                <TextField
-                  form={form}
-                  name="attributes"
-                  label="Attributes"
-                  optional
-                  multiline
-                  placeholder='[{"name":"Color","value":"Black"}]'
-                  description="JSON list of name and value pairs."
-                />
+                <Field>
+                  <FieldLabel>
+                    Badges <span className="font-normal text-muted-foreground">(optional)</span>
+                  </FieldLabel>
+                  <Controller
+                    name="badges"
+                    control={form.control}
+                    render={({ field }) => <ProductBadgesField value={field.value ?? []} onChange={field.onChange} />}
+                  />
+                  <FieldDescription>Labels shown on product cards.</FieldDescription>
+                </Field>
+                <Field>
+                  <FieldLabel>
+                    Attributes <span className="font-normal text-muted-foreground">(optional)</span>
+                  </FieldLabel>
+                  <Controller
+                    name="attributes"
+                    control={form.control}
+                    render={({ field, fieldState }) => {
+                      const rowErrors = fieldState.error as unknown as ({ name?: { message?: string }; values?: { message?: string } } | undefined)[] | undefined;
+                      return (
+                        <ProductAttributesField
+                          value={field.value ?? []}
+                          onChange={field.onChange}
+                          errors={Array.isArray(rowErrors) ? rowErrors.map((row) => row && { name: row.name?.message, values: row.values?.message }) : undefined}
+                        />
+                      );
+                    }}
+                  />
+                  <FieldDescription>Options shoppers choose between, like Color: Black, White or Size: S, M, L.</FieldDescription>
+                </Field>
               </FieldGroup>
             </CollapsibleContent>
           </Collapsible>

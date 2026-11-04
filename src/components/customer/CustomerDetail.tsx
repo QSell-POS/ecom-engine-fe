@@ -24,7 +24,7 @@ export function CustomerDetail({ customer }: { customer: Customer }) {
       <DetailSection
         title="Contact"
         action={
-          <Link href={`/orders?f.customerId=${customer.id}`} className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+          <Link href={`/orders?customerId=${customer.id}`} className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
             View orders
           </Link>
         }

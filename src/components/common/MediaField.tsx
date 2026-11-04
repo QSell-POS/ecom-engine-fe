@@ -1,20 +1,18 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useState } from "react";
 import { Controller, type FieldValues, type Path, type UseFormReturn } from "react-hook-form";
 import { ImagePlus, X } from "lucide-react";
-import { toast } from "sonner";
+import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
-import { Spinner } from "@/components/ui/spinner";
-import { uploadMediaAction } from "@/lib/api/media-library/action";
 import type { MediaFolder } from "@/lib/api/media-library/types";
 
 /**
  * An image field that stores a media asset **id**, because that is what the
- * API takes on write (`logoId`, `imageId`, `mediaIds`). The file is uploaded
- * to /admin/media as soon as it is picked, and the returned id goes into the
- * form; an explicit null clears the image.
+ * API takes on write (`logoId`, `imageId`). The image is chosen through the
+ * media picker — from the library, or uploaded into it from there — and an
+ * explicit null clears it.
  */
 export function MediaField<T extends FieldValues, TOut extends FieldValues>({
   form,
@@ -34,8 +32,7 @@ export function MediaField<T extends FieldValues, TOut extends FieldValues>({
   /** Existing image to show when the form opens on a saved record. */
   currentUrl?: string | null;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [isPending, startTransition] = useTransition();
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [preview, setPreview] = useState<string | null>(currentUrl ?? null);
   const error = form.getFieldState(name, form.formState).error?.message;
   const id = `field-${String(name)}`;
@@ -59,39 +56,16 @@ export function MediaField<T extends FieldValues, TOut extends FieldValues>({
                 <ImagePlus className="size-5" />
               </span>
             )}
-            <input
-              id={id}
-              ref={inputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                event.target.value = "";
-                if (!file) return;
-                startTransition(async () => {
-                  const result = await uploadMediaAction({ files: [file], folder });
-                  const asset = result?.data?.assets?.[0];
-                  if (!asset) {
-                    toast.error(result?.serverError ?? "That upload failed.");
-                    return;
-                  }
-                  field.onChange(asset.id);
-                  setPreview(asset.url);
-                });
-              }}
-            />
             <div className="flex items-center gap-2">
-              <Button type="button" variant="outline" size="sm" disabled={isPending} onClick={() => inputRef.current?.click()}>
-                {isPending ? <Spinner /> : <ImagePlus />}
-                {preview ? "Replace" : "Upload"}
+              <Button id={id} type="button" variant="outline" size="sm" onClick={() => setPickerOpen(true)}>
+                <ImagePlus />
+                {preview ? "Replace" : "Select image"}
               </Button>
               {preview && (
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  disabled={isPending}
                   onClick={() => {
                     // null, not undefined: that is how the API clears an image.
                     field.onChange(null);
@@ -102,6 +76,17 @@ export function MediaField<T extends FieldValues, TOut extends FieldValues>({
                 </Button>
               )}
             </div>
+            <MediaPickerDialog
+              open={pickerOpen}
+              onOpenChange={setPickerOpen}
+              folder={folder}
+              selected={field.value && preview ? [{ id: field.value as string, url: preview }] : []}
+              onConfirm={([media]) => {
+                if (!media) return;
+                field.onChange(media.id);
+                setPreview(media.url);
+              }}
+            />
           </div>
         )}
       />

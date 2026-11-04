@@ -102,13 +102,13 @@ export function CategoriesGrid({ categories }: { categories: Category[] }) {
               <EmptyDescription>Group products into categories to build your store&apos;s navigation.</EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
-              <CreateCategoryButton />
+              <CreateCategoryButton categories={categories} />
             </EmptyContent>
           </Empty>
         }
       />
       {editing && (
-        <CategoryFormDialog key={editing.id} category={editing} open onOpenChange={(open) => !open && setEditing(null)} />
+        <CategoryFormDialog key={editing.id} category={editing} categories={categories} open onOpenChange={(open) => !open && setEditing(null)} />
       )}
     </>
   );

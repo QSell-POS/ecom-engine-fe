@@ -4,11 +4,25 @@ import { updateTag } from "next/cache";
 import { z } from "zod";
 import { authActionClient } from "@/lib/safe-action";
 import { optionalText } from "@/lib/api/shared/validation";
-import { deleteMediaAsset, updateMediaAsset, uploadMedia } from "./service";
+import { deleteMediaAsset, getMedia, updateMediaAsset, uploadMedia } from "./service";
 import { MEDIA_FOLDERS } from "./types";
 import { MEDIA_TAG, mediaTag } from "./constants";
 
 const MediaIdSchema = z.object({ id: z.string().min(1, "Asset id is required") });
+
+/** One page of the library, for the media picker (which runs in the browser). */
+export const listMediaAction = authActionClient
+  .inputSchema(
+    z.object({
+      page: z.number().int().min(1).default(1),
+      search: optionalText,
+      folder: z.enum(MEDIA_FOLDERS).optional(),
+    }),
+  )
+  .action(async ({ parsedInput }) => {
+    const { data, meta } = await getMedia({ ...parsedInput, limit: 40 });
+    return { assets: data, hasMore: (meta?.page ?? 1) < (meta?.totalPages ?? 1) };
+  });
 
 export const uploadMediaAction = authActionClient
   .inputSchema(

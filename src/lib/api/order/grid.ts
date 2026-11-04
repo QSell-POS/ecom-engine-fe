@@ -1,7 +1,7 @@
 import { defineColumns } from "@/lib/data-grid";
 import { DEFAULT_CURRENCY } from "@/lib/constants/money";
 import { toAmount } from "@/lib/api/shared/types";
-import { ORDER_CHANNEL_LABELS, ORDER_CHANNELS, orderItemCount, orderShipsTo, paymentMethodLabel, type Order } from "./types";
+import { ORDER_CHANNEL_LABELS, ORDER_CHANNELS, orderCustomerName, orderItemCount, orderShipsTo, paymentMethodLabel, type Order } from "./types";
 
 export const orderStatuses = {
   pending: { label: "Pending", tone: "warning" as const },
@@ -13,14 +13,26 @@ export const orderStatuses = {
   refunded: { label: "Refunded", tone: "danger" as const },
 };
 
-// The API joins no customer onto an order — only customerId — so there is no
-// name to show here. The shipping snapshot is what identifies an order at a
-// glance instead.
+export const paymentStatuses = {
+  paid: { label: "Paid", tone: "success" as const },
+  unpaid: { label: "Unpaid", tone: "warning" as const },
+  pending: { label: "Pending", tone: "info" as const },
+  failed: { label: "Failed", tone: "danger" as const },
+  refunded: { label: "Refunded", tone: "neutral" as const },
+  partially_refunded: { label: "Partly refunded", tone: "neutral" as const },
+};
+
+// Phone and email are their own (hidden by default) columns so the grid's
+// search matches them even when they are not shown.
 export const orderColumns = defineColumns<Order>([
   { id: "orderNumber", header: "Order", accessor: "orderNumber", width: 180, hideable: false, defaultPin: "left", mobile: { role: "title" } },
-  { id: "shipsTo", header: "Ships to", accessor: orderShipsTo, width: 260, mobile: { role: "subtitle" } },
+  { id: "customer", header: "Customer", accessor: orderCustomerName, width: 220, mobile: { role: "subtitle" } },
+  { id: "customerPhone", header: "Phone", accessor: (order) => order.customer?.phone ?? "", width: 150, defaultHidden: true },
+  { id: "customerEmail", header: "Email", accessor: (order) => order.customer?.email ?? "", width: 220, defaultHidden: true },
+  { id: "shipsTo", header: "Ships to", accessor: orderShipsTo, width: 260 },
   { id: "status", header: "Status", accessor: "status", type: "status", statuses: orderStatuses, filter: { type: "multiselect" }, width: 130, mobile: { role: "status" } },
-  { id: "paymentMethod", header: "Payment", accessor: (order) => paymentMethodLabel(order.paymentMethod), filter: { type: "multiselect" }, width: 150 },
+  { id: "paymentStatus", header: "Payment", accessor: (order) => order.paymentStatus ?? "", type: "status", statuses: paymentStatuses, filter: { type: "multiselect" }, width: 130 },
+  { id: "paymentMethod", header: "Method", accessor: (order) => paymentMethodLabel(order.paymentMethod), filter: { type: "multiselect" }, width: 150 },
   {
     id: "channel",
     header: "Channel",
