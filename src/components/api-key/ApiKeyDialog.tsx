@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, Copy, Plus } from "lucide-react";
+import { Check, Copy, Download, Plus } from "lucide-react";
 import { toast } from "sonner";
 import type { z } from "zod";
 import { TextField } from "@/components/common/FormFields";
@@ -55,13 +55,11 @@ export function ApiKeyDialog({ open, onOpenChange }: { open: boolean; onOpenChan
         setServerError(result?.serverError ?? "Please check the highlighted fields.");
         return;
       }
-      const key = result.data.apiKey.key;
+      const key = result.data.apiKey.fullKey;
       if (key) {
         setCreated(key);
       } else {
-        // Some deployments do not return the secret; nothing to show.
-        toast.success("API key created");
-        handleOpenChange(false);
+        setServerError("The key was created but the server did not return it. Revoke it and try again.");
       }
     });
   }
@@ -77,6 +75,17 @@ export function ApiKeyDialog({ open, onOpenChange }: { open: boolean; onOpenChan
     }
   }
 
+  function download() {
+    if (!created) return;
+    const name = form.getValues("name") || "storefront";
+    const body = `# ${name} — created ${new Date().toISOString()}\nAPI_KEY=${created}\n`;
+    const url = URL.createObjectURL(new Blob([body], { type: "text/plain" }));
+    const link = Object.assign(document.createElement("a"), { href: url, download: "api-key.env" });
+    link.click();
+    URL.revokeObjectURL(url);
+    setCopied(true);
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-lg">
@@ -87,13 +96,16 @@ export function ApiKeyDialog({ open, onOpenChange }: { open: boolean; onOpenChan
               <DialogDescription>This is the only time it is shown. Store it in your storefront env as API_KEY.</DialogDescription>
             </DialogHeader>
             <div className="flex items-start gap-2 rounded-md border bg-muted/40 p-3">
-              <code className="min-w-0 flex-1 wrap-break-word font-mono text-[13px]">{created}</code>
+              <code className="min-w-0 flex-1 select-all break-all font-mono text-[13px]">{created}</code>
               <Button variant="outline" size="sm" onClick={copy}>
                 {copied ? <Check /> : <Copy />}
                 {copied ? "Copied" : "Copy"}
               </Button>
             </div>
             <DialogFooter>
+              <Button variant="outline" onClick={download}>
+                <Download /> Download
+              </Button>
               <Button onClick={() => handleOpenChange(false)}>Done</Button>
             </DialogFooter>
           </>
