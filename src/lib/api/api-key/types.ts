@@ -6,7 +6,7 @@ export type ApiKey = {
   /** The visible head of the key, e.g. "ek_live_a1b2c3d4". */
   keyPrefix: string;
   /** The full secret. Present only in the POST response, never again. */
-  key?: string;
+  fullKey?: string;
   scopes?: ApiKeyScope[];
   isActive?: boolean;
   lastUsedAt?: string | null;
