@@ -44,6 +44,8 @@ export type CatalogQueryParams = ListParams & {
   /** A presence filter: anything other than `true` means no filter at all. */
   inStock?: true;
   badge?: ProductBadge;
+  /** Collection slug (new-arrivals, best-sellers, featured, sale…); the API maps it onto badges. */
+  collection?: string;
   tag?: string;
   sort?: CatalogSort;
 };

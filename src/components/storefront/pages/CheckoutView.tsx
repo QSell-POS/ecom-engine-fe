@@ -160,7 +160,7 @@ export function CheckoutView() {
 
   return (
     <div className="sf-container py-8 @5xl:py-12">
-      <h1 className="sf-heading sf-h1 mb-10">Checkout</h1>
+      <h1 className="sf-heading sf-title sf-h1 mb-10">Checkout</h1>
       <div className="grid items-start gap-10 @4xl:grid-cols-[1fr_24rem] @5xl:gap-16">
         <div className="space-y-8">
           <Step number={1} title="Contact">
@@ -342,7 +342,7 @@ export function OrderConfirmation() {
           <Check className="size-8" strokeWidth={2.5} />
         </div>
         <p className="sf-eyebrow text-(--sf-muted)">Order {order.number}</p>
-        <h1 className="sf-heading sf-h1 mt-2">Thank you for your order</h1>
+        <h1 className="sf-heading sf-title sf-h1 mt-2">Thank you for your order</h1>
         <p className="mx-auto mt-3 max-w-md text-(--sf-muted)">
           {order.status === "pending" ? "We're confirming your payment. This usually takes a moment." : "We'll let you know as soon as it ships."}
         </p>

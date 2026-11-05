@@ -10,6 +10,9 @@ export function themeCssVars(settings: SettingValues): CSSProperties {
     "--sf-bg": settings.colorBackground,
     "--sf-surface": settings.colorSurface,
     "--sf-text": settings.colorText,
+    // Optional: unset means headings follow text and borders are derived (see globals.css).
+    "--sf-heading-color": settings.colorHeading || undefined,
+    "--sf-border": settings.colorBorder || undefined,
     "--sf-primary": settings.colorPrimary,
     "--sf-primary-text": settings.colorPrimaryText,
     "--sf-sale": settings.colorSale,

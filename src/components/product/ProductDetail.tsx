@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Package } from "lucide-react";
 import { DetailFields, DetailSection, DetailStats } from "@/components/data-grid";
 import { StatusLabel } from "@/components/common/StatusLabel";
 import { stockLevel, stockStatuses } from "@/lib/api/product/grid";
@@ -18,6 +19,7 @@ export function ProductDetail({ product }: { product: Product }) {
   const onHand = product.inventory?.quantityOnHand ?? 0;
   const reserved = product.inventory?.quantityReserved ?? 0;
   const level = stockStatuses[stockLevel(product)];
+  const gallery = [...(product.media ?? [])].filter((item) => item.media?.url).sort((a, b) => a.position - b.position);
 
   return (
     <div className="space-y-10">
@@ -51,6 +53,29 @@ export function ProductDetail({ product }: { product: Product }) {
 
       <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="min-w-0 space-y-10">
+          <DetailSection title="Media">
+            {gallery.length ? (
+              <div className="flex flex-wrap gap-3">
+                {gallery.map((item, index) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    key={item.id}
+                    src={item.media.url}
+                    alt={item.media.alt ?? product.name}
+                    className={index === 0 ? "size-40 rounded-md border bg-muted/40 object-cover" : "size-20 rounded-md border bg-muted/40 object-cover"}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <span className="flex size-20 items-center justify-center rounded-md border bg-muted/40">
+                  <Package className="size-6" />
+                </span>
+                No images yet. Add some from the edit page.
+              </div>
+            )}
+          </DetailSection>
+
           <DetailSection title="Description">
             {product.description ? (
               <p className="max-w-prose text-sm leading-6 whitespace-pre-line text-foreground/85">{product.description}</p>

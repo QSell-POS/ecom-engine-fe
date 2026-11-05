@@ -6,6 +6,7 @@ import { StoreCustomizer } from "@/components/themes/StoreCustomizer";
 import { Button } from "@/components/ui/button";
 import { getCurrentTenant, getTheme, THEME_ROUTES } from "@/lib/api/theme";
 import { tenantPreview } from "../previews";
+import { paletteFromSettings } from "@/components/themes/PaletteControls";
 
 export const metadata: Metadata = { title: "Customize your store" };
 
@@ -37,6 +38,7 @@ export default async function CustomizePage({ searchParams }: { searchParams: Pr
       <StoreCustomizer
         initialProfile={tenant.profile}
         initialBrand={{
+          ...paletteFromSettings(settings),
           colorPrimary: String(settings.colorPrimary),
           colorPrimaryText: String(settings.colorPrimaryText),
           fontHeading: String(settings.fontHeading),

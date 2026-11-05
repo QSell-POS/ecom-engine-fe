@@ -23,8 +23,8 @@ export type Payment = {
   rawResponse?: Record<string, unknown> | null;
   notes?: string | null;
   paidAt?: string | null;
-  /** Present on the detail route only. */
-  order?: Order;
+  /** The list joins only `id` and `orderNumber`; the detail route carries the whole order. */
+  order?: Pick<Order, "id" | "orderNumber"> & Partial<Order>;
   createdAt?: string;
   updatedAt?: string;
 };

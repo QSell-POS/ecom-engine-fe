@@ -16,7 +16,7 @@ function expandHex(value: string) {
   return value.length === 4 ? `#${[...value.slice(1)].map((c) => c + c).join("")}` : value;
 }
 
-function ColorInput({ id, value, onChange }: { id: string; value: string; onChange: (v: string) => void }) {
+function ColorInput({ id, value, onChange, allowEmpty = false }: { id: string; value: string; onChange: (v: string) => void; allowEmpty?: boolean }) {
   // Local text so a half-typed hex never reaches the document.
   const [text, setText] = useState(value);
   const [synced, setSynced] = useState(value);
@@ -43,8 +43,10 @@ function ColorInput({ id, value, onChange }: { id: string; value: string; onChan
         onChange={(e) => {
           setText(e.target.value);
           if (HEX.test(e.target.value)) onChange(e.target.value.toLowerCase());
+          else if (allowEmpty && e.target.value === "") onChange("");
         }}
         onBlur={() => setText(value)}
+        placeholder={allowEmpty ? "Auto" : undefined}
         className="min-w-0 flex-1 bg-transparent font-mono text-sm uppercase outline-none"
       />
     </div>
@@ -131,7 +133,7 @@ export function SettingInput({
           <FieldLabel htmlFor={id} className="font-normal">
             {field.label}
           </FieldLabel>
-          <ColorInput id={id} value={String(current)} onChange={onChange} />
+          <ColorInput id={id} value={String(current ?? "")} onChange={onChange} allowEmpty={field.default === ""} />
         </Field>
       );
 

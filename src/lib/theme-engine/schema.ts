@@ -38,6 +38,9 @@ export const THEME_SETTINGS_GROUPS: { name: string; settings: SettingField[] }[]
       { type: "color", id: "colorBackground", label: "Background", default: "#ffffff" },
       { type: "color", id: "colorSurface", label: "Surface", default: "#f4f4f5", info: "Cards, panels and alternate sections." },
       { type: "color", id: "colorText", label: "Text", default: "#18181b" },
+      // Empty default means "auto", so themes saved before these existed keep their look.
+      { type: "color", id: "colorHeading", label: "Headings", default: "", info: "Leave empty to use the text color." },
+      { type: "color", id: "colorBorder", label: "Borders", default: "", info: "Leave empty to derive from text and background." },
       { type: "color", id: "colorPrimary", label: "Brand / buttons", default: "#18181b" },
       { type: "color", id: "colorPrimaryText", label: "Button text", default: "#ffffff" },
       { type: "color", id: "colorSale", label: "Sale price & badges", default: "#b91c1c" },
@@ -98,8 +101,18 @@ export const THEME_SETTINGS_GROUPS: { name: string; settings: SettingField[] }[]
 
 export const THEME_SETTINGS_SCHEMA: SettingField[] = THEME_SETTINGS_GROUPS.flatMap((group) => group.settings);
 
-/** Keys the simple customizer may change (brand color and fonts). */
-export const BRAND_SETTING_KEYS = ["colorPrimary", "colorPrimaryText", "fontHeading", "fontBody"] as const;
+/** Keys the simple customizer may change: the page palette, brand color and fonts. */
+export const BRAND_SETTING_KEYS = [
+  "colorPrimary",
+  "colorPrimaryText",
+  "colorBackground",
+  "colorSurface",
+  "colorText",
+  "colorHeading",
+  "colorBorder",
+  "fontHeading",
+  "fontBody",
+] as const;
 
 // ---------------------------------------------------------------- sections
 

@@ -14,7 +14,23 @@ import { productColumns, stockLevel, stockStatuses } from "@/lib/api/product/gri
 import type { Product } from "@/lib/api/product/types";
 import { httpSource, type FilterOption, type GridResult } from "@/lib/data-grid";
 import { ProductDetail } from "./ProductDetail";
-import { availableStock } from "@/lib/api/product/types";
+import { availableStock, primaryImage } from "@/lib/api/product/types";
+
+/** Primary image (position 0), or a box icon when the product has none. */
+function ProductThumb({ product }: { product: Product }) {
+  const image = primaryImage(product);
+  if (!image?.url) {
+    return (
+      <span className="flex size-7 shrink-0 items-center justify-center rounded-sm border bg-muted/40 text-muted-foreground">
+        <Package className="size-3.5" />
+      </span>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={image.url} alt={image.alt ?? ""} loading="lazy" className="size-7 shrink-0 rounded-sm border bg-muted/40 object-cover" />
+  );
+}
 
 type SafeResult = { data?: unknown; serverError?: string; validationErrors?: unknown } | undefined;
 
@@ -128,9 +144,7 @@ export function ProductsGrid({ initialResult, facets }: { initialResult?: GridRe
       cells={{
         name: (p) => (
           <span className="flex min-w-0 items-center gap-2.5">
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-sm border bg-muted/40 text-muted-foreground">
-              <Package className="size-3.5" />
-            </span>
+            <ProductThumb product={p} />
             <span className="truncate font-medium">{p.name}</span>
           </span>
         ),

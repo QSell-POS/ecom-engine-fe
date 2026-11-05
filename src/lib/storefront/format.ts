@@ -17,3 +17,18 @@ export function discountPercent(price: number, compareAtPrice: number | null) {
 
 const dateFormat = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" });
 export const formatDate = (iso: string) => dateFormat.format(new Date(iso));
+
+/** "1 product", "12 products". */
+export function productCountLabel(count: number) {
+  return `${count} ${count === 1 ? "product" : "products"}`;
+}
+
+/** A URL slug from a display name: "Stride Footwear" → "stride-footwear". */
+export function slugify(value: string) {
+  return value
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}

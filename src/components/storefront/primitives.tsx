@@ -218,7 +218,7 @@ export function SectionHeading({ eyebrow, title, text, action, align = "left" }:
     <div className={cn("mb-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 @3xl:mb-10", align === "center" && "flex-col items-center text-center")}>
       <div className={cn("max-w-2xl space-y-2", align === "center" && "mx-auto")}>
         {eyebrow && <p className="sf-eyebrow text-(--sf-muted)">{eyebrow}</p>}
-        {title && <h2 className="sf-heading sf-h2">{title}</h2>}
+        {title && <h2 className="sf-heading sf-title sf-h2">{title}</h2>}
         {text && <p className="text-[0.9375rem] text-(--sf-muted)">{text}</p>}
       </div>
       {action}

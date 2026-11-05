@@ -260,7 +260,7 @@ export function CatalogView({ title, description, image, breadcrumbs, path, quer
       ) : (
         <div className="sf-container pt-8 @5xl:pt-12">
           <Breadcrumbs items={breadcrumbs} />
-          <h1 className="sf-heading sf-h1 mt-4">{title}</h1>
+          <h1 className="sf-heading sf-title sf-h1 mt-4">{title}</h1>
           {description && <p className="mt-2 max-w-2xl text-(--sf-muted)">{description}</p>}
         </div>
       )}

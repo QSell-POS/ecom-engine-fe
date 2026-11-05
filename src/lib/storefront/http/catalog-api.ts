@@ -7,7 +7,8 @@ import { getProductReviews } from "@/lib/api/review/service";
 import type { CatalogApi } from "../contracts";
 import type { CatalogQuery, Paginated, Product, ProductSort } from "../types";
 import { demoCatalog } from "../mock/catalog-data";
-import { mapBrand, mapCategory, mapProduct, mapReview, summarise } from "./map";
+import type { Product as ApiProduct } from "@/lib/api/product/types";
+import { COLLECTION_BADGES, mapBrand, mapCategory, mapProduct, mapReview, summarise } from "./map";
 
 /**
  * The storefront's catalog, served by the API.
@@ -42,6 +43,39 @@ function publicCategories(categories: Category[]): Category[] {
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 }
 
+/** Collections the API understands; anything else is dropped rather than sent to a 400. */
+const API_COLLECTIONS = new Set([...Object.keys(COLLECTION_BADGES), "sale"]);
+
+/** Collections the home page's product sections can ask for, fetched by name so none comes up empty. */
+const HOME_COLLECTIONS = ["new-arrivals", "best-sellers", "featured", "sale"];
+const HOME_COLLECTION_LIMIT = 24;
+
+function apiCollection(query: CatalogQuery): string | undefined {
+  const collection = query.collection ?? (query.onSale ? "sale" : null);
+  return collection && API_COLLECTIONS.has(collection) ? collection : undefined;
+}
+
+/** Newest first, then each collection's products, without duplicates. */
+function mergeProducts(...lists: ApiProduct[][]): ApiProduct[] {
+  const seen = new Map<string, ApiProduct>();
+  for (const product of lists.flat()) if (!seen.has(product.id)) seen.set(product.id, product);
+  return [...seen.values()];
+}
+
+/**
+ * A category without its own image borrows the first image of a product in it
+ * (or in one of its direct children), so tiles never render empty.
+ */
+function withImageFallback(categories: Category[], products: ApiProduct[]): Category[] {
+  return categories.map((category) => {
+    if (category.image?.url) return category;
+    const members = new Set([category.id, ...categories.filter((child) => child.parentId === category.id).map((child) => child.id)]);
+    const product = products.find((p) => p.categoryId && members.has(p.categoryId) && p.media?.some((m) => m.media?.url));
+    const media = product && [...(product.media ?? [])].sort((a, b) => a.position - b.position).find((m) => m.media?.url)?.media;
+    return media ? { ...category, image: media } : category;
+  });
+}
+
 function toParams(query: CatalogQuery): CatalogQueryParams {
   return {
     page: query.page,
@@ -53,6 +87,7 @@ function toParams(query: CatalogQuery): CatalogQueryParams {
     minPrice: query.minPrice ?? undefined,
     maxPrice: query.maxPrice ?? undefined,
     inStock: query.inStock ? true : undefined,
+    collection: apiCollection(query),
     sort: SORTS[query.sort],
   };
 }
@@ -60,14 +95,20 @@ function toParams(query: CatalogQuery): CatalogQueryParams {
 export function createApiCatalogApi(storeHost?: string): CatalogApi {
   return {
     home: async () => {
-      const [products, categories, brands] = await Promise.all([
+      const [products, categories, brands, ...collections] = await Promise.all([
         getProducts({ limit: COMPOSE_LIMIT, sort: "newest" }, storeHost),
         getCategories({ limit: COMPOSE_LIMIT }, storeHost),
         getBrands({ limit: COMPOSE_LIMIT }, storeHost),
+        // Sections filter by collection on this list, so each collection is
+        // fetched by name: a best seller older than the newest 100 still shows.
+        ...HOME_COLLECTIONS.map((collection) =>
+          getProducts({ limit: HOME_COLLECTION_LIMIT, sort: "newest", collection }, storeHost).catch(() => ({ data: [] as ApiProduct[] })),
+        ),
       ]);
+      const all = mergeProducts(products.data, ...collections.map((list) => list.data));
       return {
-        products: products.data.map(mapProduct),
-        categories: publicCategories(categories.data).map(mapCategory),
+        products: all.map(mapProduct),
+        categories: withImageFallback(publicCategories(categories.data), all).map(mapCategory),
         brands: brands.data.map(mapBrand),
         // No backend equivalent; the demo set keeps theme sections renderable.
         collections: [],
@@ -83,7 +124,8 @@ export function createApiCatalogApi(storeHost?: string): CatalogApi {
         total,
         page: query.page,
         pageSize: query.pageSize,
-        pageCount: response.meta?.totalPages ?? Math.max(1, Math.ceil(total / query.pageSize)),
+        // Derived from the total too, so a missing totalPages can never hide the pager.
+        pageCount: Math.max(1, response.meta?.totalPages ?? 0, Math.ceil(total / query.pageSize)),
       };
     },
 
@@ -96,8 +138,8 @@ export function createApiCatalogApi(storeHost?: string): CatalogApi {
       ]);
       const prices = products.data.map((product) => Number.parseFloat(product.sellingPrice));
       return {
-        categories: publicCategories(categories.data).map((category) => ({ ...mapCategory(category), count: 0 })),
-        brands: brands.data.map((brand) => ({ ...mapBrand(brand), count: 0 })),
+        categories: publicCategories(categories.data).map((category) => ({ ...mapCategory(category), count: category.productsCount ?? 0 })),
+        brands: brands.data.map((brand) => ({ ...mapBrand(brand), count: brand.productsCount ?? 0 })),
         price: { min: prices.length ? Math.floor(Math.min(...prices)) : 0, max: prices.length ? Math.ceil(Math.max(...prices)) : 0 },
       };
     },

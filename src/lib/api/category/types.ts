@@ -16,6 +16,8 @@ export type Category = {
    */
   imageId?: string | null;
   image?: MediaRef | null;
+  /** Active products in this category and its direct children; public reads only. */
+  productsCount?: number;
   createdAt?: string;
   updatedAt?: string;
 };

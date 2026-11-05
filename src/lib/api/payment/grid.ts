@@ -14,9 +14,13 @@ export const paymentStatuses = {
   cancelled: { label: "Cancelled", tone: "neutral" as const },
 };
 
-// List rows join no order, so the order id is all there is to show.
+/** ORD-2026-00015 when the order is joined, else a short id so a raw UUID never fills the column. */
+export function paymentOrderLabel(payment: Payment): string {
+  return payment.order?.orderNumber ?? `#${payment.orderId.slice(0, 8)}`;
+}
+
 export const paymentColumns = defineColumns<Payment>([
-  { id: "orderId", header: "Order", accessor: (payment) => payment.order?.orderNumber ?? payment.orderId, width: 200, hideable: false, defaultPin: "left", mobile: { role: "title" } },
+  { id: "orderId", header: "Order", accessor: paymentOrderLabel, width: 170, hideable: false, defaultPin: "left", mobile: { role: "title" } },
   { id: "method", header: "Method", accessor: (payment) => paymentMethodLabel(payment.method), filter: { type: "multiselect" }, width: 150, mobile: { role: "subtitle" } },
   { id: "status", header: "Status", accessor: "status", type: "status", statuses: paymentStatuses, filter: { type: "multiselect" }, width: 140, mobile: { role: "status" } },
   { id: "amount", header: "Amount", accessor: (payment) => toAmount(payment.amount), type: "currency", currency: DEFAULT_CURRENCY, filter: { type: "range" }, width: 130, align: "right", mobile: { role: "trailing" } },
