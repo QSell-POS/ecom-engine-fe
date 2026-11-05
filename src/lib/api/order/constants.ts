@@ -8,5 +8,6 @@ export const ORDER_PAGE_SIZE_OPTIONS = [10, 20, 30, 50];
 
 export const ORDER_ROUTES = {
   list: "/orders",
-  detail: (id: string) => `/orders/${id}`,
+  // No /orders/:id page: the grid opens the order in its side panel.
+  detail: (id: string) => `/orders?open=${encodeURIComponent(id)}`,
 };
