@@ -6,7 +6,7 @@ import { StoreCustomizer } from "@/components/themes/StoreCustomizer";
 import { Button } from "@/components/ui/button";
 import { getCurrentTenant, getTheme, THEME_ROUTES } from "@/lib/api/theme";
 import { tenantPreview } from "../previews";
-import { paletteFromSettings } from "@/components/themes/PaletteControls";
+import { paletteFromSettings } from "@/components/themes/palette";
 
 export const metadata: Metadata = { title: "Customize your store" };
 
