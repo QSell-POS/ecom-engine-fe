@@ -25,7 +25,8 @@ import { FONT_PAIRINGS, FONTS } from "@/lib/theme-engine/schema";
 import type { SettingValues, ThemeDocument } from "@/lib/theme-engine/types";
 import { cn } from "@/lib/utils";
 import { ImageField } from "./ImageField";
-import { PaletteControls, readableTextOn, type Palette } from "./PaletteControls";
+import { PaletteControls } from "./PaletteControls";
+import { readableTextOn, type Palette } from "./palette";
 
 // The everyday way to make a store yours: identity, brand color, fonts,
 // announcement, contact, social and basic store settings, with a live
