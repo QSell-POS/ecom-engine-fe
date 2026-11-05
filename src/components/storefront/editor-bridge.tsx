@@ -11,6 +11,11 @@ const EditorBridgeContext = createContext<EditorBridge | null>(null);
 
 export const EditorBridgeProvider = EditorBridgeContext.Provider;
 
+/** True inside the theme editor canvas, false on the live storefront. */
+export function useInEditor() {
+  return useContext(EditorBridgeContext) !== null;
+}
+
 // Wraps a block so it can be clicked/selected inside the theme editor canvas.
 // On the live storefront there is no provider, so it renders a plain element.
 export function EditableBlock({

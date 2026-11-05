@@ -13,6 +13,8 @@ export type Brand = {
    */
   logoId?: string | null;
   logo?: MediaRef | null;
+  /** Active products; public reads only. */
+  productsCount?: number;
   createdAt?: string;
   updatedAt?: string;
 };

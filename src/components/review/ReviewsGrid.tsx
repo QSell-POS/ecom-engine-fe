@@ -1,13 +1,15 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, MessageSquareQuote, Trash2 } from "lucide-react";
+import { Eye, EyeOff, MessageSquareQuote, Package, Trash2 } from "lucide-react";
 import { DataGrid, DetailFields, DetailSection, type ActionOutcome, type BulkAction, type RowAction } from "@/components/data-grid";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { deleteReviewAction, updateReviewVisibilityAction } from "@/lib/api/review/action";
 import { reviewColumns } from "@/lib/api/review/grid";
-import type { Review } from "@/lib/api/review/types";
+import { reviewCustomerName, reviewProductImage, reviewProductName, type Review } from "@/lib/api/review/types";
+import { PRODUCT_ROUTES } from "@/lib/api/product/constants";
 import { clientSource } from "@/lib/data-grid";
 
 type SafeResult = { data?: unknown; serverError?: string } | undefined;
@@ -23,9 +25,34 @@ const setVisible = (review: Review, isVisible: boolean) => updateReviewVisibilit
 
 const dateTime = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" });
 
+function ReviewProduct({ review, size = "sm" }: { review: Review; size?: "sm" | "lg" }) {
+  const image = reviewProductImage(review);
+  const box = size === "lg" ? "size-14 rounded-md" : "size-7 rounded-sm";
+  return (
+    <Link
+      href={PRODUCT_ROUTES.detail(review.product?.id ?? review.productId)}
+      onClick={(event) => event.stopPropagation()}
+      className="flex min-w-0 items-center gap-2.5 underline-offset-4 hover:underline"
+    >
+      {image?.url ? (
+        // eslint-disable-next-line @next/next/no-img-element -- the R2 host is not configured for next/image
+        <img src={image.url} alt={image.alt ?? ""} loading="lazy" className={`${box} shrink-0 border bg-muted/40 object-cover`} />
+      ) : (
+        <span className={`${box} flex shrink-0 items-center justify-center border bg-muted/40 text-muted-foreground`}>
+          <Package className="size-3.5" />
+        </span>
+      )}
+      <span className="truncate font-medium">{reviewProductName(review)}</span>
+    </Link>
+  );
+}
+
 function ReviewDetail({ review }: { review: Review }) {
   return (
     <div className="max-w-2xl space-y-10">
+      <DetailSection title="Product">
+        <ReviewProduct review={review} size="lg" />
+      </DetailSection>
       <DetailSection title={`${review.rating} out of 5`}>
         <p aria-label={`${review.rating} out of 5`} className="text-lg tracking-widest text-foreground/80">
           {"★".repeat(review.rating)}
@@ -36,8 +63,9 @@ function ReviewDetail({ review }: { review: Review }) {
       <DetailSection title="Details">
         <DetailFields
           items={[
-            ["Product id", <span key="p" className="font-mono text-[13px]">{review.productId}</span>],
-            ["Customer id", review.customerId && <span className="font-mono text-[13px]">{review.customerId}</span>],
+            ["SKU", review.product?.sku && <span key="sku" className="font-mono text-[13px]">{review.product.sku}</span>],
+            ["Customer", reviewCustomerName(review) || null],
+            ["Email", review.customer?.email],
             ["Verified buyer", review.isVerifiedBuyer === undefined ? null : review.isVerifiedBuyer ? "Yes" : "No"],
             ["Visibility", review.isVisible === false ? "Hidden from the storefront" : "Visible"],
             ["Posted", review.createdAt ? dateTime.format(new Date(review.createdAt)) : null],
@@ -109,6 +137,7 @@ export function ReviewsGrid({ reviews }: { reviews: Review[] }) {
       bulkActions={bulkActions}
       onMutated={() => router.refresh()}
       defaultQuery={{ sort: [{ id: "createdAt", desc: true }] }}
+      cells={{ productId: (review) => <ReviewProduct review={review} /> }}
       emptyState={
         <Empty className="border py-16">
           <EmptyHeader>

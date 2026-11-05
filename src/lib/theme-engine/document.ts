@@ -78,6 +78,8 @@ function sanitizeValue(field: SettingField, raw: unknown): SettingValue {
       if (typeof raw !== "string") return field.default;
       return isSafeImageUrl(raw) && raw.length <= MAX_IMAGE_URL_LENGTH ? raw.trim() : field.default;
     case "color":
+      // An optional color (default "") may be cleared back to "auto".
+      if (raw === "" && field.default === "") return "";
       return typeof raw === "string" && HEX_COLOR.test(raw) ? raw.toLowerCase() : field.default;
     case "checkbox":
       return typeof raw === "boolean" ? raw : field.default;

@@ -200,8 +200,9 @@
 @layer components {
   .sf-root {
     --sf-fg: var(--sf-text);
+    --sf-title: var(--sf-heading-color, var(--sf-text));
     --sf-muted: color-mix(in oklab, var(--sf-text) 62%, var(--sf-bg));
-    --sf-line: color-mix(in oklab, var(--sf-text) 13%, var(--sf-bg));
+    --sf-line: var(--sf-border, color-mix(in oklab, var(--sf-text) 13%, var(--sf-bg)));
     --sf-soft: color-mix(in oklab, var(--sf-text) 5%, var(--sf-bg));
     background: var(--sf-bg);
     color: var(--sf-text);
@@ -218,6 +219,9 @@
     line-height: 1.08;
     font-weight: 500;
   }
+  /* Page and section titles take the theme's heading color; on brand/dark
+     sections and over images they follow the surrounding text instead. */
+  .sf-root .sf-title { color: var(--sf-title); }
   .sf-root .sf-h1 { font-size: calc(clamp(2.25rem, 6.2cqi, 4.75rem) * var(--sf-heading-scale)); }
   .sf-root .sf-h2 { font-size: calc(clamp(1.625rem, 3.4cqi, 2.625rem) * var(--sf-heading-scale)); }
   .sf-root .sf-h3 { font-size: calc(clamp(1.25rem, 2.2cqi, 1.625rem) * var(--sf-heading-scale)); }
@@ -240,6 +244,7 @@
   .sf-root .sf-scheme-inverse,
   .sf-root .sf-scheme-dark {
     --sf-fg: var(--sf-on);
+    --sf-title: var(--sf-on);
     --sf-muted: color-mix(in oklab, var(--sf-on) 72%, var(--sf-under));
     --sf-line: color-mix(in oklab, var(--sf-on) 22%, var(--sf-under));
     --sf-soft: color-mix(in oklab, var(--sf-on) 8%, var(--sf-under));
@@ -285,7 +290,7 @@
   .sf-root .sf-btn-ghost { background: transparent; color: var(--sf-fg); padding-inline: 0.75rem; }
   .sf-root .sf-btn-ghost:hover:not(:disabled) { background: var(--sf-soft); }
   .sf-root :is(.sf-scheme-inverse, .sf-scheme-dark, .sf-on-image) .sf-btn-primary { background: var(--sf-on, #fff); color: var(--sf-under, #111); }
-  .sf-root .sf-on-image { --sf-fg: #fff; --sf-on: #fff; --sf-under: #111; }
+  .sf-root .sf-on-image { --sf-title: #fff; --sf-fg: #fff; --sf-on: #fff; --sf-under: #111; }
   .sf-root .sf-on-image .sf-btn-secondary:hover:not(:disabled) { background: #fff; color: #111; border-color: #fff; }
   .sf-root .sf-btn-sm { min-height: 2.25rem; padding: 0 1rem; font-size: 0.8125rem; }
   .sf-root .sf-btn-block { width: 100%; }

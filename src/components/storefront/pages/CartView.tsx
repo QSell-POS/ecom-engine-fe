@@ -56,7 +56,7 @@ export function CartView() {
   return (
     <div className="sf-container py-8 @5xl:py-12">
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Bag" }]} />
-      <h1 className="sf-heading sf-h1 mt-4 mb-10">
+      <h1 className="sf-heading sf-title sf-h1 mt-4 mb-10">
         Your bag <span className="text-(--sf-muted)">({cart.itemCount})</span>
       </h1>
       <div className="grid items-start gap-10 @4xl:grid-cols-[1fr_22rem] @5xl:gap-16">
@@ -128,7 +128,7 @@ export function WishlistView() {
   return (
     <div className="sf-container py-8 @5xl:py-12">
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Wishlist" }]} />
-      <h1 className="sf-heading sf-h1 mt-4 mb-2">Wishlist</h1>
+      <h1 className="sf-heading sf-title sf-h1 mt-4 mb-2">Wishlist</h1>
       <p className="mb-10 text-(--sf-muted)">
         {wishlist.length ? `${wishlist.length} saved ${wishlist.length === 1 ? "item" : "items"}` : "Save favourites for later by tapping the heart on any product."}
         {!customer && wishlist.length > 0 && (

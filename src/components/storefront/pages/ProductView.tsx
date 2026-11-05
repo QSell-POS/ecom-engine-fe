@@ -143,7 +143,7 @@ function BuyBox({ product, onAddedVisibility }: { product: Product; onAddedVisib
         <StoreLink href={`/brands/${product.brand.slug}`} className="sf-eyebrow text-(--sf-muted) hover:text-(--sf-text)">
           {product.brand.name}
         </StoreLink>
-        <h1 className="sf-heading sf-h2">{product.name}</h1>
+        <h1 className="sf-heading sf-title sf-h2">{product.name}</h1>
         {product.rating.count > 0 && (
           <a href="#reviews" className="inline-flex items-center gap-2 text-sm">
             <Stars rating={product.rating.average} />

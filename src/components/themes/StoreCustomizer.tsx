@@ -25,22 +25,16 @@ import { FONT_PAIRINGS, FONTS } from "@/lib/theme-engine/schema";
 import type { SettingValues, ThemeDocument } from "@/lib/theme-engine/types";
 import { cn } from "@/lib/utils";
 import { ImageField } from "./ImageField";
+import { PaletteControls, readableTextOn, type Palette } from "./PaletteControls";
 
 // The everyday way to make a store yours: identity, brand color, fonts,
 // announcement, contact, social and basic store settings, with a live
 // preview. No sections, blocks or layouts; that's what the builder is for.
 
-type Brand = { colorPrimary: string; colorPrimaryText: string; fontHeading: string; fontBody: string };
+type Brand = Palette & { colorPrimary: string; colorPrimaryText: string; fontHeading: string; fontBody: string };
 
 const SWATCHES = ["#18181b", "#1c1917", "#2563eb", "#4a5a45", "#0f766e", "#a05a4f", "#9f1239", "#7c3aed", "#b45309", "#1e3a5f"];
 
-function readableTextOn(hex: string) {
-  const value = hex.replace("#", "");
-  const full = value.length === 3 ? value.split("").map((c) => c + c).join("") : value;
-  const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
-  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return luminance > 0.45 ? "#111111" : "#ffffff";
-}
 
 const SOCIAL_FIELDS: { key: keyof SocialLinks; label: string; placeholder: string }[] = [
   { key: "instagram", label: "Instagram", placeholder: "https://instagram.com/yourstore" },
@@ -419,8 +413,13 @@ export function StoreCustomizer({
 
         {identityGroups}
 
-        <Group id="brand" title="Brand color & fonts" description="Your color is used for buttons, links and highlights.">
+        <Group id="brand" title="Colors & fonts" description="Pick a light or dark look, then your brand color for buttons, links and highlights.">
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Page colors</p>
+            <PaletteControls palette={brand} primary={brand.colorPrimary} onChange={(patch) => setBrand((b) => ({ ...b, ...patch }))} />
+          </div>
           <div className="space-y-3">
+            <p className="text-sm font-medium">Brand color</p>
             <div className="flex flex-wrap gap-2">
               {SWATCHES.map((color) => (
                 <button

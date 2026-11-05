@@ -6,7 +6,8 @@ import { ArrowLeft, ArrowRight, Gift, Heart, Leaf, Lock, MessageCircle, RefreshC
 import type { HomeData, Product, StoreImage as StoreImageData } from "@/lib/storefront/types";
 import type { SectionInstance, SettingValues } from "@/lib/theme-engine/types";
 import { cn } from "@/lib/utils";
-import { EditableBlock } from "./editor-bridge";
+import { EditableBlock, useInEditor } from "./editor-bridge";
+import { productCountLabel } from "@/lib/storefront/format";
 import { EASE, Reveal, RevealGroup, RevealItem, useMotionEnabled } from "./motion";
 import { ProductCard, ProductGrid } from "./ProductCard";
 import { SectionHeading, Stars, StoreImage, StoreLink } from "./primitives";
@@ -194,7 +195,7 @@ function Categories({ section, data }: SectionProps) {
                       <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-4 text-white @3xl:p-5">
                         <div>
                           <p className="sf-heading text-lg @3xl:text-xl">{category.name}</p>
-                          <p className="text-xs text-white/75">{category.productCount} products</p>
+                          {category.productCount > 0 && <p className="text-xs text-white/75">{productCountLabel(category.productCount)}</p>}
                         </div>
                         <ArrowRight className="size-5 -translate-x-1 opacity-0 transition-all duration-300 group-hover/cat:translate-x-0 group-hover/cat:opacity-100" />
                       </div>
@@ -204,7 +205,7 @@ function Categories({ section, data }: SectionProps) {
                 {!overlay && (
                   <div className="mt-3 flex items-center justify-between">
                     <p className="font-medium">{category.name}</p>
-                    <span className="text-xs text-(--sf-muted)">{category.productCount}</span>
+                    {category.productCount > 0 && <span className="text-xs text-(--sf-muted)">{productCountLabel(category.productCount)}</span>}
                   </div>
                 )}
               </StoreLink>
@@ -261,6 +262,7 @@ function Carousel({ products }: { products: Product[] }) {
 }
 
 function Products({ section, data }: SectionProps) {
+  const inEditor = useInEditor();
   const v = section.settings;
   const collection = s(v, "collection") || "all";
   const matching = productsForCollection(data.products, collection).slice(0, n(v, "count") || 8);
@@ -268,6 +270,9 @@ function Products({ section, data }: SectionProps) {
   const columns = n(v, "columns") || 4;
   const products = s(v, "layout") !== "carousel" && matching.length > columns ? matching.slice(0, Math.floor(matching.length / columns) * columns) : matching;
   const href = collection === "all" ? "/products" : `/products?collection=${collection}`;
+  // An empty collection renders nothing rather than a heading over blank space.
+  // The theme editor still shows it, so the merchant can see and fix it.
+  if (products.length === 0 && !inEditor) return null;
   return (
     <Frame section={section}>
       <div className="sf-container">
