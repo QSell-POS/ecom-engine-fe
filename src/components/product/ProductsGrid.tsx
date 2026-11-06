@@ -60,14 +60,14 @@ export function ProductsGrid({ initialResult, facets }: { initialResult?: GridRe
 
   const rowActions: RowAction<Product>[] = [
     {
-      id: "edit",
+      id: "edit", permission: "products:update",
       label: "Edit",
       icon: Pencil,
       swipe: "leading",
       run: (product) => router.push(PRODUCT_ROUTES.edit(product.id)),
     },
     {
-      id: "activate",
+      id: "activate", permission: "products:update",
       label: "Set active",
       icon: CircleCheck,
       hidden: (p) => p.isActive !== false,
@@ -75,7 +75,7 @@ export function ProductsGrid({ initialResult, facets }: { initialResult?: GridRe
       run: async (p) => outcome(await updateProductAction({ id: p.id, isActive: true }), `${p.name} is active`),
     },
     {
-      id: "draft",
+      id: "draft", permission: "products:update",
       label: "Set as draft",
       icon: CircleDashed,
       hidden: (p) => p.isActive === false,
@@ -83,7 +83,7 @@ export function ProductsGrid({ initialResult, facets }: { initialResult?: GridRe
       run: async (p) => outcome(await updateProductAction({ id: p.id, isActive: false }), `${p.name} moved to drafts`),
     },
     {
-      id: "delete",
+      id: "delete", permission: "products:delete",
       label: "Delete",
       icon: Trash2,
       tone: "destructive",
@@ -100,21 +100,21 @@ export function ProductsGrid({ initialResult, facets }: { initialResult?: GridRe
 
   const bulkActions: BulkAction<Product>[] = [
     {
-      id: "activate",
+      id: "activate", permission: "products:update",
       label: "Set active",
       icon: CircleCheck,
       optimistic: () => ({ isActive: true }),
       run: ({ rows }) => settle(rows.map((p) => updateProductAction({ id: p.id, isActive: true })), `${rows.length} products set active`),
     },
     {
-      id: "draft",
+      id: "draft", permission: "products:update",
       label: "Set as draft",
       icon: CircleDashed,
       optimistic: () => ({ isActive: false }),
       run: ({ rows }) => settle(rows.map((p) => updateProductAction({ id: p.id, isActive: false })), `${rows.length} products moved to drafts`),
     },
     {
-      id: "delete",
+      id: "delete", permission: "products:delete",
       label: "Delete",
       icon: Trash2,
       tone: "destructive",

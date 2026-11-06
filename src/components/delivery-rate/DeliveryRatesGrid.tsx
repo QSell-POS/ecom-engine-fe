@@ -29,9 +29,9 @@ export function DeliveryRatesGrid({ rates }: { rates: DeliveryRate[] }) {
   const setActive = (rate: DeliveryRate, isActive: boolean) => updateDeliveryRateAction({ id: rate.id, isActive });
 
   const rowActions: RowAction<DeliveryRate>[] = [
-    { id: "edit", label: "Edit", icon: Pencil, swipe: "leading", run: (rate) => setEditing(rate) },
+    { id: "edit", permission: "delivery:manage", label: "Edit", icon: Pencil, swipe: "leading", run: (rate) => setEditing(rate) },
     {
-      id: "deactivate",
+      id: "deactivate", permission: "delivery:manage",
       label: "Deactivate",
       icon: CircleSlash,
       hidden: (rate) => rate.isActive === false,
@@ -39,7 +39,7 @@ export function DeliveryRatesGrid({ rates }: { rates: DeliveryRate[] }) {
       run: (rate) => settle([setActive(rate, false)], `${deliveryZone(rate)} deactivated`),
     },
     {
-      id: "activate",
+      id: "activate", permission: "delivery:manage",
       label: "Activate",
       icon: CircleCheck,
       hidden: (rate) => rate.isActive !== false,
@@ -47,7 +47,7 @@ export function DeliveryRatesGrid({ rates }: { rates: DeliveryRate[] }) {
       run: (rate) => settle([setActive(rate, true)], `${deliveryZone(rate)} activated`),
     },
     {
-      id: "delete",
+      id: "delete", permission: "delivery:manage",
       label: "Delete",
       icon: Trash2,
       tone: "destructive",
@@ -64,7 +64,7 @@ export function DeliveryRatesGrid({ rates }: { rates: DeliveryRate[] }) {
 
   const bulkActions: BulkAction<DeliveryRate>[] = [
     {
-      id: "delete",
+      id: "delete", permission: "delivery:manage",
       label: "Delete",
       icon: Trash2,
       tone: "destructive",

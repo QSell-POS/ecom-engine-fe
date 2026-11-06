@@ -21,4 +21,8 @@ export const ROUTES = {
   themes: "/themes",
   themeStore: "/themes/store",
   customize: "/themes/customize",
+  staff: "/settings/staff",
+  roles: "/settings/roles",
+  auditLog: "/settings/audit-log",
+  account: "/settings/account",
 };

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { isRefined } from "@/lib/data-grid";
+import { useCanFn } from "@/components/auth/PermissionsProvider";
 import { BulkBar } from "./BulkBar";
 import { GridCommandMenu, ShortcutsDialog } from "./CommandMenu";
 import { ConfirmProvider } from "./ConfirmDialog";
@@ -144,9 +145,13 @@ function Grid<T>(props: DataGridProps<T>) {
  * ```
  */
 export function DataGrid<T>(props: DataGridProps<T>) {
+  const can = useCanFn();
+  // Actions the admin may not take are left out entirely, rather than failing on click.
+  const rowActions = props.rowActions?.filter((action) => !action.permission || can(action.permission));
+  const bulkActions = props.bulkActions?.filter((action) => !action.permission || can(action.permission));
   return (
     <ConfirmProvider>
-      <Grid {...props} />
+      <Grid {...props} rowActions={rowActions} bulkActions={bulkActions} />
     </ConfirmProvider>
   );
 }

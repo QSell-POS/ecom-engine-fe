@@ -8,10 +8,15 @@ import { PRODUCT_ROUTES } from "@/lib/api/product/constants";
 import { productColumns } from "@/lib/api/product/grid";
 import { productFacets, queryProducts } from "@/lib/api/product/grid-server";
 import { parseQuery } from "@/lib/data-grid";
+import { denyUnless } from "@/lib/api/rbac/access";
+import { Can } from "@/components/auth/PermissionsProvider";
 
 export const metadata: Metadata = { title: "Products" };
 
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const denied = await denyUnless("products:view");
+  if (denied) return denied;
+
   const raw = await searchParams;
   const params = new URLSearchParams(
     Object.entries(raw).flatMap(([key, value]) => (typeof value === "string" ? [[key, value]] : [])),
@@ -29,11 +34,13 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
         title="Products"
         description="Everything you sell, with pricing and stock at a glance."
         actions={
-          <Button asChild>
-            <Link href={PRODUCT_ROUTES.create}>
-              <Plus /> New product
-            </Link>
-          </Button>
+          <Can I="products:create">
+            <Button asChild>
+              <Link href={PRODUCT_ROUTES.create}>
+                <Plus /> New product
+              </Link>
+            </Button>
+          </Can>
         }
       />
       <ProductsGrid initialResult={initialResult} facets={facets} />

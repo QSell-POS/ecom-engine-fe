@@ -82,7 +82,7 @@ export function ReviewsGrid({ reviews }: { reviews: Review[] }) {
 
   const rowActions: RowAction<Review>[] = [
     {
-      id: "hide",
+      id: "hide", permission: "reviews:moderate",
       label: "Hide from storefront",
       icon: EyeOff,
       swipe: "leading",
@@ -91,7 +91,7 @@ export function ReviewsGrid({ reviews }: { reviews: Review[] }) {
       run: (review) => settle([setVisible(review, false)], "Review hidden"),
     },
     {
-      id: "show",
+      id: "show", permission: "reviews:moderate",
       label: "Show on storefront",
       icon: Eye,
       swipe: "leading",
@@ -100,7 +100,7 @@ export function ReviewsGrid({ reviews }: { reviews: Review[] }) {
       run: (review) => settle([setVisible(review, true)], "Review published"),
     },
     {
-      id: "delete",
+      id: "delete", permission: "reviews:delete",
       label: "Delete",
       icon: Trash2,
       tone: "destructive",
@@ -112,10 +112,10 @@ export function ReviewsGrid({ reviews }: { reviews: Review[] }) {
   ];
 
   const bulkActions: BulkAction<Review>[] = [
-    { id: "hide", label: "Hide", icon: EyeOff, optimistic: () => ({ isVisible: false }), run: ({ rows }) => settle(rows.map((review) => setVisible(review, false)), `${rows.length} reviews hidden`) },
-    { id: "show", label: "Show", icon: Eye, optimistic: () => ({ isVisible: true }), run: ({ rows }) => settle(rows.map((review) => setVisible(review, true)), `${rows.length} reviews published`) },
+    { id: "hide", permission: "reviews:moderate", label: "Hide", icon: EyeOff, optimistic: () => ({ isVisible: false }), run: ({ rows }) => settle(rows.map((review) => setVisible(review, false)), `${rows.length} reviews hidden`) },
+    { id: "show", permission: "reviews:moderate", label: "Show", icon: Eye, optimistic: () => ({ isVisible: true }), run: ({ rows }) => settle(rows.map((review) => setVisible(review, true)), `${rows.length} reviews published`) },
     {
-      id: "delete",
+      id: "delete", permission: "reviews:delete",
       label: "Delete",
       icon: Trash2,
       tone: "destructive",

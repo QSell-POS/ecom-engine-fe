@@ -7,6 +7,8 @@ import { ConversationList } from "@/components/chat/ConversationList";
 import { ApiError } from "@/lib/api/client";
 import { getChatConnectUrl, getConversationMessages, getConversations } from "@/lib/api/chat/service";
 import { getTenantSummary } from "@/lib/api/session";
+import { denyUnless } from "@/lib/api/rbac/access";
+import { Can } from "@/components/auth/PermissionsProvider";
 
 export const metadata: Metadata = { title: "Chat" };
 
@@ -20,6 +22,9 @@ async function soft<T>(load: () => Promise<T>): Promise<{ value?: T; error?: str
 }
 
 export default async function ChatPage({ searchParams }: { searchParams: Promise<{ open?: string }> }) {
+  const denied = await denyUnless("chat:view");
+  if (denied) return denied;
+
   const { open } = await searchParams;
 
   const [conversations, connect, tenant] = await Promise.all([
@@ -36,7 +41,7 @@ export default async function ChatPage({ searchParams }: { searchParams: Promise
       <PageHeader
         title="Chat"
         description="Messenger and Instagram threads, answered from here."
-        actions={<ConnectMetaButton connectUrl={connect.value?.url} error={connect.error} />}
+        actions={<Can I="chat:manage"><ConnectMetaButton connectUrl={connect.value?.url} error={connect.error} /></Can>}
       />
 
       {conversations.error ? (

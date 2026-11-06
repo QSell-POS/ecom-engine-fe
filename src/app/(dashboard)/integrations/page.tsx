@@ -6,6 +6,7 @@ import { PageSelection } from "@/components/chat/PageSelection";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/client";
 import { getPendingPageSelection } from "@/lib/api/chat/service";
+import { denyUnless } from "@/lib/api/rbac/access";
 
 export const metadata: Metadata = { title: "Integrations" };
 
@@ -24,6 +25,9 @@ export default async function IntegrationsPage({
 }: {
   searchParams: Promise<{ success?: string; selectionId?: string; error?: string }>;
 }) {
+  const denied = await denyUnless("chat:manage");
+  if (denied) return denied;
+
   const { success, selectionId, error } = await searchParams;
 
   const selection = selectionId

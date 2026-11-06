@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Copy, ImagePlus, Trash2 } from "lucide-react";
+import { useCan } from "@/components/auth/PermissionsProvider";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
@@ -38,6 +39,8 @@ export function MediaLibrary({ assets }: { assets: MediaAsset[] }) {
   const [folder, setFolder] = useState<MediaFolder | "all">("all");
   const [editing, setEditing] = useState<MediaAsset | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const canUpload = useCan("media:upload");
+  const canDelete = useCan("media:delete");
 
   const shown = folder === "all" ? assets : assets.filter((asset) => asset.folder === folder);
 
@@ -110,10 +113,12 @@ export function MediaLibrary({ assets }: { assets: MediaAsset[] }) {
             event.target.value = "";
           }}
         />
-        <Button className="ml-auto" disabled={isPending} onClick={() => inputRef.current?.click()}>
-          {isPending ? <Spinner /> : <ImagePlus />}
-          Upload
-        </Button>
+        {canUpload && (
+          <Button className="ml-auto" disabled={isPending} onClick={() => inputRef.current?.click()}>
+            {isPending ? <Spinner /> : <ImagePlus />}
+            Upload
+          </Button>
+        )}
       </div>
 
       {shown.length === 0 ? (
@@ -125,11 +130,13 @@ export function MediaLibrary({ assets }: { assets: MediaAsset[] }) {
             <EmptyTitle>No images here</EmptyTitle>
             <EmptyDescription>Upload product photos, brand logos and banners once, then pick them from any form.</EmptyDescription>
           </EmptyHeader>
-          <EmptyContent>
-            <Button disabled={isPending} onClick={() => inputRef.current?.click()}>
-              <ImagePlus /> Upload images
-            </Button>
-          </EmptyContent>
+          {canUpload && (
+            <EmptyContent>
+              <Button disabled={isPending} onClick={() => inputRef.current?.click()}>
+                <ImagePlus /> Upload images
+              </Button>
+            </EmptyContent>
+          )}
         </Empty>
       ) : (
         <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
@@ -147,16 +154,18 @@ export function MediaLibrary({ assets }: { assets: MediaAsset[] }) {
                 <Button variant="ghost" size="icon" className="size-7" title="Copy address" onClick={() => copyUrl(asset)}>
                   {copied === asset.id ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-7 text-muted-foreground hover:text-destructive"
-                  title="Delete"
-                  disabled={isPending}
-                  onClick={() => remove(asset)}
-                >
-                  <Trash2 className="size-3.5" />
-                </Button>
+                {canDelete && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-7 text-muted-foreground hover:text-destructive"
+                    title="Delete"
+                    disabled={isPending}
+                    onClick={() => remove(asset)}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                )}
               </div>
             </li>
           ))}
