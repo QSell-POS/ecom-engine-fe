@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
-import { Archive, Check, CheckCheck, ChevronDown, Clock, Eye, Link2, RotateCcw, Send, UserRound } from "lucide-react";
+import { Archive, Check, CheckCheck, ChevronDown, Clock, Eye, Link2, RotateCcw, Send, ShoppingBag, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -70,6 +70,7 @@ export function ChatThread({
   viewers,
   typing,
   onTyping,
+  onShowCustomer,
 }: {
   conversation: Conversation;
   history: ConversationHistoryEntry[];
@@ -82,6 +83,8 @@ export function ChatThread({
   /** Other agents typing here right now. */
   typing: string[];
   onTyping: (typing: boolean) => void;
+  /** Opens the customer panel where it isn't shown as a column. */
+  onShowCustomer?: () => void;
 }) {
   const canReply = useCan("chat:reply");
   const canViewOrders = useCan("orders:view");
@@ -200,6 +203,11 @@ export function ChatThread({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {onShowCustomer && (
+            <Button variant="outline" size="sm" className="2xl:hidden" onClick={onShowCustomer}>
+              <ShoppingBag /> Customer
+            </Button>
+          )}
           {viewers.length > 0 && (
             <span className="flex items-center gap-1 text-xs text-muted-foreground" title="Also has this conversation open">
               <Eye className="size-3.5" />
@@ -439,6 +447,7 @@ function describe(event: ConversationEvent, meId?: string): string {
       if (meta.reason === "inbound_message") return "Reopened by a new message from the customer";
       return `${actor} marked this ${text(meta.newStatus) || "updated"}`;
     case "customer_linked":
+      if (meta.reason === "known_chat_identity") return "Linked to a customer who has chatted from this account before";
       return `${actor} linked this chat to a customer`;
     case "customer_created":
       return `${actor} created a customer from this chat`;

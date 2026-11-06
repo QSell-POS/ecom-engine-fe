@@ -5,6 +5,8 @@ import type { Customer } from "@/lib/api/customer/types";
 import type { Order } from "@/lib/api/order/types";
 import type {
   ChatAgents,
+  ChatCustomerSummary,
+  ChatOrderQuote,
   ChatConnectUrl,
   ChatMessage,
   Conversation,
@@ -106,7 +108,7 @@ export async function linkChatCustomer(id: string, body: { customerId: string })
 }
 
 /** For a chat shopper with no storefront account. */
-export async function createChatCustomer(id: string, body: { email: string; firstName?: string; lastName?: string; phone?: string }) {
+export async function createChatCustomer(id: string, body: { email?: string; firstName?: string; lastName?: string; phone?: string }) {
   return apiClient<Customer>(`/admin/chat/conversations/${id}/create-customer`, { method: "POST", body, auth: "owner" });
 }
 
@@ -117,6 +119,16 @@ export async function createChatCustomer(id: string, body: { email: string; firs
  */
 export async function createChatOrder(id: string, body: Record<string, unknown>) {
   return apiClient<Order>(`/admin/chat/conversations/${id}/orders`, { method: "POST", body, auth: "owner" });
+}
+
+/** The linked customer with orders and addresses, or null when the thread has no customer yet. */
+export async function getConversationCustomer(id: string) {
+  return apiClient<ChatCustomerSummary | null>(`/admin/chat/conversations/${id}/customer`, { auth: "owner", revalidate: 0 });
+}
+
+/** Totals for an order still being built. Writes nothing. */
+export async function quoteChatOrder(id: string, body: Record<string, unknown>) {
+  return apiClient<ChatOrderQuote>(`/admin/chat/conversations/${id}/orders/quote`, { method: "POST", body, auth: "owner" });
 }
 
 /** A card with a "Track order" button on Messenger, a link on Instagram. */

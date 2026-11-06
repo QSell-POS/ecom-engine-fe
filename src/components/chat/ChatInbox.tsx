@@ -6,7 +6,9 @@ import { MessagesSquare } from "lucide-react";
 import { conversationHistoryAction, markConversationReadAction } from "@/lib/api/chat/action";
 import { CHAT_SOCKET_EVENTS as EVENTS } from "@/lib/api/chat/constants";
 import type { ChatAgent, ChatMessage, ChatMessageStatus, Conversation, ConversationHistoryEntry, InboxView } from "@/lib/api/chat/types";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ChatThread } from "./ChatThread";
+import { CustomerPanel } from "./CustomerPanel";
 import { ConversationList } from "./ConversationList";
 import { useChatSocket } from "./useChatSocket";
 
@@ -58,6 +60,9 @@ export function ChatInbox({
   const [history, setHistory] = useState(initialHistory);
   const [viewers, setViewers] = useState<Record<string, Agent[]>>({});
   const [typing, setTyping] = useState<Record<string, Record<string, Agent & { until: number }>>>({});
+  // Bumped when the open thread's activity changes, so the customer panel re-reads.
+  const [customerVersion, setCustomerVersion] = useState(0);
+  const [customerSheetOpen, setCustomerSheetOpen] = useState(false);
 
   // A new server snapshot (navigation or refresh) replaces local state.
   const [seenConversations, setSeenConversations] = useState(initialConversations);
@@ -142,7 +147,9 @@ export function ChatInbox({
       );
     },
     [EVENTS.conversationActivity]: ({ conversationId }: { conversationId: string }) => {
-      if (conversationId === activeIdRef.current) void reloadHistory(conversationId);
+      if (conversationId !== activeIdRef.current) return;
+      void reloadHistory(conversationId);
+      setCustomerVersion((n) => n + 1);
     },
     [EVENTS.conversationViewers]: ({ conversationId, viewers: list }: { conversationId: string; viewers: Agent[] }) =>
       setViewers((all) => ({ ...all, [conversationId]: list })),
@@ -223,7 +230,7 @@ export function ChatInbox({
   }, []);
 
   return (
-    <div className="grid h-[calc(100dvh-12rem)] min-h-128 overflow-hidden rounded-lg border lg:grid-cols-[22rem_1fr]">
+    <div className="grid h-[calc(100dvh-12rem)] min-h-128 overflow-hidden rounded-lg border lg:grid-cols-[22rem_1fr] 2xl:grid-cols-[22rem_1fr_20rem]">
       <div className="min-h-0 border-b lg:border-r lg:border-b-0">
         <ConversationList view={view} conversations={conversations} activeId={activeId} typingIn={typingIn} connected={connected} />
       </div>
@@ -238,6 +245,7 @@ export function ChatInbox({
           viewers={(viewers[active.id] ?? []).filter((viewer) => viewer.id !== meId)}
           typing={typingIn[active.id] ?? []}
           onTyping={onTyping}
+          onShowCustomer={() => setCustomerSheetOpen(true)}
         />
       ) : (
         <div className="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center">
@@ -247,6 +255,22 @@ export function ChatInbox({
             {conversations.length ? "Choose a thread on the left to read and reply." : "Connect a Meta page to bring Messenger and Instagram conversations in here."}
           </p>
         </div>
+      )}
+      {active && (
+        <>
+          <aside className="hidden min-h-0 overflow-y-auto border-l 2xl:block" aria-label="Customer">
+            <CustomerPanel conversation={active} version={customerVersion} />
+          </aside>
+          {/* Below 2xl there is no room for a third column; the thread's "Customer" button opens this. */}
+          <Sheet open={customerSheetOpen} onOpenChange={setCustomerSheetOpen}>
+            <SheetContent side="right" className="w-full gap-0 overflow-y-auto sm:max-w-sm 2xl:hidden">
+              <SheetHeader className="border-b">
+                <SheetTitle>Customer</SheetTitle>
+              </SheetHeader>
+              {customerSheetOpen && <CustomerPanel conversation={active} version={customerVersion} />}
+            </SheetContent>
+          </Sheet>
+        </>
       )}
     </div>
   );

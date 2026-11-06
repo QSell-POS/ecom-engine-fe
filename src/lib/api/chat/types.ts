@@ -1,3 +1,5 @@
+import type { OrderStatus } from "@/lib/api/order/types";
+
 /**
  * Facebook and Instagram DMs.
  *
@@ -95,6 +97,48 @@ export type ChatAgent = { id: string; name: string; kind: "owner" | "staff" };
 
 /** GET /admin/chat/agents. `meId` is the signed-in admin, in the same id space. */
 export type ChatAgents = { agents: ChatAgent[]; meId: string };
+
+/** GET /conversations/:id/customer: the panel beside a thread. Null data when not linked. */
+export type ChatCustomerSummary = {
+  customer: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    status?: string;
+    createdAt?: string;
+  };
+  /** `totalSpent` leaves out cancelled and refunded orders. */
+  stats: { orderCount: number; totalSpent: number; lastOrderAt: string | null };
+  /** The latest 10, newest first. `active` = still to be delivered. */
+  orders: {
+    id: string;
+    orderNumber: string;
+    status: OrderStatus;
+    active: boolean;
+    totalAmount: number;
+    paymentMethod: string;
+    channel: string;
+    conversationId: string | null;
+    createdAt: string;
+    items: { name: string; quantity: number; price: number }[];
+  }[];
+  addresses: { id: string; address: string; city: string; region: string }[];
+};
+
+/** POST /conversations/:id/orders/quote: the order drawer's live totals. */
+export type ChatOrderQuote = {
+  items: { productId: string; name: string; sku: string; price: number; quantity: number; lineTotal: number }[];
+  subtotal: number;
+  discount: number;
+  delivery: number;
+  total: number;
+  /** False until there is an address or a delivery charge; the total then leaves delivery out. */
+  deliveryKnown: boolean;
+  discountError: string | null;
+  deliveryError: string | null;
+};
 
 /** GET /admin/chat/connect-url → where to send the owner for Meta OAuth. */
 export type ChatConnectUrl = { url: string };

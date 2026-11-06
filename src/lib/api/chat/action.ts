@@ -4,14 +4,19 @@ import { updateTag } from "next/cache";
 import { authActionClient } from "@/lib/safe-action";
 import { CUSTOMERS_TAG } from "@/lib/api/customer/constants";
 import { ORDERS_TAG } from "@/lib/api/order/constants";
+import { getCustomers } from "@/lib/api/customer/service";
+import { getProductsAdmin } from "@/lib/api/product/service";
+import { toAmount } from "@/lib/api/shared/types";
 import {
   assignConversation,
   createChatCustomer,
   createChatOrder,
+  getConversationCustomer,
   getConversationHistory,
   issueChatSocketToken,
   linkChatCustomer,
   markConversationRead,
+  quoteChatOrder,
   selectChatPage,
   sendChatMessage,
   sendTrackingLink,
@@ -25,6 +30,8 @@ import {
   CreateChatOrderSchema,
   CreateCustomerFromChatSchema,
   LinkCustomerSchema,
+  QuoteChatOrderSchema,
+  SearchSchema,
   SelectPageSchema,
   SendMessageSchema,
   SendTrackingLinkSchema,
@@ -51,6 +58,46 @@ export const chatSocketTokenAction = authActionClient.action(async () => {
 /** Re-reads one thread's messages and activity, for a live inbox that missed events. */
 export const conversationHistoryAction = authActionClient.inputSchema(ConversationOnlySchema).action(async ({ parsedInput }) => {
   return { history: await getConversationHistory(parsedInput.id) };
+});
+
+/** The customer panel's data for one thread. */
+export const conversationCustomerAction = authActionClient.inputSchema(ConversationOnlySchema).action(async ({ parsedInput }) => {
+  return { summary: await getConversationCustomer(parsedInput.id) };
+});
+
+export const quoteChatOrderAction = authActionClient.inputSchema(QuoteChatOrderSchema).action(async ({ parsedInput }) => {
+  const { id, ...body } = parsedInput;
+  return { quote: await quoteChatOrder(id, body) };
+});
+
+/** Active products for the order drawer (needs products:view). */
+export const searchChatProductsAction = authActionClient.inputSchema(SearchSchema).action(async ({ parsedInput }) => {
+  const { data } = await getProductsAdmin({ search: parsedInput.search, limit: 10, isActive: true });
+  return {
+    products: data
+      .filter((product) => product.isActive !== false)
+      .map((product) => ({
+        id: product.id,
+        name: product.name,
+        sku: product.sku ?? "",
+        price: toAmount(product.sellingPrice),
+        available: product.inventory ? product.inventory.quantityOnHand - product.inventory.quantityReserved : null,
+        image: product.media?.[0]?.media?.url ?? null,
+      })),
+  };
+});
+
+/** Existing customers to link a thread to (needs customers:view). */
+export const searchChatCustomersAction = authActionClient.inputSchema(SearchSchema).action(async ({ parsedInput }) => {
+  const { data } = await getCustomers({ search: parsedInput.search, limit: 8 });
+  return {
+    customers: data.map((customer) => ({
+      id: customer.id,
+      name: [customer.firstName, customer.lastName].filter(Boolean).join(" ") || null,
+      email: customer.email ?? null,
+      phone: customer.phone ?? null,
+    })),
+  };
 });
 
 export const sendChatMessageAction = authActionClient.inputSchema(SendMessageSchema).action(async ({ parsedInput }) => {

@@ -13,7 +13,8 @@ export type Customer = {
   id: string;
   firstName?: string | null;
   lastName?: string | null;
-  email: string;
+  /** Null for a customer created from a social chat without one. */
+  email: string | null;
   phone?: string | null;
   status: CustomerStatus;
   isEmailVerified?: boolean;
@@ -40,5 +41,5 @@ export type CustomerCart = {
 };
 
 export function customerName(customer: Customer): string {
-  return [customer.firstName, customer.lastName].filter(Boolean).join(" ") || customer.email;
+  return [customer.firstName, customer.lastName].filter(Boolean).join(" ") || customer.email || customer.phone || "Unnamed customer";
 }
