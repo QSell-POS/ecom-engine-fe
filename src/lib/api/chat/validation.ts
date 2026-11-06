@@ -3,61 +3,44 @@ import { optionalText } from "@/lib/api/shared/validation";
 import { PAYMENT_METHODS } from "@/lib/api/order/types";
 import { CONVERSATION_STATUSES } from "./types";
 
-const ConversationIdSchema = z.object({ id: z.string().min(1, "Conversation is required") });
+const ConversationIdSchema = z.object({ id: z.uuid("Conversation is required") });
 
-/**
- * Who is doing this. Required on assign, unassign, status, link-customer,
- * create-customer and orders — the event log records them as the actor, and a
- * body without them is a 400.
- */
-const ActingUser = {
-  actingUserId: z.uuid("Acting user is required"),
-  actingUserName: z.string().min(1, "Acting user name is required"),
-};
+export const ConversationOnlySchema = ConversationIdSchema;
 
-/** Replies use this optional pair instead of actingUser*. */
 export const SendMessageSchema = ConversationIdSchema.extend({
   text: z.string().trim().min(1, "Write a message").max(2000, "Keep it under 2000 characters"),
-  userId: z.preprocess((value) => (value === "" ? undefined : value), z.uuid().optional()),
-  userName: optionalText,
 });
 
 export const UpdateConversationStatusSchema = ConversationIdSchema.extend({
   status: z.enum(CONVERSATION_STATUSES),
-  ...ActingUser,
 });
 
+/** The owner (their tenant id) or a staff member; the API looks up the name and checks access. */
 export const AssignConversationSchema = ConversationIdSchema.extend({
-  // Both the assignee and the actor are id + display name; nothing is looked
-  // up server-side.
-  assigneeUserId: z.uuid("Pick who should take this"),
-  assigneeUserName: z.string().min(1, "Assignee name is required"),
+  assigneeId: z.uuid("Pick who should take this"),
   note: z.preprocess((value) => (value === "" ? undefined : value), z.string().max(500).optional()),
-  ...ActingUser,
 });
-
-export const UnassignConversationSchema = ConversationIdSchema.extend({ ...ActingUser });
 
 export const LinkCustomerSchema = ConversationIdSchema.extend({
   customerId: z.uuid("Pick a customer"),
-  ...ActingUser,
 });
 
+const blank = (value: unknown) => (value === "" ? undefined : value);
+
+/** Chat shoppers rarely give an email, so nothing here is required. */
 export const CreateCustomerFromChatSchema = ConversationIdSchema.extend({
-  email: z.email("Enter a valid email address"),
+  email: z.preprocess(blank, z.email("Enter a valid email address").optional()),
   firstName: optionalText,
   lastName: optionalText,
   phone: z.preprocess(
     (value) => (value === "" ? undefined : value),
     z.string().regex(/^\+?\d{7,15}$/, "Enter 7 to 15 digits, optionally starting with +").optional(),
   ),
-  ...ActingUser,
 });
 
 /**
  * Either an addressId or all three inline fields — both, or neither, is a 400.
- * Unlike storefront checkout this takes the full payment method enum, and the
- * order carries no delivery charge or discount.
+ * Unlike storefront checkout this takes the full payment method enum.
  */
 export const CreateChatOrderSchema = ConversationIdSchema.extend({
   items: z.array(z.object({ productId: z.uuid(), quantity: z.coerce.number().int().positive() })).min(1, "Add at least one product"),
@@ -66,7 +49,12 @@ export const CreateChatOrderSchema = ConversationIdSchema.extend({
   shippingAddress: optionalText,
   shippingCity: optionalText,
   shippingRegion: optionalText,
-  ...ActingUser,
+  discountCode: z.preprocess(blank, z.string().trim().max(50).optional()),
+  /** A price agreed in the chat; leave empty to use the store's rate for the address. */
+  deliveryCharge: z.preprocess(blank, z.coerce.number().min(0, "Delivery can't be negative").max(1_000_000).optional()),
+  customerNotes: z.preprocess(blank, z.string().max(1000).optional()),
+  /** Defaults to true on the API: the link goes out if Meta's 24-hour window is open. */
+  sendTrackingLink: z.boolean().optional(),
 }).refine(
   (data) => {
     const inline = Boolean(data.shippingAddress && data.shippingCity && data.shippingRegion);
@@ -74,6 +62,22 @@ export const CreateChatOrderSchema = ConversationIdSchema.extend({
   },
   { path: ["addressId"], message: "Give either a saved address or all three address fields, not both" },
 );
+
+/** Like an order, but anything may still be missing: the drawer quotes as staff fill it in. */
+export const QuoteChatOrderSchema = ConversationIdSchema.extend({
+  items: z.array(z.object({ productId: z.uuid(), quantity: z.number().int().positive() })).max(50),
+  addressId: z.preprocess(blank, z.uuid().optional()),
+  shippingCity: z.preprocess(blank, z.string().optional()),
+  shippingRegion: z.preprocess(blank, z.string().optional()),
+  discountCode: z.preprocess(blank, z.string().trim().max(50).optional()),
+  deliveryCharge: z.preprocess(blank, z.coerce.number().min(0).max(1_000_000).optional()),
+});
+
+export const SearchSchema = z.object({ search: z.string().trim().max(100) });
+
+export const SendTrackingLinkSchema = ConversationIdSchema.extend({
+  orderId: z.uuid("Pick an order"),
+});
 
 export const SelectPageSchema = z.object({
   selectionId: z.uuid("Selection is required"),

@@ -5,6 +5,7 @@ import { toAmount } from "@/lib/api/shared/types";
 import { ORDER_CHANNEL_LABELS, orderCustomerName, orderItemCount, orderShipsTo, paymentMethodLabel, type Order } from "@/lib/api/order/types";
 import { orderStatuses, paymentStatuses } from "@/lib/api/order/grid";
 import { formatMoney } from "@/lib/constants/money";
+import { TrackingLink } from "./TrackingLink";
 
 const dateTime = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" });
 const when = (value?: string) => (value ? dateTime.format(new Date(value)) : null);
@@ -116,6 +117,7 @@ export function OrderDetail({ order }: { order: Order }) {
         <DetailFields
           items={[
             ["Channel", order.channel ? ORDER_CHANNEL_LABELS[order.channel] ?? order.channel : null],
+            ["Tracking page", order.trackingUrl ? <TrackingLink key="tracking" url={order.trackingUrl} /> : null],
             ["From chat", order.conversationId ? <Link key="chat" href={`/chat?open=${order.conversationId}`} className="underline-offset-4 hover:underline">Open conversation</Link> : null],
             ["Placed", when(order.createdAt)],
             ["Updated", when(order.updatedAt)],

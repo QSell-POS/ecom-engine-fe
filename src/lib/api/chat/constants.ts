@@ -14,16 +14,15 @@ export const CHAT_ROUTES = {
   integrations: "/integrations",
 };
 
-/** Socket.IO namespace. The owner token goes in the handshake's auth.token. */
+/** Socket.IO namespace. A short-lived token from /admin/chat/socket-token goes in the handshake's auth.token. */
 export function chatSocketUrl(apiUrl: string): string {
   return `${apiUrl.replace(/\/$/, "")}/admin/chat`;
 }
 
 /**
  * Event names are kebab-case — a camelCase listener silently never fires.
- * Every event also reaches a tenant-wide room, so an inbox needs no
- * joinConversation; joining a thread as well delivers a second copy of
- * message:new and message:status-updated, which has to be de-duplicated.
+ * Every server event reaches the whole tenant, so the inbox list needs no
+ * joins; joining a thread is what registers presence and allows typing.
  */
 export const CHAT_SOCKET_EVENTS = {
   messageNew: "message:new",
@@ -33,6 +32,12 @@ export const CHAT_SOCKET_EVENTS = {
   conversationAssigned: "conversation:assigned",
   conversationUnassigned: "conversation:unassigned",
   conversationOrderCreated: "conversation:order-created",
+  /** The activity log changed; an open thread refetches it. */
+  conversationActivity: "conversation:activity",
+  /** `{ conversationId, viewers: { id, name }[] }` */
+  conversationViewers: "conversation:viewers",
+  /** Both directions: `{ conversationId, typing }` up, `{ conversationId, agent, typing }` down. */
+  agentTyping: "agent:typing",
   joinConversation: "joinConversation",
   leaveConversation: "leaveConversation",
 } as const;
