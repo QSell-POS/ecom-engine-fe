@@ -3,44 +3,26 @@ import { optionalText } from "@/lib/api/shared/validation";
 import { PAYMENT_METHODS } from "@/lib/api/order/types";
 import { CONVERSATION_STATUSES } from "./types";
 
-const ConversationIdSchema = z.object({ id: z.string().min(1, "Conversation is required") });
+const ConversationIdSchema = z.object({ id: z.uuid("Conversation is required") });
 
-/**
- * Who is doing this. Required on assign, unassign, status, link-customer,
- * create-customer and orders — the event log records them as the actor, and a
- * body without them is a 400.
- */
-const ActingUser = {
-  actingUserId: z.uuid("Acting user is required"),
-  actingUserName: z.string().min(1, "Acting user name is required"),
-};
+export const ConversationOnlySchema = ConversationIdSchema;
 
-/** Replies use this optional pair instead of actingUser*. */
 export const SendMessageSchema = ConversationIdSchema.extend({
   text: z.string().trim().min(1, "Write a message").max(2000, "Keep it under 2000 characters"),
-  userId: z.preprocess((value) => (value === "" ? undefined : value), z.uuid().optional()),
-  userName: optionalText,
 });
 
 export const UpdateConversationStatusSchema = ConversationIdSchema.extend({
   status: z.enum(CONVERSATION_STATUSES),
-  ...ActingUser,
 });
 
+/** The owner (their tenant id) or a staff member; the API looks up the name and checks access. */
 export const AssignConversationSchema = ConversationIdSchema.extend({
-  // Both the assignee and the actor are id + display name; nothing is looked
-  // up server-side.
-  assigneeUserId: z.uuid("Pick who should take this"),
-  assigneeUserName: z.string().min(1, "Assignee name is required"),
+  assigneeId: z.uuid("Pick who should take this"),
   note: z.preprocess((value) => (value === "" ? undefined : value), z.string().max(500).optional()),
-  ...ActingUser,
 });
-
-export const UnassignConversationSchema = ConversationIdSchema.extend({ ...ActingUser });
 
 export const LinkCustomerSchema = ConversationIdSchema.extend({
   customerId: z.uuid("Pick a customer"),
-  ...ActingUser,
 });
 
 export const CreateCustomerFromChatSchema = ConversationIdSchema.extend({
@@ -51,7 +33,6 @@ export const CreateCustomerFromChatSchema = ConversationIdSchema.extend({
     (value) => (value === "" ? undefined : value),
     z.string().regex(/^\+?\d{7,15}$/, "Enter 7 to 15 digits, optionally starting with +").optional(),
   ),
-  ...ActingUser,
 });
 
 /**
@@ -66,7 +47,8 @@ export const CreateChatOrderSchema = ConversationIdSchema.extend({
   shippingAddress: optionalText,
   shippingCity: optionalText,
   shippingRegion: optionalText,
-  ...ActingUser,
+  /** Defaults to true on the API: the link goes out if Meta's 24-hour window is open. */
+  sendTrackingLink: z.boolean().optional(),
 }).refine(
   (data) => {
     const inline = Boolean(data.shippingAddress && data.shippingCity && data.shippingRegion);
@@ -74,6 +56,10 @@ export const CreateChatOrderSchema = ConversationIdSchema.extend({
   },
   { path: ["addressId"], message: "Give either a saved address or all three address fields, not both" },
 );
+
+export const SendTrackingLinkSchema = ConversationIdSchema.extend({
+  orderId: z.uuid("Pick an order"),
+});
 
 export const SelectPageSchema = z.object({
   selectionId: z.uuid("Selection is required"),

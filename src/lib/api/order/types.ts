@@ -78,6 +78,8 @@ export type OrderCustomer = {
 export type Order = {
   id: string;
   orderNumber: string;
+  /** Public tracking page (admin detail only). Null until the store has a web address. */
+  trackingUrl?: string | null;
   status: OrderStatus;
   paymentMethod?: PaymentMethod;
   channel?: OrderChannel;
