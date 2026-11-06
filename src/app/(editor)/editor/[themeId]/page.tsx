@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ThemeEditor } from "@/components/theme-editor/ThemeEditor";
 import { getCurrentTenant, getTheme } from "@/lib/api/theme";
 import { getCatalogApi } from "@/lib/storefront/server";
+import { denyUnless } from "@/lib/api/rbac/access";
 
 type Props = { params: Promise<{ themeId: string }> };
 
@@ -14,6 +15,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ThemeEditorPage({ params }: Props) {
+  // Outside the dashboard shell, so the guard renders on its own page.
+  const denied = await denyUnless("themes:edit");
+  if (denied) return <div className="mx-auto max-w-3xl p-8">{denied}</div>;
+
   const { themeId } = await params;
   const tenant = await getCurrentTenant();
   // Scoped to the current tenant: another tenant's theme id 404s.

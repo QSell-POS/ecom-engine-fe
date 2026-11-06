@@ -34,9 +34,9 @@ export function BrandsGrid({ brands }: { brands: Brand[] }) {
   const source = useMemo(() => clientSource(brands), [brands]);
 
   const rowActions: RowAction<Brand>[] = [
-    { id: "edit", label: "Edit", icon: Pencil, swipe: "leading", run: (brand) => setEditing(brand) },
+    { id: "edit", permission: "brands:manage", label: "Edit", icon: Pencil, swipe: "leading", run: (brand) => setEditing(brand) },
     {
-      id: "deactivate",
+      id: "deactivate", permission: "brands:manage",
       label: "Deactivate",
       icon: CircleSlash,
       hidden: (b) => b.isActive === false,
@@ -44,7 +44,7 @@ export function BrandsGrid({ brands }: { brands: Brand[] }) {
       run: (b) => settle([setActive(b, false)], `${b.name} deactivated`),
     },
     {
-      id: "activate",
+      id: "activate", permission: "brands:manage",
       label: "Activate",
       icon: CircleCheck,
       hidden: (b) => b.isActive !== false,
@@ -52,7 +52,7 @@ export function BrandsGrid({ brands }: { brands: Brand[] }) {
       run: (b) => settle([setActive(b, true)], `${b.name} activated`),
     },
     {
-      id: "delete",
+      id: "delete", permission: "brands:manage",
       label: "Delete",
       icon: Trash2,
       tone: "destructive",
@@ -64,10 +64,10 @@ export function BrandsGrid({ brands }: { brands: Brand[] }) {
   ];
 
   const bulkActions: BulkAction<Brand>[] = [
-    { id: "activate", label: "Activate", icon: CircleCheck, optimistic: () => ({ isActive: true }), run: ({ rows }) => settle(rows.map((b) => setActive(b, true)), `${rows.length} brands activated`) },
-    { id: "deactivate", label: "Deactivate", icon: CircleSlash, optimistic: () => ({ isActive: false }), run: ({ rows }) => settle(rows.map((b) => setActive(b, false)), `${rows.length} brands deactivated`) },
+    { id: "activate", permission: "brands:manage", label: "Activate", icon: CircleCheck, optimistic: () => ({ isActive: true }), run: ({ rows }) => settle(rows.map((b) => setActive(b, true)), `${rows.length} brands activated`) },
+    { id: "deactivate", permission: "brands:manage", label: "Deactivate", icon: CircleSlash, optimistic: () => ({ isActive: false }), run: ({ rows }) => settle(rows.map((b) => setActive(b, false)), `${rows.length} brands deactivated`) },
     {
-      id: "delete",
+      id: "delete", permission: "brands:manage",
       label: "Delete",
       icon: Trash2,
       tone: "destructive",

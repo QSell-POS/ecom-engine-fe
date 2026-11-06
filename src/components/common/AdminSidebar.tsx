@@ -17,11 +17,17 @@ import {
 } from "@/components/ui/sidebar";
 import { NAV_GROUPS, navItemForPath } from "@/lib/constants/nav";
 import type { TenantSummary } from "@/lib/api/session";
+import { useCanFn } from "@/components/auth/PermissionsProvider";
 import { TenantMenu } from "./TenantMenu";
 
 export function AdminSidebar({ tenant }: { tenant: TenantSummary | null }) {
   const pathname = usePathname();
   const active = navItemForPath(pathname);
+  const can = useCanFn();
+  // Only what this admin can open; a group with nothing left is dropped.
+  const groups = NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => !item.permission || can(item.permission)) })).filter(
+    (group) => group.items.length > 0,
+  );
 
   return (
     <Sidebar collapsible="icon">
@@ -37,7 +43,7 @@ export function AdminSidebar({ tenant }: { tenant: TenantSummary | null }) {
       </SidebarHeader>
 
       <SidebarContent className="gap-0 pt-1">
-        {NAV_GROUPS.map((group, index) => (
+        {groups.map((group, index) => (
           <SidebarGroup key={group.label ?? index} className="py-1.5">
             {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
             <SidebarGroupContent>

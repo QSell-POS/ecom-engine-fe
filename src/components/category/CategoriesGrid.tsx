@@ -38,11 +38,11 @@ export function CategoriesGrid({ categories }: { categories: Category[] }) {
   const byId = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
 
   const rowActions: RowAction<CategoryNode>[] = [
-    { id: "edit", label: "Edit", icon: Pencil, swipe: "leading", run: (c) => setEditing(c) },
-    { id: "deactivate", label: "Deactivate", icon: CircleSlash, hidden: (c) => c.isActive === false, optimistic: () => ({ isActive: false }), run: (c) => settle([setActive(c, false)], `${c.name} deactivated`) },
-    { id: "activate", label: "Activate", icon: CircleCheck, hidden: (c) => c.isActive !== false, optimistic: () => ({ isActive: true }), run: (c) => settle([setActive(c, true)], `${c.name} activated`) },
+    { id: "edit", permission: "categories:manage", label: "Edit", icon: Pencil, swipe: "leading", run: (c) => setEditing(c) },
+    { id: "deactivate", permission: "categories:manage", label: "Deactivate", icon: CircleSlash, hidden: (c) => c.isActive === false, optimistic: () => ({ isActive: false }), run: (c) => settle([setActive(c, false)], `${c.name} deactivated`) },
+    { id: "activate", permission: "categories:manage", label: "Activate", icon: CircleCheck, hidden: (c) => c.isActive !== false, optimistic: () => ({ isActive: true }), run: (c) => settle([setActive(c, true)], `${c.name} activated`) },
     {
-      id: "delete",
+      id: "delete", permission: "categories:manage",
       label: "Delete",
       icon: Trash2,
       tone: "destructive",
@@ -60,10 +60,10 @@ export function CategoriesGrid({ categories }: { categories: Category[] }) {
   ];
 
   const bulkActions: BulkAction<CategoryNode>[] = [
-    { id: "activate", label: "Activate", icon: CircleCheck, optimistic: () => ({ isActive: true }), run: ({ rows }) => settle(rows.map((c) => setActive(c, true)), `${rows.length} categories activated`) },
-    { id: "deactivate", label: "Deactivate", icon: CircleSlash, optimistic: () => ({ isActive: false }), run: ({ rows }) => settle(rows.map((c) => setActive(c, false)), `${rows.length} categories deactivated`) },
+    { id: "activate", permission: "categories:manage", label: "Activate", icon: CircleCheck, optimistic: () => ({ isActive: true }), run: ({ rows }) => settle(rows.map((c) => setActive(c, true)), `${rows.length} categories activated`) },
+    { id: "deactivate", permission: "categories:manage", label: "Deactivate", icon: CircleSlash, optimistic: () => ({ isActive: false }), run: ({ rows }) => settle(rows.map((c) => setActive(c, false)), `${rows.length} categories deactivated`) },
     {
-      id: "delete",
+      id: "delete", permission: "categories:manage",
       label: "Delete",
       icon: Trash2,
       tone: "destructive",

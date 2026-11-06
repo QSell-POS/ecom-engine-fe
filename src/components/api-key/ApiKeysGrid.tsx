@@ -26,7 +26,7 @@ export function ApiKeysGrid({ keys }: { keys: ApiKey[] }) {
 
   const rowActions: RowAction<ApiKey>[] = [
     {
-      id: "revoke",
+      id: "revoke", permission: "api_keys:manage",
       label: "Revoke",
       icon: Trash2,
       tone: "destructive",
@@ -43,7 +43,7 @@ export function ApiKeysGrid({ keys }: { keys: ApiKey[] }) {
 
   const bulkActions: BulkAction<ApiKey>[] = [
     {
-      id: "revoke",
+      id: "revoke", permission: "api_keys:manage",
       label: "Revoke",
       icon: Trash2,
       tone: "destructive",

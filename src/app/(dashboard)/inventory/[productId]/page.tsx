@@ -10,12 +10,16 @@ import { availableStock, itemName, stockState } from "@/lib/api/inventory/types"
 import { stockStates } from "@/lib/api/inventory/grid";
 import { formatMoney } from "@/lib/constants/money";
 import { toAmount } from "@/lib/api/shared/types";
+import { denyUnless } from "@/lib/api/rbac/access";
 
 export const metadata: Metadata = { title: "Stock history" };
 
 const date = new Intl.DateTimeFormat("en-US", { dateStyle: "medium" });
 
 export default async function ProductInventoryPage({ params }: { params: Promise<{ productId: string }> }) {
+  const denied = await denyUnless("inventory:view");
+  if (denied) return denied;
+
   const { productId } = await params;
 
   let item;

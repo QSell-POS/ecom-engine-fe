@@ -11,12 +11,16 @@ import { getCurrentTenant, getTheme, listTenants, listThemes, THEME_ROUTES } fro
 import { getPreset, THEME_PRESETS } from "@/lib/theme-engine/presets";
 import { cn } from "@/lib/utils";
 import { presetPreview, tenantPreview } from "./previews";
+import { denyUnless } from "@/lib/api/rbac/access";
 
 export const metadata: Metadata = { title: "Online store" };
 
 const ago = (iso: string | null) => (iso ? formatDistanceToNow(new Date(iso), { addSuffix: true }) : "never");
 
 export default async function ThemesPage() {
+  const denied = await denyUnless("themes:view");
+  if (denied) return denied;
+
   const tenant = await getCurrentTenant();
   const [tenants, themes, preview] = await Promise.all([listTenants(), listThemes(), tenantPreview(tenant)]);
   const live = themes.find((theme) => theme.isLive) ?? null;

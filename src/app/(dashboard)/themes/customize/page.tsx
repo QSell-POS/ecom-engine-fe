@@ -7,10 +7,14 @@ import { Button } from "@/components/ui/button";
 import { getCurrentTenant, getTheme, THEME_ROUTES } from "@/lib/api/theme";
 import { tenantPreview } from "../previews";
 import { paletteFromSettings } from "@/components/themes/palette";
+import { denyUnless } from "@/lib/api/rbac/access";
 
 export const metadata: Metadata = { title: "Customize your store" };
 
 export default async function CustomizePage({ searchParams }: { searchParams: Promise<{ welcome?: string }> }) {
+  const denied = await denyUnless("themes:view");
+  if (denied) return denied;
+
   const tenant = await getCurrentTenant();
   const live = tenant.liveThemeId ? await getTheme(tenant.id, tenant.liveThemeId) : null;
 

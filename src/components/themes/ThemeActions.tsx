@@ -4,6 +4,7 @@ import { useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, Copy, Eye, LayoutTemplate, MoreHorizontal, Palette, Rocket, Trash2 } from "lucide-react";
+import { useCan } from "@/components/auth/PermissionsProvider";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -143,6 +144,9 @@ export function ThemeActions({
 }) {
   const { run, isPending } = useAction();
   const [confirm, setConfirm] = useState<"publish" | "delete" | null>(null);
+  const canEdit = useCan("themes:edit");
+  const canPublish = useCan("themes:publish");
+  const canDelete = useCan("themes:delete");
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -153,20 +157,26 @@ export function ThemeActions({
               <Palette /> Customize
             </Link>
           </Button>
-          <Button variant="outline" asChild>
-            <Link href={THEME_ROUTES.editor(themeId)}>
-              <LayoutTemplate /> Edit in builder
-            </Link>
-          </Button>
+          {canEdit && (
+            <Button variant="outline" asChild>
+              <Link href={THEME_ROUTES.editor(themeId)}>
+                <LayoutTemplate /> Edit in builder
+              </Link>
+            </Button>
+          )}
         </>
       ) : (
         <>
-          <Button variant="outline" disabled={isPending} onClick={() => setConfirm("publish")}>
-            <Rocket /> Publish
-          </Button>
-          <Button variant="ghost" asChild>
-            <Link href={THEME_ROUTES.editor(themeId)}>Edit in builder</Link>
-          </Button>
+          {canPublish && (
+            <Button variant="outline" disabled={isPending} onClick={() => setConfirm("publish")}>
+              <Rocket /> Publish
+            </Button>
+          )}
+          {canEdit && (
+            <Button variant="ghost" asChild>
+              <Link href={THEME_ROUTES.editor(themeId)}>Edit in builder</Link>
+            </Button>
+          )}
         </>
       )}
       <DropdownMenu modal={false}>
@@ -188,6 +198,7 @@ export function ThemeActions({
               <Eye /> {isLive ? "Preview unpublished changes" : "Preview on your store"}
             </Link>
           </DropdownMenuItem>
+          {canEdit && (
           <DropdownMenuItem
             disabled={atLimit}
             onSelect={() =>
@@ -199,7 +210,8 @@ export function ThemeActions({
           >
             <Copy /> Duplicate
           </DropdownMenuItem>
-          {!isLive && (
+          )}
+          {!isLive && canDelete && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem variant="destructive" onSelect={() => setConfirm("delete")}>
@@ -263,6 +275,8 @@ export function InstallThemeButton({
 }) {
   const { run, isPending, router } = useAction();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // Installing a theme also makes it live.
+  const canPublish = useCan("themes:publish");
 
   const install = () =>
     run(() => installThemeAction({ presetId }), {
@@ -270,6 +284,8 @@ export function InstallThemeButton({
       error: "Couldn't install the theme",
       onSuccess: () => router.push(`${THEME_ROUTES.customize}?welcome=1`),
     });
+
+  if (!canPublish) return null;
 
   return (
     <>

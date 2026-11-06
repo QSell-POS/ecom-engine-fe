@@ -4,10 +4,14 @@ import { ProductForm } from "@/components/product/ProductForm";
 import { getBrandsAdmin } from "@/lib/api/brand";
 import { getCategoriesAdmin } from "@/lib/api/category/service";
 import { getProductAdmin } from "@/lib/api/product";
+import { denyUnless } from "@/lib/api/rbac/access";
 
 export const metadata: Metadata = { title: "Edit product" };
 
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const denied = await denyUnless("products:update");
+  if (denied) return denied;
+
   const { id } = await params;
   const [product, { data: brands }, { data: categories }] = await Promise.all([
     getProductAdmin(id),

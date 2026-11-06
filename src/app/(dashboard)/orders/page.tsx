@@ -9,12 +9,16 @@ import { customerName } from "@/lib/api/customer/types";
 import { ORDER_ROUTES } from "@/lib/api/order/constants";
 import { getOrders } from "@/lib/api/order/service";
 import { loadAllPages } from "@/lib/api/shared/types";
+import { denyUnless } from "@/lib/api/rbac/access";
 
 export const metadata: Metadata = { title: "Orders" };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ customerId?: string }> }) {
+  const denied = await denyUnless("orders:view");
+  if (denied) return denied;
+
   const { customerId: raw } = await searchParams;
   // Filtered by the API, not the grid: "View orders" on a customer lands here.
   const customerId = raw && UUID.test(raw) ? raw : undefined;

@@ -55,8 +55,8 @@ export function InventoryGrid({ items }: { items: InventoryItem[] }) {
   const source = useMemo(() => clientSource(items), [items]);
 
   const rowActions: RowAction<InventoryItem>[] = [
-    { id: "receive", label: "Receive stock", icon: PackagePlus, swipe: "leading", run: (item) => setActive({ item, mode: "receive" }) },
-    { id: "adjust", label: "Adjust stock", icon: Scale, run: (item) => setActive({ item, mode: "adjust" }) },
+    { id: "receive", permission: "inventory:adjust", label: "Receive stock", icon: PackagePlus, swipe: "leading", run: (item) => setActive({ item, mode: "receive" }) },
+    { id: "adjust", permission: "inventory:adjust", label: "Adjust stock", icon: Scale, run: (item) => setActive({ item, mode: "adjust" }) },
   ];
 
   return (

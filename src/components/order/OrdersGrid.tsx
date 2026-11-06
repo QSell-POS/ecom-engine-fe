@@ -37,7 +37,7 @@ export function OrdersGrid({ orders }: { orders: Order[] }) {
   // 400, not something to discover by clicking.
   const rowActions: RowAction<Order>[] = [
     {
-      id: "confirm",
+      id: "confirm", permission: "orders:update",
       label: "Mark confirmed",
       icon: CheckCircle2,
       swipe: "leading",
@@ -46,7 +46,7 @@ export function OrdersGrid({ orders }: { orders: Order[] }) {
       run: (order) => settle([setStatus(order, "confirmed")], `${label(order)} confirmed`),
     },
     {
-      id: "ship",
+      id: "ship", permission: "orders:update",
       label: "Mark shipped",
       icon: Truck,
       swipe: "leading",
@@ -55,7 +55,7 @@ export function OrdersGrid({ orders }: { orders: Order[] }) {
       run: (order) => settle([setStatus(order, "shipped")], `${label(order)} marked shipped`),
     },
     {
-      id: "deliver",
+      id: "deliver", permission: "orders:update",
       label: "Mark delivered",
       icon: PackageCheck,
       hidden: (order) => !canTransition(order.status, "delivered"),
@@ -63,7 +63,7 @@ export function OrdersGrid({ orders }: { orders: Order[] }) {
       run: (order) => settle([setStatus(order, "delivered")], `${label(order)} delivered`),
     },
     {
-      id: "cancel",
+      id: "cancel", permission: "orders:update",
       label: "Cancel order",
       icon: Ban,
       tone: "destructive",
@@ -81,14 +81,14 @@ export function OrdersGrid({ orders }: { orders: Order[] }) {
 
   const bulkActions: BulkAction<Order>[] = [
     {
-      id: "confirm",
+      id: "confirm", permission: "orders:update",
       label: "Mark confirmed",
       icon: CheckCircle2,
       optimistic: () => ({ status: "confirmed" as OrderStatus }),
       run: ({ rows }) => settle(rows.map((order) => setStatus(order, "confirmed")), `${rows.length} orders confirmed`),
     },
     {
-      id: "ship",
+      id: "ship", permission: "orders:update",
       label: "Mark shipped",
       icon: Truck,
       optimistic: () => ({ status: "shipped" as OrderStatus }),

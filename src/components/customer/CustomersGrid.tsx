@@ -30,7 +30,7 @@ export function CustomersGrid({ customers }: { customers: Customer[] }) {
 
   const rowActions: RowAction<Customer>[] = [
     {
-      id: "activate",
+      id: "activate", permission: "customers:update",
       label: "Activate",
       icon: CircleCheck,
       swipe: "leading",
@@ -39,7 +39,7 @@ export function CustomersGrid({ customers }: { customers: Customer[] }) {
       run: (customer) => settle([setStatus(customer, "active")], `${customerName(customer)} activated`),
     },
     {
-      id: "deactivate",
+      id: "deactivate", permission: "customers:update",
       label: "Deactivate",
       icon: CircleSlash,
       hidden: (customer) => customer.status !== "active",
@@ -47,7 +47,7 @@ export function CustomersGrid({ customers }: { customers: Customer[] }) {
       run: (customer) => settle([setStatus(customer, "inactive")], `${customerName(customer)} deactivated`),
     },
     {
-      id: "ban",
+      id: "ban", permission: "customers:update",
       label: "Ban",
       icon: ShieldBan,
       tone: "destructive",
@@ -61,7 +61,7 @@ export function CustomersGrid({ customers }: { customers: Customer[] }) {
       run: (customer) => settle([setStatus(customer, "banned")], `${customerName(customer)} banned`),
     },
     {
-      id: "delete",
+      id: "delete", permission: "customers:delete",
       label: "Delete",
       icon: Trash2,
       tone: "destructive",
@@ -78,14 +78,14 @@ export function CustomersGrid({ customers }: { customers: Customer[] }) {
 
   const bulkActions: BulkAction<Customer>[] = [
     {
-      id: "activate",
+      id: "activate", permission: "customers:update",
       label: "Activate",
       icon: CircleCheck,
       optimistic: () => ({ status: "active" as CustomerStatus }),
       run: ({ rows }) => settle(rows.map((customer) => setStatus(customer, "active")), `${rows.length} customers activated`),
     },
     {
-      id: "ban",
+      id: "ban", permission: "customers:update",
       label: "Ban",
       icon: ShieldBan,
       tone: "destructive",
@@ -94,7 +94,7 @@ export function CustomersGrid({ customers }: { customers: Customer[] }) {
       run: ({ rows }) => settle(rows.map((customer) => setStatus(customer, "banned")), `${rows.length} customers banned`),
     },
     {
-      id: "delete",
+      id: "delete", permission: "customers:delete",
       label: "Delete",
       icon: Trash2,
       tone: "destructive",

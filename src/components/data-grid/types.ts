@@ -1,3 +1,4 @@
+import type { Permission } from "@/lib/api/rbac/permissions";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import type { GridColumn, GridDataSource, GridQuery, GridResult, GridSelection } from "@/lib/data-grid";
@@ -9,6 +10,8 @@ export type ConfirmSpec = { title: string; description?: ReactNode; confirmLabel
 export type RowAction<T> = {
   id: string;
   label: string;
+  /** Shown only to admins holding this permission. The API enforces it regardless. */
+  permission?: Permission;
   icon?: LucideIcon;
   tone?: "default" | "destructive";
   /** Mobile list: reveal by swiping. `trailing` = swipe left, `leading` = swipe right. */
@@ -23,6 +26,8 @@ export type RowAction<T> = {
 export type BulkAction<T> = {
   id: string;
   label: string;
+  /** Shown only to admins holding this permission. The API enforces it regardless. */
+  permission?: Permission;
   icon?: LucideIcon;
   tone?: "default" | "destructive";
   confirm?: (count: number) => ConfirmSpec;

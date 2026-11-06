@@ -3,10 +3,14 @@ import { ThemeStoreGrid } from "@/components/themes/ThemeStoreGrid";
 import { listThemes } from "@/lib/api/theme";
 import { THEME_PRESETS } from "@/lib/theme-engine/presets";
 import { presetPreview } from "../previews";
+import { denyUnless } from "@/lib/api/rbac/access";
 
 export const metadata: Metadata = { title: "Theme store" };
 
 export default async function ThemeStorePage() {
+  const denied = await denyUnless("themes:view");
+  if (denied) return denied;
+
   // The API resolves the tenant from the session, so none is needed here.
   const [themes, previews] = await Promise.all([listThemes(), Promise.all(THEME_PRESETS.map(presetPreview))]);
   const status = (presetId: string) => {

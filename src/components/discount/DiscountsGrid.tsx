@@ -65,9 +65,9 @@ export function DiscountsGrid({ discounts }: { discounts: Discount[] }) {
   const setActive = (discount: Discount, isActive: boolean) => updateDiscountAction({ id: discount.id, isActive });
 
   const rowActions: RowAction<Discount>[] = [
-    { id: "edit", label: "Edit", icon: Pencil, swipe: "leading", run: (discount) => setEditing(discount) },
+    { id: "edit", permission: "discounts:manage", label: "Edit", icon: Pencil, swipe: "leading", run: (discount) => setEditing(discount) },
     {
-      id: "disable",
+      id: "disable", permission: "discounts:manage",
       label: "Disable",
       icon: CircleSlash,
       hidden: (discount) => discount.isActive === false,
@@ -75,7 +75,7 @@ export function DiscountsGrid({ discounts }: { discounts: Discount[] }) {
       run: (discount) => settle([setActive(discount, false)], `${discount.code} disabled`),
     },
     {
-      id: "enable",
+      id: "enable", permission: "discounts:manage",
       label: "Enable",
       icon: CircleCheck,
       hidden: (discount) => discount.isActive !== false,
@@ -85,8 +85,8 @@ export function DiscountsGrid({ discounts }: { discounts: Discount[] }) {
   ];
 
   const bulkActions: BulkAction<Discount>[] = [
-    { id: "enable", label: "Enable", icon: CircleCheck, optimistic: () => ({ isActive: true }), run: ({ rows }) => settle(rows.map((d) => setActive(d, true)), `${rows.length} codes enabled`) },
-    { id: "disable", label: "Disable", icon: CircleSlash, optimistic: () => ({ isActive: false }), run: ({ rows }) => settle(rows.map((d) => setActive(d, false)), `${rows.length} codes disabled`) },
+    { id: "enable", permission: "discounts:manage", label: "Enable", icon: CircleCheck, optimistic: () => ({ isActive: true }), run: ({ rows }) => settle(rows.map((d) => setActive(d, true)), `${rows.length} codes enabled`) },
+    { id: "disable", permission: "discounts:manage", label: "Disable", icon: CircleSlash, optimistic: () => ({ isActive: false }), run: ({ rows }) => settle(rows.map((d) => setActive(d, false)), `${rows.length} codes disabled`) },
   ];
 
   return (

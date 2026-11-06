@@ -9,6 +9,7 @@ import { getCurrentTenant, listThemes, THEME_ROUTES } from "@/lib/api/theme";
 import { getPreset, THEME_PRESETS } from "@/lib/theme-engine/presets";
 import { FONTS } from "@/lib/theme-engine/schema";
 import { presetPreview } from "../../previews";
+import { denyUnless } from "@/lib/api/rbac/access";
 
 type Props = { params: Promise<{ presetId: string }> };
 
@@ -29,6 +30,9 @@ const PAGES = [
 ];
 
 export default async function ThemeDetailPage({ params }: Props) {
+  const denied = await denyUnless("themes:view");
+  if (denied) return denied;
+
   const preset = getPreset((await params).presetId);
   if (!preset) notFound();
   const tenant = await getCurrentTenant();
