@@ -79,7 +79,12 @@ export async function getChatAgents() {
 
 /** A one-minute token for the inbox socket's handshake. */
 export async function issueChatSocketToken() {
-  return apiClient<{ token: string; expiresIn: number }>("/admin/chat/socket-token", { method: "POST", auth: "owner" });
+  return apiClient<{ token: string; expiresIn: number }>("/admin/chat/socket-token", {
+    method: "POST",
+    auth: "owner",
+    // A one-minute token: a cached copy fails the handshake with "invalid or missing token".
+    revalidate: 0,
+  });
 }
 
 /** Sent through the Meta Graph API; outside Meta's 24-hour window this fails. */
@@ -143,7 +148,7 @@ export async function getChatConnectUrl() {
 
 /** Candidate pages for a `selectionId` returned by OAuth. Selections expire. */
 export async function getPendingPageSelection(selectionId: string) {
-  return apiClient<PendingPageSelection>(`/admin/chat/pending-selection/${selectionId}`, { auth: "owner", revalidate: false, allow404: true });
+  return apiClient<PendingPageSelection>(`/admin/chat/pending-selection/${selectionId}`, { auth: "owner", revalidate: 0, allow404: true });
 }
 
 export async function selectChatPage(body: { selectionId: string; pageId: string }) {
