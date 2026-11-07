@@ -142,6 +142,7 @@ export async function sendTrackingLink(id: string, orderId: string) {
 }
 
 export async function getChatConnectUrl() {
+  // Never cache: the URL carries a fresh, expiring signed `state` and reflects the API's current Meta config.
   return apiClient<ChatConnectUrl>("/admin/chat/connect-url", { auth: "owner", revalidate: 0 });
 }
 
