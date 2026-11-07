@@ -92,15 +92,41 @@ export function ChatInbox({
     refreshTimer.current = setTimeout(() => router.refresh(), 800);
   }, [router]);
 
+  // Threads seen but not yet marked read on the server. Kept per id so one thread's
+  // debounce never cancels another's, and kept while the tab is hidden so the read is
+  // sent once the agent is back instead of being dropped.
+  const pendingReads = useRef(new Set<string>());
   const readTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const markReadSoon = useCallback((id: string) => {
-    if (document.visibilityState !== "visible") return;
-    if (readTimer.current) clearTimeout(readTimer.current);
-    readTimer.current = setTimeout(() => {
-      setConversations((list) => list.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c)));
-      void markConversationReadAction({ id });
-    }, 600);
+  const flushReads = useCallback(() => {
+    readTimer.current = null;
+    if (document.visibilityState !== "visible" || pendingReads.current.size === 0) return;
+    const ids = new Set(pendingReads.current);
+    pendingReads.current.clear();
+    setConversations((list) => list.map((c) => (ids.has(c.id) ? { ...c, unreadCount: 0 } : c)));
+    for (const id of ids) void markConversationReadAction({ id });
   }, []);
+  const markReadSoon = useCallback(
+    (id: string) => {
+      pendingReads.current.add(id);
+      if (document.visibilityState !== "visible") return;
+      if (readTimer.current) clearTimeout(readTimer.current);
+      readTimer.current = setTimeout(flushReads, 600);
+    },
+    [flushReads],
+  );
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "visible" && pendingReads.current.size > 0) {
+        if (readTimer.current) clearTimeout(readTimer.current);
+        readTimer.current = setTimeout(flushReads, 600);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      if (readTimer.current) clearTimeout(readTimer.current);
+    };
+  }, [flushReads]);
 
   const reloadHistory = useCallback(async (id: string) => {
     const result = await conversationHistoryAction({ id });
