@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { MessagesSquare } from "lucide-react";
+import { MessagesSquare, X } from "lucide-react";
 import { conversationHistoryAction, markConversationReadAction } from "@/lib/api/chat/action";
 import { CHAT_SOCKET_EVENTS as EVENTS } from "@/lib/api/chat/constants";
 import type { ChatAgent, ChatMessage, ChatMessageStatus, Conversation, ConversationHistoryEntry, InboxView } from "@/lib/api/chat/types";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 import { ChatThread } from "./ChatThread";
 import { CustomerPanel } from "./CustomerPanel";
 import { ConversationList, inboxHref } from "./ConversationList";
@@ -29,6 +29,34 @@ function patch<T extends object>(target: T, update: Partial<T>): T {
   const next = { ...target };
   for (const [key, value] of Object.entries(update)) if (value !== undefined) (next as Record<string, unknown>)[key] = value;
   return next;
+}
+
+/**
+ * Whether the customer drawer is open, remembered in this browser across
+ * threads and visits. Read through useSyncExternalStore so the server render
+ * (closed) and the stored value never disagree during hydration.
+ */
+const PANEL_KEY = "chat:customer-panel";
+const panelListeners = new Set<() => void>();
+function subscribePanel(listener: () => void) {
+  panelListeners.add(listener);
+  window.addEventListener("storage", listener);
+  return () => {
+    panelListeners.delete(listener);
+    window.removeEventListener("storage", listener);
+  };
+}
+function useCustomerPanelPreference(): [boolean, (open: boolean) => void] {
+  const open = useSyncExternalStore(
+    subscribePanel,
+    () => window.localStorage.getItem(PANEL_KEY) === "open",
+    () => false,
+  );
+  const setOpen = useCallback((next: boolean) => {
+    window.localStorage.setItem(PANEL_KEY, next ? "open" : "closed");
+    for (const listener of panelListeners) listener();
+  }, []);
+  return [open, setOpen];
 }
 
 function appendMessage(history: ConversationHistoryEntry[], message: ChatMessage) {
@@ -71,7 +99,7 @@ export function ChatInbox({
   const [typing, setTyping] = useState<Record<string, Record<string, Agent & { until: number }>>>({});
   // Bumped when the open thread's activity changes, so the customer panel re-reads.
   const [customerVersion, setCustomerVersion] = useState(0);
-  const [customerSheetOpen, setCustomerSheetOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useCustomerPanelPreference();
 
   // A new server snapshot (navigation or refresh) replaces local state.
   const [seenConversations, setSeenConversations] = useState(initialConversations);
@@ -315,8 +343,13 @@ export function ChatInbox({
   return (
     // Sized by the space the dashboard actually gives it (container queries), not the window,
     // so the columns never overflow next to the sidebar.
-    <div className="@container h-[calc(100dvh-11rem)] min-h-128 overflow-hidden rounded-lg border bg-background">
-      <div className="grid h-full grid-cols-1 grid-rows-[minmax(0,1fr)] @3xl:grid-cols-[17rem_minmax(0,1fr)] @6xl:grid-cols-[18rem_minmax(0,1fr)_18rem]">
+    <div className="@container relative h-[calc(100dvh-11rem)] min-h-128 overflow-hidden rounded-lg border bg-background">
+      <div
+        className={cn(
+          "grid h-full grid-cols-1 grid-rows-[minmax(0,1fr)] @3xl:grid-cols-[17rem_minmax(0,1fr)]",
+          panelOpen && active && "@6xl:grid-cols-[18rem_minmax(0,1fr)_18rem]",
+        )}
+      >
         {/* Narrow: the list or the open thread, one at a time. */}
         <div className={cn("min-h-0 @3xl:border-r", active && "hidden @3xl:block")}>
           <ConversationList
@@ -343,7 +376,8 @@ export function ChatInbox({
               viewers={(viewers[active.id] ?? []).filter((viewer) => viewer.id !== meId)}
               typing={typingIn[active.id] ?? []}
               onTyping={onTyping}
-              onShowCustomer={() => setCustomerSheetOpen(true)}
+              customerOpen={panelOpen}
+              onToggleCustomer={() => setPanelOpen(!panelOpen)}
               onBack={() => openConversation(undefined)}
             />
           </div>
@@ -357,24 +391,29 @@ export function ChatInbox({
           </div>
         )}
 
+        {/*
+          The customer drawer. Where there's room it opens as a third column beside the thread;
+          where there isn't, it slides over the thread. Closed, it's off-canvas and inert.
+        */}
         {active && (
-          <aside className="hidden min-h-0 min-w-0 overflow-y-auto border-l @6xl:block" aria-label="Customer">
-            <CustomerPanel conversation={active} version={customerVersion} />
+          <aside
+            aria-label="Customer"
+            inert={!panelOpen}
+            className={cn(
+              "absolute inset-y-0 right-0 z-20 flex w-80 max-w-full min-w-0 flex-col border-l bg-background shadow-xl transition-transform duration-200 ease-out",
+              panelOpen ? "translate-x-0 @6xl:static @6xl:w-auto @6xl:shadow-none" : "translate-x-full",
+            )}
+          >
+            <div className="flex items-center justify-between border-b px-4 py-2.5">
+              <h2 className="text-sm font-semibold">Customer</h2>
+              <Button variant="ghost" size="icon" className="size-7" onClick={() => setPanelOpen(false)} aria-label="Close customer panel">
+                <X />
+              </Button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto">{panelOpen && <CustomerPanel conversation={active} version={customerVersion} />}</div>
           </aside>
         )}
       </div>
-
-      {/* Without room for a third column, the thread's "Customer" button opens this. */}
-      {active && (
-        <Sheet open={customerSheetOpen} onOpenChange={setCustomerSheetOpen}>
-          <SheetContent side="right" className="w-full gap-0 overflow-y-auto sm:max-w-sm">
-            <SheetHeader className="border-b">
-              <SheetTitle>Customer</SheetTitle>
-            </SheetHeader>
-            {customerSheetOpen && <CustomerPanel conversation={active} version={customerVersion} />}
-          </SheetContent>
-        </Sheet>
-      )}
     </div>
   );
 }
