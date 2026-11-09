@@ -70,7 +70,8 @@ export function ChatThread({
   viewers,
   typing,
   onTyping,
-  onShowCustomer,
+  customerOpen = false,
+  onToggleCustomer,
   onBack,
   loading = false,
 }: {
@@ -85,8 +86,9 @@ export function ChatThread({
   /** Other agents typing here right now. */
   typing: string[];
   onTyping: (typing: boolean) => void;
-  /** Opens the customer panel where it isn't shown as a column. */
-  onShowCustomer?: () => void;
+  /** Whether the customer drawer is open, and the button that opens or closes it. */
+  customerOpen?: boolean;
+  onToggleCustomer?: () => void;
   /** Back to the conversation list, where the list and thread don't fit side by side. */
   onBack?: () => void;
   /** The history is still being fetched (first open of this thread). */
@@ -214,8 +216,14 @@ export function ChatThread({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {onShowCustomer && (
-            <Button variant="outline" size="sm" className="@6xl:hidden" onClick={onShowCustomer}>
+          {onToggleCustomer && (
+            <Button
+              variant={customerOpen ? "secondary" : "outline"}
+              size="sm"
+              onClick={onToggleCustomer}
+              aria-pressed={customerOpen}
+              title={customerOpen ? "Hide the customer panel" : "Show the customer, their orders and New order"}
+            >
               <ShoppingBag /> Customer
             </Button>
           )}
