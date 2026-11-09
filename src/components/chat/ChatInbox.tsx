@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { MessagesSquare } from "lucide-react";
 import { conversationHistoryAction, markConversationReadAction } from "@/lib/api/chat/action";
 import { CHAT_SOCKET_EVENTS as EVENTS } from "@/lib/api/chat/constants";
@@ -9,8 +9,9 @@ import type { ChatAgent, ChatMessage, ChatMessageStatus, Conversation, Conversat
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ChatThread } from "./ChatThread";
 import { CustomerPanel } from "./CustomerPanel";
-import { ConversationList } from "./ConversationList";
+import { ConversationList, inboxHref } from "./ConversationList";
 import { useChatSocket } from "./useChatSocket";
+import { cn } from "@/lib/utils";
 
 type Agent = { id: string; name: string };
 
@@ -39,11 +40,15 @@ function appendMessage(history: ConversationHistoryEntry[], message: ChatMessage
  * The live inbox. The server page supplies a snapshot (the list for this
  * view, the open thread's history); this keeps it current from the socket and
  * re-reads after a reconnect, since events sent while offline are lost.
+ *
+ * Switching threads never goes back to the server page: the URL's `?open=` is
+ * updated with history.pushState (Next keeps useSearchParams in sync), and each
+ * thread's history is cached here, prefetched on hover and revalidated on open.
  */
 export function ChatInbox({
   view,
   conversations: initialConversations,
-  activeId,
+  activeId: serverActiveId,
   history: initialHistory,
   agents,
   meId,
@@ -56,8 +61,12 @@ export function ChatInbox({
   meId?: string;
 }) {
   const router = useRouter();
+  const activeId = useSearchParams().get("open") ?? undefined;
   const [conversations, setConversations] = useState(initialConversations);
-  const [history, setHistory] = useState(initialHistory);
+  // Conversation id -> its messages and activity, oldest first.
+  const [histories, setHistories] = useState<Record<string, ConversationHistoryEntry[]>>(() =>
+    serverActiveId ? { [serverActiveId]: initialHistory } : {},
+  );
   const [viewers, setViewers] = useState<Record<string, Agent[]>>({});
   const [typing, setTyping] = useState<Record<string, Record<string, Agent & { until: number }>>>({});
   // Bumped when the open thread's activity changes, so the customer panel re-reads.
@@ -73,10 +82,16 @@ export function ChatInbox({
   const [seenHistory, setSeenHistory] = useState(initialHistory);
   if (seenHistory !== initialHistory) {
     setSeenHistory(initialHistory);
-    setHistory(initialHistory);
+    if (serverActiveId) setHistories((all) => ({ ...all, [serverActiveId]: initialHistory }));
   }
 
   const active = conversations.find((conversation) => conversation.id === activeId);
+  const history = activeId ? histories[activeId] : undefined;
+
+  /** Applies a change to one cached thread; threads never opened are left alone. */
+  const updateHistory = useCallback((id: string, change: (history: ConversationHistoryEntry[]) => ConversationHistoryEntry[]) => {
+    setHistories((all) => (all[id] ? { ...all, [id]: change(all[id]) } : all));
+  }, []);
 
   // Handlers run outside render; they read the latest values through refs.
   const conversationsRef = useRef(conversations);
@@ -128,10 +143,42 @@ export function ChatInbox({
     };
   }, [flushReads]);
 
+  const inflight = useRef(new Set<string>());
   const reloadHistory = useCallback(async (id: string) => {
-    const result = await conversationHistoryAction({ id });
-    if (result?.data && activeIdRef.current === id) setHistory(result.data.history);
+    if (inflight.current.has(id)) return;
+    inflight.current.add(id);
+    try {
+      const result = await conversationHistoryAction({ id });
+      const loaded = result?.data?.history;
+      if (loaded) setHistories((all) => ({ ...all, [id]: loaded }));
+    } finally {
+      inflight.current.delete(id);
+    }
   }, []);
+
+  // Opening a thread shows what is cached at once and re-reads it in the background.
+  useEffect(() => {
+    if (activeId) void reloadHistory(activeId);
+  }, [activeId, reloadHistory]);
+
+  const historiesRef = useRef(histories);
+  useEffect(() => {
+    historiesRef.current = histories;
+  });
+  const prefetch = useCallback(
+    (id: string) => {
+      if (!historiesRef.current[id]) void reloadHistory(id);
+    },
+    [reloadHistory],
+  );
+
+  const openConversation = useCallback(
+    (id?: string) => {
+      if (id === activeIdRef.current) return;
+      window.history.pushState(null, "", inboxHref(view, id));
+    },
+    [view],
+  );
 
   const mergeConversation = useCallback((id: string, update: Partial<Conversation>) => {
     setConversations((list) => list.map((c) => (c.id === id ? patch(c, update) : c)).sort(byRecent));
@@ -143,10 +190,9 @@ export function ChatInbox({
         // A conversation this view doesn't hold yet (often a brand-new one): re-read the list.
         refreshSoon();
       }
-      if (conversationId === activeIdRef.current) {
-        setHistory((h) => appendMessage(h, message));
-        if (message.direction === "inbound") markReadSoon(conversationId);
-      }
+      // Cached threads stay current, so reopening one is instant and correct.
+      updateHistory(conversationId, (h) => appendMessage(h, message));
+      if (conversationId === activeIdRef.current && message.direction === "inbound") markReadSoon(conversationId);
     },
     [EVENTS.conversationUpdated]: (update: Partial<Conversation> & { id: string }) => {
       const isActive = update.id === activeIdRef.current;
@@ -164,16 +210,24 @@ export function ChatInbox({
     [EVENTS.conversationUnassigned]: ({ id }: { id: string }) =>
       mergeConversation(id, { assignedToUserId: null, assignedToUserName: null, assignmentStatus: "unassigned" }),
     [EVENTS.messageStatusUpdated]: ({ conversationId, messageIds, status }: { conversationId: string; messageIds: string[]; status: ChatMessageStatus }) => {
-      if (conversationId !== activeIdRef.current) return;
       const ids = new Set(messageIds);
-      setHistory((h) =>
+      updateHistory(conversationId, (h) =>
         h.map((entry) =>
           entry.kind === "message" && ids.has(entry.id) && RECEIPT_RANK[status] > RECEIPT_RANK[entry.status ?? "sent"] ? { ...entry, status } : entry,
         ),
       );
     },
     [EVENTS.conversationActivity]: ({ conversationId }: { conversationId: string }) => {
-      if (conversationId !== activeIdRef.current) return;
+      if (conversationId !== activeIdRef.current) {
+        // Not on screen: drop the cached copy so the next open re-reads it.
+        setHistories((all) => {
+          if (!all[conversationId]) return all;
+          const rest = { ...all };
+          delete rest[conversationId];
+          return rest;
+        });
+        return;
+      }
       void reloadHistory(conversationId);
       setCustomerVersion((n) => n + 1);
     },
@@ -251,52 +305,75 @@ export function ChatInbox({
     [socket, connected, activeId],
   );
 
-  const onSent = useCallback((message: ChatMessage) => {
-    setHistory((h) => appendMessage(h, message));
-  }, []);
+  const onSent = useCallback(
+    (message: ChatMessage) => {
+      if (activeIdRef.current) updateHistory(activeIdRef.current, (h) => appendMessage(h, message));
+    },
+    [updateHistory],
+  );
 
   return (
-    <div className="grid h-[calc(100dvh-12rem)] min-h-128 overflow-hidden rounded-lg border lg:grid-cols-[22rem_1fr] 2xl:grid-cols-[22rem_1fr_20rem]">
-      <div className="min-h-0 border-b lg:border-r lg:border-b-0">
-        <ConversationList view={view} conversations={conversations} activeId={activeId} typingIn={typingIn} connected={connected} />
-      </div>
-      {active ? (
-        <ChatThread
-          key={active.id}
-          conversation={active}
-          history={history}
-          onSent={onSent}
-          agents={agents}
-          meId={meId}
-          viewers={(viewers[active.id] ?? []).filter((viewer) => viewer.id !== meId)}
-          typing={typingIn[active.id] ?? []}
-          onTyping={onTyping}
-          onShowCustomer={() => setCustomerSheetOpen(true)}
-        />
-      ) : (
-        <div className="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center">
-          <MessagesSquare className="size-5 text-muted-foreground" />
-          <p className="text-sm font-medium">{conversations.length ? "Pick a conversation" : "Nothing to answer"}</p>
-          <p className="max-w-sm text-xs text-muted-foreground">
-            {conversations.length ? "Choose a thread on the left to read and reply." : "Connect a Meta page to bring Messenger and Instagram conversations in here."}
-          </p>
+    // Sized by the space the dashboard actually gives it (container queries), not the window,
+    // so the columns never overflow next to the sidebar.
+    <div className="@container h-[calc(100dvh-11rem)] min-h-128 overflow-hidden rounded-lg border bg-background">
+      <div className="grid h-full grid-cols-1 grid-rows-[minmax(0,1fr)] @3xl:grid-cols-[17rem_minmax(0,1fr)] @6xl:grid-cols-[18rem_minmax(0,1fr)_18rem]">
+        {/* Narrow: the list or the open thread, one at a time. */}
+        <div className={cn("min-h-0 @3xl:border-r", active && "hidden @3xl:block")}>
+          <ConversationList
+            view={view}
+            conversations={conversations}
+            activeId={activeId}
+            typingIn={typingIn}
+            connected={connected}
+            onOpen={openConversation}
+            onIntent={prefetch}
+          />
         </div>
-      )}
-      {active && (
-        <>
-          <aside className="hidden min-h-0 overflow-y-auto border-l 2xl:block" aria-label="Customer">
+
+        {active ? (
+          <div className="min-h-0 min-w-0">
+            <ChatThread
+              key={active.id}
+              conversation={active}
+              history={history ?? []}
+              loading={!history}
+              onSent={onSent}
+              agents={agents}
+              meId={meId}
+              viewers={(viewers[active.id] ?? []).filter((viewer) => viewer.id !== meId)}
+              typing={typingIn[active.id] ?? []}
+              onTyping={onTyping}
+              onShowCustomer={() => setCustomerSheetOpen(true)}
+              onBack={() => openConversation(undefined)}
+            />
+          </div>
+        ) : (
+          <div className="hidden flex-col items-center justify-center gap-2 px-6 py-16 text-center @3xl:flex">
+            <MessagesSquare className="size-5 text-muted-foreground" />
+            <p className="text-sm font-medium">{conversations.length ? "Pick a conversation" : "Nothing to answer"}</p>
+            <p className="max-w-sm text-xs text-muted-foreground">
+              {conversations.length ? "Choose a thread on the left to read and reply." : "Connect a Meta page to bring Messenger and Instagram conversations in here."}
+            </p>
+          </div>
+        )}
+
+        {active && (
+          <aside className="hidden min-h-0 min-w-0 overflow-y-auto border-l @6xl:block" aria-label="Customer">
             <CustomerPanel conversation={active} version={customerVersion} />
           </aside>
-          {/* Below 2xl there is no room for a third column; the thread's "Customer" button opens this. */}
-          <Sheet open={customerSheetOpen} onOpenChange={setCustomerSheetOpen}>
-            <SheetContent side="right" className="w-full gap-0 overflow-y-auto sm:max-w-sm 2xl:hidden">
-              <SheetHeader className="border-b">
-                <SheetTitle>Customer</SheetTitle>
-              </SheetHeader>
-              {customerSheetOpen && <CustomerPanel conversation={active} version={customerVersion} />}
-            </SheetContent>
-          </Sheet>
-        </>
+        )}
+      </div>
+
+      {/* Without room for a third column, the thread's "Customer" button opens this. */}
+      {active && (
+        <Sheet open={customerSheetOpen} onOpenChange={setCustomerSheetOpen}>
+          <SheetContent side="right" className="w-full gap-0 overflow-y-auto sm:max-w-sm">
+            <SheetHeader className="border-b">
+              <SheetTitle>Customer</SheetTitle>
+            </SheetHeader>
+            {customerSheetOpen && <CustomerPanel conversation={active} version={customerVersion} />}
+          </SheetContent>
+        </Sheet>
       )}
     </div>
   );

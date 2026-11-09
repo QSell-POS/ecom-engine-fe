@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
-import { Archive, Check, CheckCheck, ChevronDown, Clock, Eye, Link2, RotateCcw, Send, ShoppingBag, UserRound } from "lucide-react";
+import { Archive, ArrowLeft, Check, CheckCheck, ChevronDown, Clock, Eye, Link2, RotateCcw, Send, ShoppingBag, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -71,6 +71,8 @@ export function ChatThread({
   typing,
   onTyping,
   onShowCustomer,
+  onBack,
+  loading = false,
 }: {
   conversation: Conversation;
   history: ConversationHistoryEntry[];
@@ -85,6 +87,10 @@ export function ChatThread({
   onTyping: (typing: boolean) => void;
   /** Opens the customer panel where it isn't shown as a column. */
   onShowCustomer?: () => void;
+  /** Back to the conversation list, where the list and thread don't fit side by side. */
+  onBack?: () => void;
+  /** The history is still being fetched (first open of this thread). */
+  loading?: boolean;
 }) {
   const canReply = useCan("chat:reply");
   const canViewOrders = useCan("orders:view");
@@ -179,8 +185,13 @@ export function ChatThread({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-3">
+      <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b px-4 py-2.5">
         <div className="flex min-w-0 items-center gap-3">
+          {onBack && (
+            <Button variant="ghost" size="icon" className="-ml-2 size-8 @3xl:hidden" onClick={onBack} aria-label="Back to conversations">
+              <ArrowLeft />
+            </Button>
+          )}
           <Avatar className="size-9">
             {conversation.participantAvatarUrl && <AvatarImage src={conversation.participantAvatarUrl} alt="" />}
             <AvatarFallback className="text-xs">{initials(title) || "?"}</AvatarFallback>
@@ -204,7 +215,7 @@ export function ChatThread({
 
         <div className="flex flex-wrap items-center gap-2">
           {onShowCustomer && (
-            <Button variant="outline" size="sm" className="2xl:hidden" onClick={onShowCustomer}>
+            <Button variant="outline" size="sm" className="@6xl:hidden" onClick={onShowCustomer}>
               <ShoppingBag /> Customer
             </Button>
           )}
@@ -279,7 +290,13 @@ export function ChatThread({
         }}
         className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4"
       >
-        {history.length === 0 && <p className="text-sm text-muted-foreground">No messages in this conversation yet.</p>}
+        {loading && history.length === 0 ? (
+          <div className="flex justify-center py-10">
+            <Spinner className="text-muted-foreground" />
+          </div>
+        ) : (
+          history.length === 0 && <p className="text-sm text-muted-foreground">No messages in this conversation yet.</p>
+        )}
         {history.map((entry, i) => {
           const previous = history[i - 1];
           const newDay = entry.createdAt && (!previous?.createdAt || day.format(new Date(previous.createdAt)) !== day.format(new Date(entry.createdAt)));
