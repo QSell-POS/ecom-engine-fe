@@ -1,8 +1,13 @@
 import type { Address } from "@/lib/api/shared/types";
 import type { Product } from "@/lib/api/product/types";
+import { ORDER_CHANNELS, type OrderChannel } from "@/lib/api/order/types";
 
 export const CUSTOMER_STATUSES = ["active", "inactive", "banned"] as const;
 export type CustomerStatus = (typeof CUSTOMER_STATUSES)[number];
+
+/** Where a customer was acquired — the same vocabulary as an order's channel. */
+export const CUSTOMER_CHANNELS = ORDER_CHANNELS;
+export type CustomerChannel = OrderChannel;
 
 /**
  * No relations are loaded on any customer route — orders, addresses and carts
@@ -17,6 +22,8 @@ export type Customer = {
   email: string | null;
   phone?: string | null;
   status: CustomerStatus;
+  /** Storefront sign-up (`e_commerce`), chat (`facebook`/`instagram`), or set by the admin who added them. */
+  channel?: CustomerChannel;
   isEmailVerified?: boolean;
   lastLoginAt?: string | null;
   metadata?: Record<string, unknown>;

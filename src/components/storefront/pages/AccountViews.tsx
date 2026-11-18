@@ -14,6 +14,7 @@ import { SfDrawer } from "../overlay";
 import { Breadcrumbs, EmptyState, Spinner, StoreLink } from "../primitives";
 import { useStoreHref, useStorefront } from "../store-context";
 import { OrderSummaryCard } from "./CheckoutView";
+import { OrderReturnsPanel } from "./OrderReturns";
 import { AddressFields, formatAddress, readAddress } from "./forms";
 
 const STATUS: Record<OrderStatus, { label: string; tone: string }> = {
@@ -285,6 +286,8 @@ function OrderDetail({ orderId }: { orderId: string }) {
       )}
 
       <OrderSummaryCard order={order} />
+
+      <OrderReturnsPanel order={order} />
     </div>
   );
 }

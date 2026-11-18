@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { makeIdSchema, optionalText } from "@/lib/api/shared/validation";
-import { CUSTOMER_STATUSES } from "./types";
+import { CUSTOMER_CHANNELS, CUSTOMER_STATUSES } from "./types";
 
 export const CustomerIdSchema = makeIdSchema("Customer");
 
@@ -17,6 +17,7 @@ export const CreateCustomerSchema = z.object({
   phone: phoneSchema,
   password: z.preprocess((value) => (value === "" ? undefined : value), z.string().min(8, "Use at least 8 characters").optional()),
   status: z.enum(CUSTOMER_STATUSES).optional(),
+  channel: z.enum(CUSTOMER_CHANNELS).optional(),
 });
 
 export const UpdateCustomerStatusSchema = CustomerIdSchema.extend({

@@ -105,6 +105,12 @@ export type HomeData = {
   brands: Brand[];
   collections: Collection[];
   media: StoreMedia;
+  /**
+   * Product ids per Product grid source (`badge:eco_friendly`, `category:shoes`, …), in display
+   * order, for the sources the page asked `home()` for. Sections use this when present and fall
+   * back to filtering `products` (e.g. a source picked in the builder since the page loaded).
+   */
+  productSources?: Record<string, string[]>;
 };
 
 // ---------------------------------------------------------------------------
@@ -207,6 +213,38 @@ export type OrderStatus = "pending" | "confirmed" | "processing" | "shipped" | "
 export type OrderLine = { id: string; productId: string; name: string; sku: string; quantity: number; price: number };
 
 export type CheckoutPaymentMethod = "cod" | "esewa" | "khalti";
+
+/** A return or exchange the shopper asked for (see lib/api/returns for the full lifecycle). */
+export type StoreReturn = {
+  id: string;
+  number: string;
+  type: "return_refund" | "exchange";
+  status: "requested" | "approved" | "rejected" | "completed" | "cancelled";
+  reason: string;
+  note: string | null;
+  /** The store's reply (e.g. why it was rejected). */
+  storeNote: string | null;
+  lines: { orderLineId: string; name: string; quantity: number; replacementName: string | null }[];
+  refundAmount: number;
+  amountDue: number;
+  createdAt: string;
+  completedAt: string | null;
+};
+
+export type StoreReturnEligibility = {
+  eligible: boolean;
+  reason: string | null;
+  until: string | null;
+  /** Units still returnable per order line id. */
+  remaining: Record<string, number>;
+};
+
+export type ReturnRequestInput = {
+  type: StoreReturn["type"];
+  items: { orderLineId: string; quantity: number }[];
+  reason: string;
+  note?: string;
+};
 
 export type Order = {
   id: string;

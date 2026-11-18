@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Gift, Heart, Leaf, Lock, MessageCircle, RefreshCw, ShieldCheck, Sparkles, Star, Truck, type LucideIcon } from "lucide-react";
 import type { HomeData, Product, StoreImage as StoreImageData } from "@/lib/storefront/types";
 import type { SectionInstance, SettingValues } from "@/lib/theme-engine/types";
+import { parseProductSource, productSourceHref } from "@/lib/theme-engine/product-source";
 import { cn } from "@/lib/utils";
 import { EditableBlock, useInEditor } from "./editor-bridge";
 import { productCountLabel } from "@/lib/storefront/format";
@@ -219,10 +220,31 @@ function Categories({ section, data }: SectionProps) {
 
 // --------------------------------------------------------------- products
 
-export function productsForCollection(products: Product[], collection: string) {
-  if (collection === "all") return products;
-  if (collection === "sale") return products.filter((p) => p.compareAtPrice !== null && p.compareAtPrice > p.price);
-  return products.filter((p) => p.collections.includes(collection));
+/**
+ * The products a Product grid source names, from what the page loaded. `home()` fetches each
+ * source the theme uses by its own filter (`productSources`); filtering `products` is the
+ * fallback, e.g. for a source just picked in the builder.
+ */
+export function productsForCollection(products: Product[], collection: string, data?: Pick<HomeData, "productSources">) {
+  const ids = data?.productSources?.[collection];
+  if (ids) {
+    const byId = new Map(products.map((p) => [p.id, p]));
+    return ids.flatMap((id) => byId.get(id) ?? []);
+  }
+  const source = parseProductSource(collection);
+  if (!source || (source.kind === "collection" && source.slug === "all")) return products;
+  switch (source.kind) {
+    case "collection":
+      if (source.slug === "sale") return products.filter((p) => p.compareAtPrice !== null && p.compareAtPrice > p.price);
+      return products.filter((p) => p.collections.includes(source.slug));
+    case "badge":
+      return products.filter((p) => p.collections.includes(collection));
+    case "brand":
+      return products.filter((p) => p.brand.slug === source.slug);
+    case "category":
+      // The fetched list (above) also includes subcategories; this fallback can only match the slug.
+      return products.filter((p) => p.category.slug === source.slug);
+  }
 }
 
 function Carousel({ products }: { products: Product[] }) {
@@ -265,11 +287,11 @@ function Products({ section, data }: SectionProps) {
   const inEditor = useInEditor();
   const v = section.settings;
   const collection = s(v, "collection") || "all";
-  const matching = productsForCollection(data.products, collection).slice(0, n(v, "count") || 8);
+  const matching = productsForCollection(data.products, collection, data).slice(0, n(v, "count") || 8);
   // Grids fill complete rows once there's more than one (no ragged last row on desktop).
   const columns = n(v, "columns") || 4;
   const products = s(v, "layout") !== "carousel" && matching.length > columns ? matching.slice(0, Math.floor(matching.length / columns) * columns) : matching;
-  const href = collection === "all" ? "/products" : `/products?collection=${collection}`;
+  const href = productSourceHref(collection);
   // An empty collection renders nothing rather than a heading over blank space.
   // The theme editor still shows it, so the merchant can see and fix it.
   if (products.length === 0 && !inEditor) return null;

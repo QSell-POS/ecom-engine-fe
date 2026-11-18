@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { CatalogView } from "@/components/storefront/pages/CatalogView";
 import { parseCatalogQuery } from "@/lib/storefront/query";
+import { productBadgeLabel } from "@/lib/api/product/types";
+import { parseProductSource } from "@/lib/theme-engine/product-source";
 import { loadStore, type StoreParams } from "../store";
 
 type Props = StoreParams & { searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -13,6 +15,8 @@ const COLLECTION_TITLES: Record<string, { title: string; description: string }> 
 
 function heading(query: ReturnType<typeof parseCatalogQuery>): { title: string; description?: string } {
   if (query.q) return { title: `Results for “${query.q}”` };
+  const source = parseProductSource(query.collection);
+  if (source?.kind === "badge") return { title: productBadgeLabel(source.badge) };
   return (query.collection && COLLECTION_TITLES[query.collection]) || { title: "All products", description: "Everything in the store, in one place." };
 }
 

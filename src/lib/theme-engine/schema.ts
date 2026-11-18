@@ -1,4 +1,7 @@
 import type { SectionSchema, SettingField } from "./types";
+import { COLLECTION_OPTIONS } from "./product-source";
+
+export { COLLECTION_OPTIONS };
 
 // Declarative schemas for everything a theme can customise. The builder's
 // settings panel, defaults, validation and sanitisation are all generated
@@ -115,13 +118,6 @@ export const BRAND_SETTING_KEYS = [
 ] as const;
 
 // ---------------------------------------------------------------- sections
-
-export const COLLECTION_OPTIONS = [
-  { value: "all", label: "All products" },
-  { value: "new-arrivals", label: "New arrivals" },
-  { value: "best-sellers", label: "Best sellers" },
-  { value: "sale", label: "On sale" },
-];
 
 export const FEATURE_ICONS = [
   { value: "truck", label: "Delivery" },
@@ -254,7 +250,7 @@ export const SECTION_SCHEMAS: SectionSchema[] = [
     settings: withLayout([
       { type: "text", id: "heading", label: "Heading", default: "Featured products" },
       { type: "text", id: "subheading", label: "Subheading", default: "" },
-      { type: "select", id: "collection", label: "Collection", default: "all", options: COLLECTION_OPTIONS },
+      { type: "product-source", id: "collection", label: "Products from", default: "all", info: "A collection, a product badge, a category or a brand." },
       { type: "range", id: "count", label: "Products to show", default: 8, min: 2, max: 12 },
       { type: "range", id: "columns", label: "Columns on desktop", default: 4, min: 2, max: 5 },
       { type: "select", id: "layout", label: "Layout", default: "grid", options: [

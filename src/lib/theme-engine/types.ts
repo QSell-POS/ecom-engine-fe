@@ -26,7 +26,13 @@ export type SettingField =
       type: "select";
       default: string;
       options: { value: string; label: string }[];
-    });
+    })
+  /**
+   * Where a product section takes its products from: a named collection, a
+   * badge, or one of the store's categories or brands (see product-source.ts).
+   * The categories and brands are the store's own, so the builder supplies them.
+   */
+  | (BaseField & { type: "product-source"; default: string });
 
 export type BlockSchema = {
   type: string;

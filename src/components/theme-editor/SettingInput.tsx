@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { isSafeImageUrl, isSafeLinkUrl } from "@/lib/theme-engine/document";
+import { BADGE_SOURCE_OPTIONS, COLLECTION_OPTIONS, parseProductSource } from "@/lib/theme-engine/product-source";
 import type { SettingField, SettingValue } from "@/lib/theme-engine/types";
+import { useEditorCatalog } from "./catalog-context";
 
 const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
 
@@ -50,6 +52,53 @@ function ColorInput({ id, value, onChange, allowEmpty = false }: { id: string; v
         className="min-w-0 flex-1 bg-transparent font-mono text-sm uppercase outline-none"
       />
     </div>
+  );
+}
+
+/** Collections, badges, and the store's own categories and brands, in labelled groups. */
+function ProductSourceSelect({ id, value, onChange }: { id: string; value: string; onChange: (value: string) => void }) {
+  const { categories, brands } = useEditorCatalog();
+  const groups = [
+    { label: "Collections", options: COLLECTION_OPTIONS },
+    { label: "Product badges", options: BADGE_SOURCE_OPTIONS },
+    { label: "Categories", options: categories.map((c) => ({ value: `category:${c.slug}`, label: c.name })) },
+    { label: "Brands", options: brands.map((b) => ({ value: `brand:${b.slug}`, label: b.name })) },
+  ].filter((group) => group.options.length > 0);
+
+  // A saved category or brand that no longer exists still shows what it was set to.
+  const known = groups.some((group) => group.options.some((option) => option.value === value));
+  const source = parseProductSource(value);
+  const fallbackLabel = source && (source.kind === "category" || source.kind === "brand") ? `${source.slug} (not found)` : value;
+  const selectedLabel = groups.flatMap((group) => group.options).find((option) => option.value === value)?.label ?? fallbackLabel;
+  const kindLabel = source?.kind === "badge" ? "Badge" : source?.kind === "category" ? "Category" : source?.kind === "brand" ? "Brand" : null;
+
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger id={id} className="w-full">
+        <SelectValue>
+          {kindLabel && <span className="text-muted-foreground">{kindLabel}: </span>}
+          {selectedLabel}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent className="max-h-80">
+        {!known && (
+          <SelectItem value={value} disabled>
+            {fallbackLabel}
+          </SelectItem>
+        )}
+        {groups.map((group, index) => (
+          <SelectGroup key={group.label}>
+            {index > 0 && <SelectSeparator />}
+            <SelectLabel>{group.label}</SelectLabel>
+            {group.options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -123,6 +172,17 @@ export function SettingInput({
               ))}
             </SelectContent>
           </Select>
+          {info}
+        </Field>
+      );
+
+    case "product-source":
+      return (
+        <Field>
+          <FieldLabel htmlFor={id} className="font-normal">
+            {field.label}
+          </FieldLabel>
+          <ProductSourceSelect id={id} value={String(current)} onChange={onChange} />
           {info}
         </Field>
       );

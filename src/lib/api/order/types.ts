@@ -91,6 +91,8 @@ export type Order = {
   discountAmount?: Decimal | number;
   deliveryCharge?: Decimal | number;
   totalAmount: Decimal | number;
+  /** Paid back through completed returns. */
+  refundedAmount?: Decimal | number;
   /** The address as charged, flattened onto the order. */
   shippingAddressSnapshot?: string | null;
   shippingCitySnapshot?: string | null;

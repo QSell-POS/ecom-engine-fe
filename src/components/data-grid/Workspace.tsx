@@ -31,7 +31,10 @@ import type { DataGridController } from "./use-data-grid";
 // Everything below the admin navbar (h-14): the panes scroll, the page doesn't.
 const WORKSPACE_HEIGHT = "h-[calc(100dvh-3.5rem)]";
 // Radix wraps viewport content in `display: table`; block keeps widths honest.
-const SCROLL_BLOCK = "[&>[data-slot=scroll-area-viewport]>div]:block!";
+// overscroll-contain keeps wheel/trackpad momentum inside the pane instead of
+// chaining it to the app shell when a pane reaches its end.
+const SCROLL_BLOCK =
+  "[&>[data-slot=scroll-area-viewport]>div]:block! [&>[data-slot=scroll-area-viewport]]:overscroll-contain";
 
 const number = new Intl.NumberFormat("en-US");
 
@@ -398,6 +401,13 @@ export function Workspace<T>({
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
   }, []);
+
+  // The shell scroller is frozen while a workspace is open; make sure it isn't
+  // left part-way down from the table view, which would clip the panes' tops.
+  useEffect(() => {
+    const shell = rootRef.current?.closest<HTMLElement>("[data-slot=app-scroll-viewport]");
+    if (shell) shell.scrollTop = 0;
+  }, [rootRef]);
 
   // ------------------------------------------------------------------ render
   const roles = summaryRoles(grid);

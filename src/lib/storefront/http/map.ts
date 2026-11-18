@@ -40,11 +40,13 @@ export const COLLECTION_BADGES: Record<string, readonly ProductBadge[]> = {
   clearance: ["clearance"],
 };
 
+/** Named collections, plus `badge:<badge>` for each badge so any badge can be a Product grid source. */
 function collectionsFor(badges: readonly string[] | undefined): string[] {
   if (!badges?.length) return [];
-  return Object.entries(COLLECTION_BADGES)
+  const named = Object.entries(COLLECTION_BADGES)
     .filter(([, members]) => members.some((badge) => badges.includes(badge)))
     .map(([slug]) => slug);
+  return [...named, ...badges.map((badge) => `badge:${badge}`)];
 }
 
 const PLACEHOLDER: StoreImage = { url: "", alt: "" };

@@ -6,6 +6,7 @@ import { CircleCheck, CircleSlash, ShieldBan, Trash2, Users } from "lucide-react
 import { DataGrid, type ActionOutcome, type BulkAction, type RowAction } from "@/components/data-grid";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { StatusLabel } from "@/components/common/StatusLabel";
+import { ChannelBadge } from "@/components/common/ChannelIcon";
 import { deleteCustomerAction, updateCustomerStatusAction } from "@/lib/api/customer/action";
 import { customerColumns, customerStatuses } from "@/lib/api/customer/grid";
 import { customerName, type Customer, type CustomerStatus } from "@/lib/api/customer/types";
@@ -117,6 +118,7 @@ export function CustomersGrid({ customers }: { customers: Customer[] }) {
       onMutated={() => router.refresh()}
       cells={{
         name: (customer) => <span className="font-medium">{customerName(customer)}</span>,
+        channel: (customer) => <ChannelBadge channel={customer.channel ?? "e_commerce"} />,
         status: (customer) => {
           const status = customerStatuses[customer.status];
           return <StatusLabel tone={status.tone}>{status.label}</StatusLabel>;

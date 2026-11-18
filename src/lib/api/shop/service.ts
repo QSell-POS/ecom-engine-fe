@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { apiClient, apiList } from "@/lib/api/client";
 import { buildQuery, type Address, type ListParams, type ListResponse } from "@/lib/api/shared/types";
 import type { Order } from "@/lib/api/order/types";
+import type { OrderReturn, ReturnEligibility } from "@/lib/api/returns/types";
 import type { AddressPayload, CartItemPayload, PlaceOrderPayload, ShopLoginPayload, ShopRegisterPayload } from "./dto";
 import type { PaymentInitiation, ShopCart, ShopCustomerSession, ShopRegisterResponse, ShopWishlistItem } from "./types";
 import { CART_TAG, SHOP_ADDRESSES_TAG, SHOP_ORDERS_TAG, WISHLIST_TAG, shopOrderTag } from "./constants";
@@ -67,6 +68,22 @@ export async function placeShopOrder(data: PlaceOrderPayload, idempotencyKey?: s
  */
 export async function cancelShopOrder(id: string) {
   return apiClient<Order>(`/orders/${id}/cancel`, { method: "POST", auth: "customer" });
+}
+
+// Returns: a shopper's own requests on a delivered storefront order.
+export async function getShopOrderReturns(orderId: string) {
+  return apiClient<{ returns: OrderReturn[]; eligibility: ReturnEligibility }>(`/orders/${orderId}/returns`, { auth: "customer" });
+}
+
+export async function requestShopReturn(
+  orderId: string,
+  data: { type: string; items: { orderItemId: string; quantity: number }[]; reason: string; note?: string },
+) {
+  return apiClient<OrderReturn>(`/orders/${orderId}/returns`, { method: "POST", body: data, auth: "customer" });
+}
+
+export async function cancelShopReturn(orderId: string, returnId: string) {
+  return apiClient<OrderReturn>(`/orders/${orderId}/returns/${returnId}/cancel`, { method: "POST", auth: "customer" });
 }
 
 // Payments: start, or retry a failed attempt. Neither takes a body. The order

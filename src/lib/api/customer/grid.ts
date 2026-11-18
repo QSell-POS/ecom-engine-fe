@@ -1,5 +1,6 @@
 import { defineColumns } from "@/lib/data-grid";
-import { customerName, type Customer } from "./types";
+import { ORDER_CHANNEL_LABELS } from "@/lib/api/order/types";
+import { CUSTOMER_CHANNELS, customerName, type Customer } from "./types";
 
 export const customerStatuses = {
   active: { label: "Active", tone: "success" as const },
@@ -11,6 +12,13 @@ export const customerColumns = defineColumns<Customer>([
   { id: "name", header: "Customer", accessor: customerName, width: 220, hideable: false, defaultPin: "left", mobile: { role: "title" } },
   { id: "email", header: "Email", accessor: "email", width: 240, mobile: { role: "subtitle" } },
   { id: "phone", header: "Phone", accessor: "phone", width: 150 },
+  {
+    id: "channel",
+    header: "Channel",
+    accessor: (customer) => ORDER_CHANNEL_LABELS[customer.channel ?? "e_commerce"] ?? customer.channel ?? "",
+    filter: { type: "multiselect", options: CUSTOMER_CHANNELS.map((channel) => ({ value: ORDER_CHANNEL_LABELS[channel], label: ORDER_CHANNEL_LABELS[channel] })) },
+    width: 150,
+  },
   { id: "status", header: "Status", accessor: "status", type: "status", statuses: customerStatuses, filter: { type: "multiselect" }, width: 120, mobile: { role: "status" } },
   { id: "isEmailVerified", header: "Verified", accessor: "isEmailVerified", type: "boolean", filter: { type: "boolean" }, width: 110 },
   { id: "lastLoginAt", header: "Last seen", accessor: "lastLoginAt", type: "datetime", filter: { type: "date-range" }, width: 170, mobile: { role: "trailing" } },
