@@ -33,6 +33,7 @@ const PROTECTED = [
   "/categories",
   "/brand",
   "/orders",
+  "/returns",
   "/customers",
   "/payments",
   "/reviews",

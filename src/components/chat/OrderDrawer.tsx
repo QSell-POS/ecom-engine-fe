@@ -15,7 +15,7 @@ import { messagingWindowOpen, type ChatCustomerSummary, type ChatOrderQuote, typ
 import { PAYMENT_METHODS, paymentMethodLabel, type PaymentMethod } from "@/lib/api/order/types";
 import { formatMoney } from "@/lib/constants/money";
 
-type FoundProduct = { id: string; name: string; sku: string; price: number; available: number | null; image: string | null };
+export type FoundProduct = { id: string; name: string; sku: string; price: number; available: number | null; image: string | null };
 type Line = FoundProduct & { quantity: number };
 
 const NEW_ADDRESS = "new";
@@ -294,7 +294,7 @@ function OrderForm({ conversation, addresses, onCreated }: { conversation: Conve
   );
 }
 
-function ProductSearch({ onPick }: { onPick: (product: FoundProduct) => void }) {
+export function ProductSearch({ onPick }: { onPick: (product: FoundProduct) => void }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<FoundProduct[]>([]);
   const [searching, setSearching] = useState(false);

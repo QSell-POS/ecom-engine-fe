@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { EditorCatalogContext } from "./catalog-context";
 import Link from "next/link";
 import {
   DndContext,
@@ -406,9 +407,13 @@ export function ThemeEditor({
     createEditorStore({ doc: theme.draft, name: theme.name, published: theme.published, isLive }),
   );
 
+  const catalog = useMemo(() => ({ categories: data.categories, brands: data.brands }), [data.categories, data.brands]);
+
   return (
     <EditorStoreContext.Provider value={store}>
-      <EditorShell themeId={theme.id} tenant={tenant} data={data} storeInfo={storeInfo} />
+      <EditorCatalogContext.Provider value={catalog}>
+        <EditorShell themeId={theme.id} tenant={tenant} data={data} storeInfo={storeInfo} />
+      </EditorCatalogContext.Provider>
     </EditorStoreContext.Provider>
   );
 }

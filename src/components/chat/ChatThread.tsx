@@ -19,6 +19,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { StatusLabel } from "@/components/common/StatusLabel";
+import { ChannelIcon, channelLabel, chatChannel } from "@/components/common/ChannelIcon";
 import { useCan } from "@/components/auth/PermissionsProvider";
 import {
   assignConversationAction,
@@ -194,14 +195,20 @@ export function ChatThread({
               <ArrowLeft />
             </Button>
           )}
-          <Avatar className="size-9">
-            {conversation.participantAvatarUrl && <AvatarImage src={conversation.participantAvatarUrl} alt="" />}
-            <AvatarFallback className="text-xs">{initials(title) || "?"}</AvatarFallback>
-          </Avatar>
+          <span className="relative shrink-0">
+            <Avatar className="size-9">
+              {conversation.participantAvatarUrl && <AvatarImage src={conversation.participantAvatarUrl} alt="" />}
+              <AvatarFallback className="text-xs">{initials(title) || "?"}</AvatarFallback>
+            </Avatar>
+            <span className="absolute -right-1 -bottom-1 flex rounded-full bg-background p-px">
+              <ChannelIcon channel={chatChannel(conversation.platform)} className="size-4" title="" />
+            </span>
+          </span>
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold">{title}</p>
-            <p className="truncate text-xs text-muted-foreground">
-              {conversation.platform === "instagram" ? "Instagram" : "Messenger"}
+            <p className="flex min-w-0 items-center gap-1 truncate text-xs text-muted-foreground">
+              <ChannelIcon channel={chatChannel(conversation.platform)} className="size-3.5" title="" />
+              {channelLabel(chatChannel(conversation.platform))}
               {conversation.pageName ? ` · ${conversation.pageName}` : ""}
               {conversation.customerId && canViewOrders && (
                 <>

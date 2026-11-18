@@ -9,6 +9,7 @@ import type { CatalogQuery, Paginated, Product, ProductSort } from "../types";
 import { demoCatalog } from "../mock/catalog-data";
 import type { Product as ApiProduct } from "@/lib/api/product/types";
 import { COLLECTION_BADGES, mapBrand, mapCategory, mapProduct, mapReview, summarise } from "./map";
+import { parseProductSource } from "@/lib/theme-engine/product-source";
 
 /**
  * The storefront's catalog, served by the API.
@@ -55,6 +56,28 @@ function apiCollection(query: CatalogQuery): string | undefined {
   return collection && API_COLLECTIONS.has(collection) ? collection : undefined;
 }
 
+/** `?collection=badge:eco_friendly` (a Product grid's "View all") filters by that badge. */
+function apiBadge(query: CatalogQuery): CatalogQueryParams["badge"] {
+  const source = parseProductSource(query.collection);
+  return source?.kind === "badge" ? source.badge : undefined;
+}
+
+/** The API filter for a Product grid source; null when the general product list already covers it. */
+function sourceParams(value: string): CatalogQueryParams | null {
+  const source = parseProductSource(value);
+  if (!source) return null;
+  switch (source.kind) {
+    case "collection":
+      return source.slug === "all" ? null : { collection: source.slug };
+    case "badge":
+      return { badge: source.badge };
+    case "category":
+      return { categorySlug: source.slug };
+    case "brand":
+      return { brandSlug: source.slug };
+  }
+}
+
 /** Newest first, then each collection's products, without duplicates. */
 function mergeProducts(...lists: ApiProduct[][]): ApiProduct[] {
   const seen = new Map<string, ApiProduct>();
@@ -88,14 +111,25 @@ function toParams(query: CatalogQuery): CatalogQueryParams {
     maxPrice: query.maxPrice ?? undefined,
     inStock: query.inStock ? true : undefined,
     collection: apiCollection(query),
+    badge: apiBadge(query),
     sort: SORTS[query.sort],
   };
 }
 
 export function createApiCatalogApi(storeHost?: string): CatalogApi {
   return {
-    home: async () => {
-      const [products, categories, brands, ...collections] = await Promise.all([
+    home: async (sources = []) => {
+      // Each Product grid source the theme uses, fetched by its own filter.
+      const wanted = sources.flatMap((source) => {
+        const params = sourceParams(source);
+        return params ? [{ source, params }] : [];
+      });
+      const bySource = Promise.all(
+        wanted.map(({ params }) =>
+          getProducts({ limit: HOME_COLLECTION_LIMIT, sort: "newest", ...params }, storeHost).catch(() => ({ data: [] as ApiProduct[] })),
+        ),
+      );
+      const [sourced, [products, categories, brands, ...collections]] = await Promise.all([bySource, Promise.all([
         getProducts({ limit: COMPOSE_LIMIT, sort: "newest" }, storeHost),
         getCategories({ limit: COMPOSE_LIMIT }, storeHost),
         getBrands({ limit: COMPOSE_LIMIT }, storeHost),
@@ -104,9 +138,10 @@ export function createApiCatalogApi(storeHost?: string): CatalogApi {
         ...HOME_COLLECTIONS.map((collection) =>
           getProducts({ limit: HOME_COLLECTION_LIMIT, sort: "newest", collection }, storeHost).catch(() => ({ data: [] as ApiProduct[] })),
         ),
-      ]);
-      const all = mergeProducts(products.data, ...collections.map((list) => list.data));
+      ])]);
+      const all = mergeProducts(products.data, ...collections.map((list) => list.data), ...sourced.map((list) => list.data));
       return {
+        productSources: Object.fromEntries(wanted.map(({ source }, index) => [source, sourced[index].data.map((product) => product.id)])),
         products: all.map(mapProduct),
         categories: withImageFallback(publicCategories(categories.data), all).map(mapCategory),
         brands: brands.data.map(mapBrand),

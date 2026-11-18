@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { MessagesSquare } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ChannelIcon, chatChannel } from "@/components/common/ChannelIcon";
 import { INBOX_VIEWS, INBOX_VIEW_LABELS, conversationTitle, type Conversation, type InboxView } from "@/lib/api/chat/types";
 import { cn } from "@/lib/utils";
 
@@ -124,13 +125,9 @@ export function ConversationList({
                       {conversation.participantAvatarUrl && <AvatarImage src={conversation.participantAvatarUrl} alt="" />}
                       <AvatarFallback className="text-xs">{initials(title) || "?"}</AvatarFallback>
                     </Avatar>
-                    <span
-                      className={cn(
-                        "absolute -right-0.5 -bottom-0.5 size-3 rounded-full border-2 border-background",
-                        conversation.platform === "instagram" ? "bg-pink-500" : "bg-blue-500",
-                      )}
-                      title={conversation.platform === "instagram" ? "Instagram" : "Messenger"}
-                    />
+                    <span className="absolute -right-1 -bottom-1 flex rounded-full bg-background p-px">
+                      <ChannelIcon channel={chatChannel(conversation.platform)} className="size-4" />
+                    </span>
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="flex items-baseline justify-between gap-2">

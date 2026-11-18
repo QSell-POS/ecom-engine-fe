@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { getBlockSchema, getSectionSchema, THEME_SETTINGS_SCHEMA } from "./schema";
+import { isProductSource } from "./product-source";
 import type {
   BlockInstance,
   SectionInstance,
@@ -92,6 +93,8 @@ function sanitizeValue(field: SettingField, raw: unknown): SettingValue {
     }
     case "select":
       return field.options.some((option) => option.value === raw) ? (raw as string) : field.default;
+    case "product-source":
+      return isProductSource(raw) ? raw : field.default;
   }
 }
 

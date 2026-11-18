@@ -6,6 +6,7 @@ import { ORDER_CHANNEL_LABELS, orderCustomerName, orderItemCount, orderShipsTo, 
 import { orderStatuses, paymentStatuses } from "@/lib/api/order/grid";
 import { formatMoney } from "@/lib/constants/money";
 import { TrackingLink } from "./TrackingLink";
+import { OrderReturns } from "./OrderReturns";
 
 const dateTime = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" });
 const when = (value?: string) => (value ? dateTime.format(new Date(value)) : null);
@@ -74,9 +75,12 @@ export function OrderDetail({ order }: { order: Order }) {
             ["Discount", toAmount(order.discountAmount) > 0 ? `− ${formatMoney(order.discountAmount)}` : null],
             ["Delivery", order.deliveryCharge === undefined ? null : formatMoney(order.deliveryCharge)],
             ["Total", <span key="total" className="font-semibold">{formatMoney(order.totalAmount)}</span>],
+            ["Refunded", toAmount(order.refundedAmount) > 0 ? `− ${formatMoney(order.refundedAmount)}` : null],
           ]}
         />
       </DetailSection>
+
+      <OrderReturns order={order} />
 
       <DetailSection
         title="Customer"

@@ -12,10 +12,15 @@ import type {
   Product,
   Review,
   StoreProfile,
+  StoreReturn,
   Vertical,
   WishlistItem,
 } from "../types";
 import { demoCatalog } from "./catalog-data";
+
+const DEMO_RETURN_WINDOW_DAYS = 30;
+/** Demo return requests live for the session only; nothing processes them. */
+const demoReturns = new Map<string, StoreReturn[]>();
 
 // MOCK customer API (browser only, demo/preview/design modes): cart,
 // wishlist, accounts and orders kept in localStorage per store, with the
@@ -368,6 +373,68 @@ export function createMockCustomerApi(options: { storeKey: string; vertical: Ver
         state.cart = state.cart.filter((line) => !items.some((i) => i.productId === line.productId));
         return order;
       });
+    },
+
+    async getOrderReturns(orderId) {
+      await wait();
+      const order = currentUser(load())?.orders.find((o) => o.id === orderId);
+      if (!order) throw new StorefrontError("Order not found.", 404);
+      const returns = demoReturns.get(orderId) ?? [];
+      const taken = new Map<string, number>();
+      for (const r of returns) {
+        if (r.status === "rejected" || r.status === "cancelled") continue;
+        for (const line of r.lines) taken.set(line.orderLineId, (taken.get(line.orderLineId) ?? 0) + line.quantity);
+      }
+      const remaining = Object.fromEntries(order.lines.map((line) => [line.id, Math.max(0, line.quantity - (taken.get(line.id) ?? 0))]));
+      // The demo has no delivery date, so the window runs from when the order was placed.
+      const until = new Date(new Date(order.createdAt).getTime() + DEMO_RETURN_WINDOW_DAYS * 86_400_000);
+      const reason =
+        order.status !== "delivered"
+          ? "Only delivered orders can be returned"
+          : until.getTime() < Date.now()
+            ? `Returns are accepted within ${DEMO_RETURN_WINDOW_DAYS} days of delivery`
+            : returns.some((r) => r.status === "requested")
+              ? "You already have a return request open for this order"
+              : !Object.values(remaining).some((n) => n > 0)
+                ? "Every item on this order has already been returned"
+                : null;
+      return { returns, eligibility: { eligible: reason === null, reason, until: until.toISOString(), remaining } };
+    },
+
+    async requestReturn(orderId, input) {
+      const { eligibility } = await this.getOrderReturns(orderId);
+      if (!eligibility.eligible) throw new StorefrontError(eligibility.reason ?? "This order can't be returned.", 409);
+      const order = currentUser(load())!.orders.find((o) => o.id === orderId)!;
+      const rma: StoreReturn = {
+        id: `rma_demo_${Date.now()}`,
+        number: `RMA-DEMO-${String((demoReturns.get(orderId)?.length ?? 0) + 1).padStart(3, "0")}`,
+        type: input.type,
+        status: "requested",
+        reason: input.reason,
+        note: input.note ?? null,
+        storeNote: null,
+        lines: input.items.map((item) => ({
+          orderLineId: item.orderLineId,
+          name: order.lines.find((line) => line.id === item.orderLineId)?.name ?? "Item",
+          quantity: item.quantity,
+          replacementName: input.type === "exchange" ? (order.lines.find((line) => line.id === item.orderLineId)?.name ?? null) : null,
+        })),
+        refundAmount: 0,
+        amountDue: 0,
+        createdAt: new Date().toISOString(),
+        completedAt: null,
+      };
+      demoReturns.set(orderId, [rma, ...(demoReturns.get(orderId) ?? [])]);
+      return rma;
+    },
+
+    async cancelReturn(orderId, returnId) {
+      await wait();
+      const rma = demoReturns.get(orderId)?.find((r) => r.id === returnId);
+      if (!rma) throw new StorefrontError("Return not found.", 404);
+      if (rma.status !== "requested") throw new StorefrontError("This return can no longer be cancelled.", 409);
+      rma.status = "cancelled";
+      return rma;
     },
 
     async cancelOrder(orderId) {

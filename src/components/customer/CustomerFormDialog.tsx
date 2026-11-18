@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import type { z } from "zod";
-import { TextField } from "@/components/common/FormFields";
+import { SelectField, TextField } from "@/components/common/FormFields";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -15,6 +15,10 @@ import { FieldGroup } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
 import { createCustomerAction } from "@/lib/api/customer/action";
 import { CreateCustomerSchema } from "@/lib/api/customer/validation";
+import { CUSTOMER_CHANNELS } from "@/lib/api/customer/types";
+import { ORDER_CHANNEL_LABELS } from "@/lib/api/order/types";
+
+const CHANNEL_OPTIONS = CUSTOMER_CHANNELS.map((channel) => ({ value: channel, label: ORDER_CHANNEL_LABELS[channel] }));
 
 type Input = z.input<typeof CreateCustomerSchema>;
 type Output = z.output<typeof CreateCustomerSchema>;
@@ -27,7 +31,7 @@ export function CustomerFormDialog({ open, onOpenChange }: { open: boolean; onOp
 
   const form = useForm<Input, unknown, Output>({
     resolver: zodResolver(CreateCustomerSchema),
-    defaultValues: { firstName: "", lastName: "", email: "", phone: "", password: "" },
+    defaultValues: { firstName: "", lastName: "", email: "", phone: "", password: "", channel: "manual" },
   });
 
   function handleOpenChange(next: boolean) {
@@ -69,6 +73,7 @@ export function CustomerFormDialog({ open, onOpenChange }: { open: boolean; onOp
             </div>
             <TextField form={form} name="email" label="Email" type="email" placeholder="shopper@example.com" />
             <TextField form={form} name="phone" label="Phone" optional type="tel" />
+            <SelectField form={form} name="channel" label="Channel" options={CHANNEL_OPTIONS} description="Where this customer came from." />
             <TextField form={form} name="password" label="Password" optional type="password" description="Leave blank to let them set their own." />
             {serverError && (
               <Alert variant="destructive">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { DetailFields, DetailSection, DetailStats } from "@/components/data-grid";
 import { StatusLabel } from "@/components/common/StatusLabel";
+import { ChannelBadge } from "@/components/common/ChannelIcon";
 import { customerName, type Customer } from "@/lib/api/customer/types";
 import { customerStatuses } from "@/lib/api/customer/grid";
 
@@ -15,6 +16,7 @@ export function CustomerDetail({ customer }: { customer: Customer }) {
       <DetailStats
         items={[
           { label: "Status", value: <StatusLabel tone={status.tone}>{status.label}</StatusLabel> },
+          { label: "Channel", value: <ChannelBadge channel={customer.channel ?? "e_commerce"} /> },
           { label: "Email", value: customer.isEmailVerified ? "Verified" : "Unverified" },
           { label: "Last seen", value: customer.lastLoginAt ? when(customer.lastLoginAt) : "Never signed in" },
           { label: "Joined", value: when(customer.createdAt) },

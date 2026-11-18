@@ -16,12 +16,16 @@ import {
   shopLogoutAction,
   shopRegisterAction,
   toggleWishlistAction,
+  cancelReturnAction,
+  getOrderReturnsAction,
+  requestReturnAction,
 } from "@/lib/api/shop/action";
+import type { OrderReturn as ApiReturn } from "@/lib/api/returns/types";
 import type { ShopCart, ShopCartItem, ShopCustomer, ShopWishlistItem } from "@/lib/api/shop/types";
 import type { Order as ApiOrder } from "@/lib/api/order/types";
 import { submitReviewAction } from "@/lib/api/review/action";
 import type { CustomerApi } from "../contracts";
-import type { Address, AddressInput, Cart, CartLine, Customer, Order, OrderLine, Review, StoreImage, WishlistItem } from "../types";
+import type { Address, AddressInput, Cart, CartLine, Customer, Order, OrderLine, Review, StoreImage, StoreReturn, WishlistItem } from "../types";
 import { StorefrontError } from "../checkout";
 
 /**
@@ -166,6 +170,28 @@ function mapOrder(order: ApiOrder): Order {
   };
 }
 
+function mapReturn(rma: ApiReturn): StoreReturn {
+  return {
+    id: rma.id,
+    number: rma.returnNumber,
+    type: rma.type,
+    status: rma.status,
+    reason: rma.reason,
+    note: rma.customerNote ?? null,
+    storeNote: rma.adminNote ?? null,
+    lines: (rma.items ?? []).map((item) => ({
+      orderLineId: item.orderItemId,
+      name: item.productNameSnapshot,
+      quantity: item.quantity,
+      replacementName: item.replacementNameSnapshot ?? null,
+    })),
+    refundAmount: toAmount(rma.refundAmount),
+    amountDue: toAmount(rma.amountDue),
+    createdAt: rma.createdAt,
+    completedAt: rma.completedAt ?? null,
+  };
+}
+
 async function fetchAddresses(): Promise<Address[]> {
   const result = unwrap(await getShopAddressesAction({}), "Couldn't load your addresses.");
   return result.addresses.map(mapAddress);
@@ -273,6 +299,27 @@ export function createLiveCustomerApi(): CustomerApi {
     async cancelOrder(orderId) {
       const result = await cancelOrderAction({ id: orderId });
       return mapOrder(unwrap(result, "Couldn't cancel this order.").order);
+    },
+
+    async getOrderReturns(orderId) {
+      const result = unwrap(await getOrderReturnsAction({ orderId }), "Couldn't load returns for this order.");
+      return { returns: result.returns.map(mapReturn), eligibility: result.eligibility };
+    },
+
+    async requestReturn(orderId, input) {
+      const result = await requestReturnAction({
+        orderId,
+        type: input.type,
+        items: input.items.map((line) => ({ orderItemId: line.orderLineId, quantity: line.quantity })),
+        reason: input.reason,
+        note: input.note,
+      });
+      return mapReturn(unwrap(result, "Couldn't send your return request.").rma);
+    },
+
+    async cancelReturn(orderId, returnId) {
+      const result = await cancelReturnAction({ orderId, returnId });
+      return mapReturn(unwrap(result, "Couldn't cancel this return request.").rma);
     },
 
     async submitReview({ productId, rating, comment }) {

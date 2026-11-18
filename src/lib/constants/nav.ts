@@ -14,8 +14,8 @@ import {
   MessagesSquare,
   MessageSquareQuote,
   Package,
-  Palette,
   ReceiptText,
+  RotateCcw,
   Shapes,
   Store,
   Tag,
@@ -59,6 +59,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Selling",
     items: [
       { label: "Orders", href: ROUTES.orders, icon: ReceiptText, permission: "orders:view" },
+      { label: "Returns", href: ROUTES.returns, icon: RotateCcw, permission: "orders:view" },
       { label: "Customers", href: ROUTES.customers, icon: Users, permission: "customers:view" },
       { label: "Payments", href: ROUTES.payments, icon: CreditCard, permission: "payments:view" },
       { label: "Discounts", href: ROUTES.discounts, icon: TicketPercent, permission: "discounts:view" },
@@ -76,21 +77,30 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Online store",
     items: [
       { label: "Themes", href: ROUTES.themes, icon: LayoutTemplate, permission: "themes:view" },
-      { label: "Customize", href: ROUTES.customize, icon: Palette, permission: "themes:view" },
       { label: "Theme store", href: ROUTES.themeStore, icon: Store, permission: "themes:view" },
     ],
   },
+  // Settings, split by what they configure. A group whose items the admin
+  // can't see is hidden entirely by the sidebar.
   {
-    label: "Settings",
+    label: "Store settings",
     items: [
       { label: "Store address", href: ROUTES.storeAddress, icon: Globe, permission: "settings:view" },
+      { label: "API keys", href: ROUTES.apiKeys, icon: KeyRound, permission: "api_keys:manage" },
+      { label: "Demo data", href: ROUTES.demoData, icon: Database, permission: "owner" },
+    ],
+  },
+  {
+    label: "Team & access",
+    items: [
       { label: "Staff", href: ROUTES.staff, icon: UserCog, permission: "staff:view" },
       { label: "Roles", href: ROUTES.roles, icon: ShieldCheck, permission: "staff:view" },
       { label: "Audit log", href: ROUTES.auditLog, icon: History, permission: "staff:manage" },
-      { label: "API keys", href: ROUTES.apiKeys, icon: KeyRound, permission: "api_keys:manage" },
-      { label: "Demo data", href: ROUTES.demoData, icon: Database, permission: "owner" },
-      { label: "Your account", href: ROUTES.account, icon: UserRound },
     ],
+  },
+  {
+    label: "Account",
+    items: [{ label: "Your account", href: ROUTES.account, icon: UserRound }],
   },
 ];
 

@@ -12,8 +12,11 @@ import type {
   Order,
   Paginated,
   Product,
+  ReturnRequestInput,
   Review,
   ReviewSummary,
+  StoreReturn,
+  StoreReturnEligibility,
   WishlistItem,
 } from "./types";
 
@@ -35,8 +38,11 @@ import type {
  * with the store's public API key (`x-storefront-key`).
  */
 export interface CatalogApi {
-  /** GET /storefront/home */
-  home(): Promise<HomeData>;
+  /**
+   * GET /storefront/home. `sources` are the Product grid sources the theme uses (see
+   * theme-engine/product-source.ts); each is fetched by name so none comes up short.
+   */
+  home(sources?: string[]): Promise<HomeData>;
   /** GET /storefront/products?q&category&brand&minPrice&maxPrice&rating&inStock&onSale&collection&sort&page&pageSize */
   listProducts(query: CatalogQuery): Promise<Paginated<Product>>;
   /** GET /storefront/products/facets?(same filters) */
@@ -92,6 +98,12 @@ export interface CustomerApi {
   initiatePayment(orderId: string): Promise<{ redirectUrl: string }>;
   /** Only while `pending` or `confirmed`; later statuses reject it. */
   cancelOrder(orderId: string): Promise<Order>;
+  /** The order's returns, and whether (and how much) can still be returned. Storefront orders, delivered, within the return window. */
+  getOrderReturns(orderId: string): Promise<{ returns: StoreReturn[]; eligibility: StoreReturnEligibility }>;
+  /** Ask the store for a return or exchange; nothing moves until the store processes it. */
+  requestReturn(orderId: string, input: ReturnRequestInput): Promise<StoreReturn>;
+  /** Withdraw a request the store hasn't acted on yet. */
+  cancelReturn(orderId: string, returnId: string): Promise<StoreReturn>;
 
   submitReview(input: { productId: string; rating: number; comment?: string }): Promise<Review>;
 }

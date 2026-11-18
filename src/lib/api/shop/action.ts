@@ -7,6 +7,9 @@ import type { ListParams } from "@/lib/api/shared/types";
 import { clearCustomerSession, getCustomerSummary, setCustomerSession } from "@/lib/api/session";
 import {
   cancelShopOrder,
+  cancelShopReturn,
+  getShopOrderReturns,
+  requestShopReturn,
   changeCartItem,
   clearCart,
   clearWishlist,
@@ -116,6 +119,31 @@ export const cancelOrderAction = customerActionClient.inputSchema(IdSchema).acti
   updateTag(SHOP_ORDERS_TAG);
   updateTag(shopOrderTag(parsedInput.id));
   return { order };
+});
+
+const OrderReturnsSchema = z.object({ orderId: z.string().min(1) });
+const RequestReturnSchema = OrderReturnsSchema.extend({
+  type: z.enum(["return_refund", "exchange"]),
+  items: z
+    .array(z.object({ orderItemId: z.string().min(1), quantity: z.number().int().min(1).max(1000) }))
+    .min(1, "Choose at least one item")
+    .max(50),
+  reason: z.string().trim().min(2, "Tell us why").max(100),
+  note: z.string().trim().max(2000).optional(),
+});
+const CancelReturnSchema = OrderReturnsSchema.extend({ returnId: z.string().min(1) });
+
+export const getOrderReturnsAction = customerActionClient.inputSchema(OrderReturnsSchema).action(async ({ parsedInput }) => {
+  return getShopOrderReturns(parsedInput.orderId);
+});
+
+export const requestReturnAction = customerActionClient.inputSchema(RequestReturnSchema).action(async ({ parsedInput }) => {
+  const { orderId, ...body } = parsedInput;
+  return { rma: await requestShopReturn(orderId, body) };
+});
+
+export const cancelReturnAction = customerActionClient.inputSchema(CancelReturnSchema).action(async ({ parsedInput }) => {
+  return { rma: await cancelShopReturn(parsedInput.orderId, parsedInput.returnId) };
 });
 
 /** Returns where to send the shopper; the caller does the redirect or form post. */
