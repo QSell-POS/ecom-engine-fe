@@ -132,7 +132,7 @@ const PLANS = [
     name: "Starter",
     prices: {
       yearly:  { NPR: "15,000", INR: "9,500",  USD: "109" },
-      monthly: { NPR: "1,800",  INR: "1,100",  USD: "13"  },
+      monthly: { NPR: "1,500",  INR: "1,100",  USD: "13"  },
     },
     desc: "New stores getting off the ground.",
     featured: false,
@@ -542,8 +542,15 @@ export function LandingPage() {
                 <p className={`text-xs leading-relaxed mb-5 ${plan.featured ? "text-zinc-400" : "text-zinc-500"}`}>{plan.desc}</p>
                 {plan.prices ? (
                   <>
-                    <div className="text-2xl font-semibold tracking-tight mb-0.5">
-                      {symbol}{plan.prices[billing][currency]}
+                    <div className="flex items-baseline gap-2 mb-0.5">
+                      <div className="text-2xl font-semibold tracking-tight">
+                        {symbol}{plan.prices[billing][currency]}
+                      </div>
+                      {billing === "yearly" && (
+                        <span className={`text-xs line-through ${plan.featured ? "text-zinc-600" : "text-zinc-400"}`}>
+                          {symbol}{plan.prices.monthly[currency]}/mo
+                        </span>
+                      )}
                     </div>
                     <div className={`text-xs mb-6 ${plan.featured ? "text-zinc-500" : "text-zinc-400"}`}>
                       per {billing === "yearly" ? "year" : "month"} · {currency}
