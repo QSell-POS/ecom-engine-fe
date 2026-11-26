@@ -9,9 +9,12 @@ const nextConfig: NextConfig = {
   images: {
     // Product, brand and category images are served from Cloudflare R2. Set
     // R2_PUBLIC_HOST to that bucket's public hostname to allow next/image.
-    remotePatterns: process.env.R2_PUBLIC_HOST
-      ? [{ protocol: "https", hostname: process.env.R2_PUBLIC_HOST }]
-      : [],
+    remotePatterns: [
+      ...(process.env.R2_PUBLIC_HOST
+        ? [{ protocol: "https" as const, hostname: process.env.R2_PUBLIC_HOST }]
+        : []),
+      { protocol: "https", hostname: "images.unsplash.com" },
+    ],
   },
 
   async headers() {
